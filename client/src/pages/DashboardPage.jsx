@@ -184,7 +184,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
 
       {projects.length > 0 ? (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? '16px' : '28px' }}>
-          {!hasJira && (
+          {!hasJira && !isClient && (
             <div className="glass-card" style={{
               marginBottom: 20,
               padding: '12px 16px',
