@@ -15,36 +15,52 @@ function requireAdmin(req, res, next) {
   next()
 }
 
-// GET /api/users — list all client users with their assigned projects
+// GET /api/users — list all non-self users with their assigned projects (clients get projects, admins don't)
 router.get('/', requireAdmin, (req, res) => {
   const users = db.prepare(
-    "SELECT id, email, name, role, created_at as createdAt FROM users WHERE role = 'client' ORDER BY created_at ASC"
-  ).all()
+    'SELECT id, email, name, role, created_at as createdAt FROM users WHERE id != ? ORDER BY role ASC, created_at ASC'
+  ).all(req.userId)
 
   const result = users.map(u => {
-    const projects = db.prepare(`
-      SELECT p.id, p.epic_key as epicKey, p.display_name as displayName
-      FROM project_clients pc
-      JOIN projects p ON p.id = pc.project_id
-      WHERE pc.client_user_id = ?
-    `).all(u.id)
-    return { ...u, projects }
+    if (u.role === 'client') {
+      const projects = db.prepare(`
+        SELECT p.id, p.epic_key as epicKey, p.display_name as displayName
+        FROM project_clients pc
+        JOIN projects p ON p.id = pc.project_id
+        WHERE pc.client_user_id = ?
+      `).all(u.id)
+      return { ...u, projects }
+    }
+    return { ...u, projects: [] }
   })
 
   res.json(result)
 })
 
-// POST /api/users — create a new client user
+// POST /api/users — create a new user (admin or client)
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, email, password, role = 'client' } = req.body
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Sva polja su obavezna' })
     }
+    if (!['admin', 'client'].includes(role)) {
+      return res.status(400).json({ error: 'Nevalidna uloga' })
+    }
     const hash = await bcrypt.hash(password, 12)
+
+    let jiraUrl = null, jiraEmail = null, jiraToken = null
+    if (role === 'admin') {
+      // Copy Jira credentials from the creating admin
+      const creator = db.prepare('SELECT jira_url, jira_email, jira_token FROM users WHERE id = ?').get(req.userId)
+      jiraUrl = creator?.jira_url || null
+      jiraEmail = creator?.jira_email || null
+      jiraToken = creator?.jira_token || null
+    }
+
     const result = db.prepare(
-      "INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'client')"
-    ).run(email.toLowerCase(), hash, name)
+      'INSERT INTO users (email, password, name, role, jira_url, jira_email, jira_token) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(email.toLowerCase(), hash, name, role, jiraUrl, jiraEmail, jiraToken)
 
     const user = db.prepare('SELECT id, email, name, role, created_at as createdAt FROM users WHERE id = ?').get(result.lastInsertRowid)
     res.json({ user: { ...user, projects: [] } })

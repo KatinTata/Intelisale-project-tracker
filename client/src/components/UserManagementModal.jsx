@@ -6,7 +6,7 @@ export default function UserManagementModal({ projects, onClose }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [creating, setCreating] = useState(false)
-  const [newForm, setNewForm] = useState({ name: '', email: '', password: '' })
+  const [newForm, setNewForm] = useState({ name: '', email: '', password: '', role: 'client' })
   const [newError, setNewError] = useState('')
   const [newLoading, setNewLoading] = useState(false)
 
@@ -187,9 +187,9 @@ export default function UserManagementModal({ projects, onClose }) {
               borderRadius: 12,
             }}>
               <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 14 }}>
-                Novi klijent
+                Novi korisnik
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 140px', gap: 10, marginBottom: 12 }}>
                 <div>
                   <label style={labelStyle}>IME</label>
                   <input
@@ -227,6 +227,17 @@ export default function UserManagementModal({ projects, onClose }) {
                     onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                     onBlur={e => e.target.style.borderColor = 'var(--border)'}
                   />
+                </div>
+                <div>
+                  <label style={labelStyle}>ULOGA</label>
+                  <select
+                    value={newForm.role}
+                    onChange={e => setNewForm(f => ({ ...f, role: e.target.value }))}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="client">Klijent</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
               </div>
               {newError && (
@@ -298,6 +309,7 @@ export default function UserManagementModal({ projects, onClose }) {
 
 function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
   const [selectedProject, setSelectedProject] = useState('')
+  const isAdmin = user.role === 'admin'
 
   const assignedIds = new Set(user.projects.map(p => p.id))
   const availableProjects = adminProjects.filter(p => !assignedIds.has(p.id))
@@ -306,15 +318,15 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
     <div style={{
       padding: '14px 16px',
       background: 'var(--surfaceAlt)',
-      border: '1px solid var(--border)',
+      border: `1px solid ${isAdmin ? 'rgba(79,142,247,0.3)' : 'var(--border)'}`,
       borderRadius: 10,
     }}>
       {/* User info row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isAdmin ? 0 : 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
-            background: 'var(--accent)',
+            background: isAdmin ? 'var(--accent)' : 'var(--textMuted)',
             color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'Syne', fontWeight: 700, fontSize: 13, flexShrink: 0,
@@ -322,7 +334,16 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
             {user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
           </div>
           <div>
-            <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{user.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{user.name}</span>
+              <span style={{
+                fontFamily: "'DM Mono'", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '2px 7px', borderRadius: 20,
+                background: isAdmin ? 'rgba(79,142,247,0.12)' : 'rgba(107,122,153,0.12)',
+                color: isAdmin ? 'var(--accent)' : 'var(--textMuted)',
+                border: `1px solid ${isAdmin ? 'rgba(79,142,247,0.25)' : 'rgba(107,122,153,0.2)'}`,
+              }}>{isAdmin ? 'Admin' : 'Klijent'}</span>
+            </div>
             <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>{user.email}</div>
           </div>
         </div>
@@ -342,8 +363,15 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
         </button>
       </div>
 
-      {/* Assigned projects */}
-      <div style={{ marginBottom: 10 }}>
+      {/* Admin note */}
+      {isAdmin && (
+        <div style={{ marginTop: 10, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', fontStyle: 'italic' }}>
+          Admin korisnik — konfiguriše sopstvene projekte i dodeljuje klijente.
+        </div>
+      )}
+
+      {/* Assigned projects — clients only */}
+      {!isAdmin && <div style={{ marginBottom: 10 }}>
         <div style={{ fontFamily: "'DM Mono'", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--textMuted)', marginBottom: 6 }}>
           Projekti
         </div>
@@ -379,10 +407,10 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
             ))
           )}
         </div>
-      </div>
+      </div>}
 
-      {/* Assign project */}
-      {availableProjects.length > 0 && (
+      {/* Assign project — clients only */}
+      {!isAdmin && availableProjects.length > 0 && (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <select
             value={selectedProject}
