@@ -1,8 +1,10 @@
 const DONE    = new Set(['Resolved', 'Closed', 'Done'])
-const IN_PROG = new Set(['In Progress', 'For Testing', 'TESTING STARTED', 'On Hold - Testing', 'Development', 'Review', 'On Hold'])
+const TESTING = new Set(['For Testing', 'TESTING STARTED', 'On Hold - Testing'])
+const IN_PROG = new Set(['In Progress', 'Development', 'Review', 'On Hold'])
 
 export function getStatusCategory(statusName) {
   if (DONE.has(statusName)) return 'done'
+  if (TESTING.has(statusName)) return 'testing'
   if (IN_PROG.has(statusName)) return 'inprog'
   return 'todo'
 }
@@ -29,6 +31,7 @@ export function processEpicData(parents, subtasks) {
   let totalSpent = 0
   let done = 0
   let inprog = 0
+  let testing = 0
   let todo = 0
   const overTasks = []
 
@@ -77,6 +80,7 @@ export function processEpicData(parents, subtasks) {
     totalSpent += calcSpent
 
     if (statusCat === 'done') done++
+    else if (statusCat === 'testing') testing++
     else if (statusCat === 'inprog') inprog++
     else todo++
 
@@ -85,7 +89,7 @@ export function processEpicData(parents, subtasks) {
 
   const total = tasks.length
 
-  return { tasks, totalEst, totalSpent, done, inprog, todo, total, overTasks }
+  return { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks }
 }
 
 export function fmtHours(seconds) {

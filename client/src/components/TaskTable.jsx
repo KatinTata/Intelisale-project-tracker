@@ -131,6 +131,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
     const matchSearch = !search || t.key.toLowerCase().includes(search.toLowerCase()) || t.summary.toLowerCase().includes(search.toLowerCase())
     if (!matchSearch) return false
     if (filter === 'done') return t.statusCategory === 'done'
+    if (filter === 'testing') return t.statusCategory === 'testing'
     if (filter === 'inprog') return t.statusCategory === 'inprog'
     if (filter === 'todo') return t.statusCategory === 'todo'
     if (filter === 'over') return overKeys.has(t.key)
@@ -140,6 +141,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
   const counts = {
     all: tasks.length,
     done: tasks.filter(t => t.statusCategory === 'done').length,
+    testing: tasks.filter(t => t.statusCategory === 'testing').length,
     inprog: tasks.filter(t => t.statusCategory === 'inprog').length,
     todo: tasks.filter(t => t.statusCategory === 'todo').length,
     over: overTasks.length,
@@ -148,8 +150,9 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
   const filterPills = [
     { key: 'all', label: `Svi ${counts.all}` },
     { key: 'done', label: `✅ Završeni ${counts.done}` },
+    { key: 'testing', label: `🧪 Testing ${counts.testing}` },
     { key: 'inprog', label: `🔄 In Progress ${counts.inprog}` },
-    { key: 'todo', label: `⏳ Grooming ${counts.todo}` },
+    { key: 'todo', label: `📋 To Do ${counts.todo}` },
     { key: 'over', label: `⚠️ Prekoračenje ${counts.over}` },
   ]
 

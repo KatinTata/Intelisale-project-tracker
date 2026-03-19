@@ -47,7 +47,7 @@ function MetricCard({ label, value, subtitle, icon, valueColor }) {
 }
 
 export default function MetricCards({ data }) {
-  const { total, done, inprog, todo, totalEst, totalSpent, overTasks } = data
+  const { total, done, inprog, testing, todo, totalEst, totalSpent, overTasks } = data
 
   const donePct = total > 0 ? Math.round(done / total * 100) : 0
   const diffSec = totalSpent - totalEst
@@ -59,13 +59,14 @@ export default function MetricCards({ data }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))',
+      gridTemplateColumns: 'repeat(9, minmax(0, 1fr))',
       gap: 12,
     }}>
       <MetricCard label="Ukupno taskova" value={total} subtitle="projekti i subtask" icon="📋" />
       <MetricCard label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} icon="✅" valueColor="var(--green)" />
+      <MetricCard label="Testing" value={testing} subtitle="čeka QA / u testu" icon="🧪" valueColor="var(--amber)" />
       <MetricCard label="In Progress" value={inprog} subtitle="aktivno u radu" icon="🔄" valueColor="var(--accent)" />
-      <MetricCard label="For Grooming" value={todo} subtitle="čeka planiranje" icon="⏳" valueColor="var(--textMuted)" />
+      <MetricCard label="To Do" value={todo} subtitle="čeka planiranje" icon="📋" valueColor="var(--textMuted)" />
       <MetricCard label="Estimacija" value={fmtHours(totalEst)} subtitle="originalna procena" icon="📐" valueColor="var(--accent)" />
       <MetricCard label="Utrošeno" value={fmtHours(totalSpent)} subtitle="logovano vreme" icon="⏱️" valueColor="var(--accent)" />
       <MetricCard

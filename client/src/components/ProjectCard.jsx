@@ -37,10 +37,11 @@ export default function ProjectCard({ project, data, onDelete, loading, error })
     )
   }
 
-  const { tasks, totalEst, totalSpent, done, inprog, todo, total, overTasks } = data
+  const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
 
   const donePct = total > 0 ? done / total : 0
   const inprogPct = total > 0 ? inprog / total : 0
+  const testingPct = total > 0 ? testing / total : 0
 
   const statusLabel = donePct >= 0.8 ? 'active' : donePct >= 0.4 ? 'paused' : 'active'
   const statusColor = donePct >= 0.8 ? 'green' : donePct >= 0.4 ? 'amber' : 'blue'
@@ -51,8 +52,9 @@ export default function ProjectCard({ project, data, onDelete, loading, error })
 
   const donutSegments = [
     { value: done, color: 'var(--green)', label: 'Završeno' },
+    { value: testing, color: 'var(--amber)', label: 'Testing' },
     { value: inprog, color: 'var(--accent)', label: 'In Progress' },
-    { value: todo, color: 'var(--textSubtle)', label: 'Grooming' },
+    { value: todo, color: 'var(--textSubtle)', label: 'To Do' },
   ]
 
   return (
@@ -98,14 +100,15 @@ export default function ProjectCard({ project, data, onDelete, loading, error })
           />
           <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, fontFamily: "'DM Sans'", color: 'var(--textMuted)' }}>
             <span>● <span style={{ color: 'var(--green)' }}>Završeno {done}</span></span>
-            <span>● <span style={{ color: 'var(--amber)' }}>In Progress {inprog}</span></span>
-            <span>● <span style={{ color: 'var(--textSubtle)' }}>Todo {todo}</span></span>
+            <span>● <span style={{ color: 'var(--amber)' }}>Testing {testing}</span></span>
+            <span>● <span style={{ color: 'var(--accent)' }}>In Progress {inprog}</span></span>
+            <span>● <span style={{ color: 'var(--textSubtle)' }}>To Do {todo}</span></span>
           </div>
         </div>
       </div>
 
       {/* Metric cards */}
-      <MetricCards data={{ total, done, inprog, todo, totalEst, totalSpent, overTasks }} />
+      <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} />
 
       {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16 }}>
