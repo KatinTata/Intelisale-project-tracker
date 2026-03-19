@@ -6,6 +6,8 @@ import SettingsModal from '../components/SettingsModal.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
 import UserManagementModal from '../components/UserManagementModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
+import MessagesPage from './MessagesPage.jsx'
+import ClientNotificationModal from '../components/ClientNotificationModal.jsx'
 import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
@@ -26,6 +28,11 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [lastRefresh, setLastRefresh] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [prevProjectData, setPrevProjectData] = useState({})
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatTaskKey, setChatTaskKey] = useState(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [recentUnread, setRecentUnread] = useState([])
+  const [clientModalOpen, setClientModalOpen] = useState(false)
   const projectsRef = useRef([])
 
   const hasJira = !!(user.jiraUrl && user.jiraEmail)
@@ -35,6 +42,29 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   useEffect(() => {
     loadProjects()
   }, [])
+
+  // Notification polling — every 60s
+  useEffect(() => {
+    if (!hasJira && !isClient) return
+    async function loadNotifications() {
+      try {
+        const [{ count }, messages] = await Promise.all([
+          api.getUnreadCount(),
+          api.getRecentUnread(),
+        ])
+        setUnreadCount(count)
+        setRecentUnread(messages)
+        // Client modal — show once per session
+        if (isClient && count > 0 && !sessionStorage.getItem('notif_modal_shown')) {
+          setClientModalOpen(true)
+          sessionStorage.setItem('notif_modal_shown', '1')
+        }
+      } catch {}
+    }
+    loadNotifications()
+    const interval = setInterval(loadNotifications, 60000)
+    return () => clearInterval(interval)
+  }, [hasJira, isClient])
 
   async function loadProjects() {
     if (!hasJira && !isClient) {
@@ -137,6 +167,20 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     onLogout()
   }
 
+  async function handleMarkAllRead() {
+    try {
+      await api.markAllRead()
+      setUnreadCount(0)
+      setRecentUnread([])
+    } catch {}
+  }
+
+  function handleNotificationClick(n) {
+    // Switch to the project that notification belongs to
+    if (n.project_id) setActiveId(n.project_id)
+    setChatOpen(true)
+  }
+
   const activeProject = projects.find(p => p.id === activeId)
 
   if (!initialized) {
@@ -169,6 +213,11 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onOpenSettings={isClient ? undefined : () => setSettingsOpen(true)}
         onLogout={handleLogout}
         onOpenUsers={isClient ? undefined : () => setUsersOpen(true)}
+        unreadCount={unreadCount}
+        recentUnread={recentUnread}
+        onMarkAllRead={handleMarkAllRead}
+        onNotificationClick={handleNotificationClick}
+        onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
       />
 
       <ProjectTabs
@@ -224,6 +273,10 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               previousData={prevProjectData[activeProject.id]?.data}
               previousTime={prevProjectData[activeProject.id]?.time}
               isClient={isClient}
+              onOpenMessages={(taskKey) => {
+                setChatTaskKey(taskKey || null)
+                setChatOpen(true)
+              }}
             />
           )}
         </div>
@@ -373,8 +426,34 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         />
       )}
 
+      {chatOpen && activeProject && (
+        <MessagesPage
+          project={activeProject}
+          currentUser={user}
+          isClient={isClient}
+          initialTaskKey={chatTaskKey}
+          onClose={() => { setChatOpen(false); setChatTaskKey(null) }}
+          onMessagesRead={() => {
+            api.getUnreadCount().then(({ count }) => setUnreadCount(count)).catch(() => {})
+            api.getRecentUnread().then(setRecentUnread).catch(() => {})
+          }}
+        />
+      )}
+
+      {clientModalOpen && (
+        <ClientNotificationModal
+          notifications={recentUnread}
+          onClose={() => setClientModalOpen(false)}
+          onOpenChat={() => { setClientModalOpen(false); setChatOpen(true) }}
+        />
+      )}
+
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes notif-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.15); }
+        }
         .glass-card {
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);

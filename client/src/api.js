@@ -55,6 +55,15 @@ export const api = {
   }),
   testJql: (jql) => request('POST', '/jira/test-jql', { jql }),
 
+  // Messages
+  getMessages: (projectId) => request('GET', `/messages/${projectId}`),
+  sendMessage: (projectId, body) => request('POST', `/messages/${projectId}`, body),
+  getUnreadCount: () => request('GET', '/messages/unread-count'),
+  getRecentUnread: () => request('GET', '/messages/recent-unread'),
+  markAllRead: () => request('PUT', '/messages/read-all'),
+  getProjectClients: (projectId) => request('GET', `/messages/${projectId}/clients`),
+  getTaskInfo: (key) => request('GET', `/jira/task-info/${key}`),
+
   // Users (admin only)
   getUsers: () => request('GET', '/users'),
   createUser: (body) => request('POST', '/users', body),

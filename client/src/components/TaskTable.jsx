@@ -18,7 +18,8 @@ const COL_TABLET         = '120px 1fr 120px 140px 90px'
 const COL_TABLET_CLIENT  = '120px 1fr 120px 140px'
 const COL_MOBILE         = '100px 1fr 100px'
 
-function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient }) {
+function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpenQuickMsg }) {
+  const [hovered, setHovered] = useState(false)
   const pct = task.est > 0 ? Math.min(task.spent / task.est, 2) : 0
   const barColor = (!isClient && task.over) ? 'var(--red)' : 'var(--accent)'
   const col = isMobile
@@ -32,19 +33,49 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient }) {
       <div
         onClick={onToggle}
         style={{
+          position: 'relative',
           display: 'grid',
           gridTemplateColumns: col,
           alignItems: 'center',
           padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid var(--border)',
           cursor: task.subtasks?.length || isMobile ? 'pointer' : 'default',
-          background: (!isClient && task.over) ? 'var(--redTint)' : 'transparent',
+          background: (!isClient && task.over) ? 'var(--redTint)' : hovered ? 'var(--surfaceAlt)' : 'transparent',
           transition: 'background 0.15s',
           minHeight: 44,
         }}
-        onMouseEnter={e => { if (isClient || !task.over) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = (!isClient && task.over) ? 'var(--redTint)' : 'transparent' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
+        {!isClient && !isMobile && hovered && (
+          <button
+            onClick={e => { e.stopPropagation(); onOpenQuickMsg(task) }}
+            title="Pošalji poruku vezan za ovaj task"
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              padding: '3px 8px',
+              fontSize: 13,
+              cursor: 'pointer',
+              color: 'var(--textMuted)',
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              transition: 'all 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
+          >
+            💬
+          </button>
+        )}
         {/* ID */}
         <div>
           <div style={{
@@ -205,7 +236,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient }) {
   )
 }
 
-export default function TaskTable({ tasks = [], overTasks = [], isClient }) {
+export default function TaskTable({ tasks = [], overTasks = [], isClient, projectId, onOpenMessages }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState({})
@@ -346,9 +377,11 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient }) {
             isMobile={isMobile}
             isTablet={isTablet}
             isClient={isClient}
+            onOpenQuickMsg={onOpenMessages ? (task) => onOpenMessages(task.key) : undefined}
           />
         ))
       )}
+
     </div>
   )
 }

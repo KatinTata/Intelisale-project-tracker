@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js'
 import projectRoutes from './routes/projects.js'
 import jiraRoutes from './routes/jira.js'
 import usersRoutes from './routes/users.js'
+import messagesRoutes from './routes/messages.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/projects', authMiddleware, projectRoutes)
 app.use('/api/jira', authMiddleware, jiraRoutes)
 app.use('/api/users', authMiddleware, usersRoutes)
+app.use('/api/messages', authMiddleware, messagesRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../client/dist')

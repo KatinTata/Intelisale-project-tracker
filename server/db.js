@@ -36,6 +36,27 @@ try { db.exec(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'`) } catch 
 try { db.exec(`ALTER TABLE projects ADD COLUMN filter_type TEXT DEFAULT 'epic'`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN filter_jql TEXT`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN filter_meta TEXT`) } catch {}
+try { db.exec(`ALTER TABLE messages ADD COLUMN task_key TEXT DEFAULT NULL`) } catch {}
+try { db.exec(`ALTER TABLE messages ADD COLUMN recipient_user_id INTEGER DEFAULT NULL`) } catch {}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id  INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    sender_id   INTEGER NOT NULL REFERENCES users(id),
+    text        TEXT NOT NULL,
+    task_key    TEXT DEFAULT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS message_reads (
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY(message_id, user_id)
+  )
+`)
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS projects (

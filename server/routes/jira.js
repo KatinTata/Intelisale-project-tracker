@@ -16,6 +16,16 @@ function getUserRole(userId) {
   return db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role || 'admin'
 }
 
+function getAnyJiraForClient(clientUserId) {
+  const row = db.prepare(`
+    SELECT p.user_id as ownerId FROM project_clients pc
+    JOIN projects p ON p.id = pc.project_id
+    WHERE pc.client_user_id = ? LIMIT 1
+  `).get(clientUserId)
+  if (!row) return null
+  return getUserJira(row.ownerId)
+}
+
 function getClientOwnerJira(clientUserId, epicKey) {
   const assignment = db.prepare(`
     SELECT p.user_id as ownerId FROM project_clients pc
@@ -114,6 +124,22 @@ router.post('/test-jql', async (req, res) => {
     }))
 
     res.json({ count: data.total ?? preview.length, preview })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/jira/task-info/:key — fetch task summary for chat linking (label only, no Jira write)
+router.get('/task-info/:key', async (req, res) => {
+  try {
+    const role = getUserRole(req.userId)
+    const jira = role === 'client'
+      ? getAnyJiraForClient(req.userId)
+      : getUserJira(req.userId)
+    if (!jira) return res.status(400).json({ error: 'Jira nije konfigurisan' })
+
+    const data = await jiraGet(jira.jiraUrl, `/issue/${req.params.key}?fields=summary`, jira.auth)
+    res.json({ key: req.params.key, summary: data.fields?.summary || '' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

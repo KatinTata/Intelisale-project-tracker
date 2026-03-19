@@ -112,7 +112,7 @@ function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
 export default function ProjectCard({
   project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
-  previousData, previousTime, isClient,
+  previousData, previousTime, isClient, onOpenMessages,
 }) {
   const [changeBannerDismissed, setChangeBannerDismissed] = useState(false)
   const { isMobile, isTablet } = useWindowSize()
@@ -343,7 +343,7 @@ export default function ProjectCard({
       {!isClient && <OverrunBanner overTasks={overTasks} />}
 
       {/* Task table */}
-      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} />
+      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} />
     </div>
   )
 }

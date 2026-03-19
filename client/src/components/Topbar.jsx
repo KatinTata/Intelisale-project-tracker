@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import NotificationBell from './NotificationBell.jsx'
 
-export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUsers }) {
+export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUsers, unreadCount, recentUnread, onMarkAllRead, onNotificationClick, onOpenChat }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const { isMobile } = useWindowSize()
@@ -49,8 +50,23 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUs
 
       <div />
 
-      {/* Right: avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Right: actions + avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {onOpenChat && (
+          <button
+            onClick={onOpenChat}
+            title="Chat"
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+          >💬</button>
+        )}
+        <NotificationBell
+          unreadCount={unreadCount || 0}
+          notifications={recentUnread || []}
+          onMarkAllRead={onMarkAllRead}
+          onNotificationClick={onNotificationClick}
+        />
         {/* Avatar dropdown */}
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
