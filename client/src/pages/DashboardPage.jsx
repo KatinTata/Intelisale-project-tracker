@@ -23,6 +23,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [initialized, setInitialized] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [prevProjectData, setPrevProjectData] = useState({})
   const projectsRef = useRef([])
 
   const hasJira = !!(user.jiraUrl && user.jiraEmail)
@@ -66,18 +67,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     try {
       const { parents, subtasks } = await api.getTasks(project.epicKey)
       const data = processEpicData(parents, subtasks)
-      setProjectData(prev => ({ ...prev, [project.id]: data }))
-      // Auto-save daily snapshot (silent — never blocks UI)
-      api.saveSnapshot(project.epicKey, {
-        total:       data.total,
-        done:        data.done,
-        testing:     data.testing,
-        inprog:      data.inprog,
-        todo:        data.todo,
-        total_est:   data.totalEst / 3600,
-        total_spent: data.totalSpent / 3600,
-        over_count:  data.overTasks.length,
-      }).catch(() => {})
+      setProjectData(prev => {
+        const current = prev[project.id]
+        if (current) {
+          setPrevProjectData(p => ({ ...p, [project.id]: { data: current, time: Date.now() } }))
+        }
+        return { ...prev, [project.id]: data }
+      })
     } catch (err) {
       setErrorProjects(prev => ({ ...prev, [project.id]: err.message }))
     } finally {
@@ -221,6 +217,8 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               refreshing={refreshing}
               lastRefresh={lastRefresh}
               onRefresh={handleRefreshClick}
+              previousData={prevProjectData[activeProject.id]?.data}
+              previousTime={prevProjectData[activeProject.id]?.time}
             />
           )}
         </div>

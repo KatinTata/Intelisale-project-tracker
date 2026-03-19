@@ -51,7 +51,4 @@ export const api = {
   getEpic: (key) => request('GET', `/jira/epic/${key}`),
   getTasks: (key) => request('GET', `/jira/tasks/${key}`),
 
-  // Snapshots
-  saveSnapshot: (epicKey, body) => request('POST', `/snapshots/${epicKey}`, body),
-  getSnapshots: (epicKey) => request('GET', `/snapshots/${epicKey}`),
 }

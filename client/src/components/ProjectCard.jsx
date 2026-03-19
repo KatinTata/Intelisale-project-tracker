@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MetricCards from './MetricCards.jsx'
 import DonutChart from './DonutChart.jsx'
 import BarChart from './BarChart.jsx'
 import OverrunBanner from './OverrunBanner.jsx'
 import TaskTable from './TaskTable.jsx'
-import ProgressTab from './ProgressTab.jsx'
 import Badge from './ui/Badge.jsx'
 import { fmtHours } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
@@ -17,10 +16,110 @@ function fmtLastRefresh(date) {
   return `pre ${Math.floor(diff / 3600)}h`
 }
 
+function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
+  if (!previousData) return null
+
+  const changes = []
+
+  const doneDiff = data.done - previousData.done
+  const testingDiff = data.testing - previousData.testing
+  const inprogDiff = data.inprog - previousData.inprog
+  const spentDiff = data.totalSpent - previousData.totalSpent
+  const overDiff = data.overTasks.length - previousData.overTasks.length
+
+  if (doneDiff !== 0) changes.push({
+    icon: '✅',
+    text: `${doneDiff > 0 ? '+' : ''}${doneDiff} završen${Math.abs(doneDiff) === 1 ? 'o' : 'ih'}`,
+    color: doneDiff > 0 ? 'var(--green)' : 'var(--textMuted)',
+  })
+  if (testingDiff !== 0) changes.push({
+    icon: '🧪',
+    text: `${testingDiff > 0 ? '+' : ''}${testingDiff} testing`,
+    color: testingDiff > 0 ? 'var(--amber)' : 'var(--textMuted)',
+  })
+  if (inprogDiff !== 0) changes.push({
+    icon: '🔄',
+    text: `${inprogDiff > 0 ? '+' : ''}${inprogDiff} in progress`,
+    color: 'var(--accent)',
+  })
+  if (Math.abs(spentDiff) > 60) changes.push({
+    icon: '⏱️',
+    text: `${spentDiff > 0 ? '+' : ''}${fmtHours(Math.abs(spentDiff))} utrošeno`,
+    color: 'var(--textMuted)',
+  })
+  if (overDiff !== 0) changes.push({
+    icon: '⚠️',
+    text: `${overDiff > 0 ? '+' : ''}${overDiff} prekoračenje`,
+    color: overDiff > 0 ? 'var(--red)' : 'var(--green)',
+  })
+
+  if (changes.length === 0) return null
+
+  return (
+    <div style={{
+      background: 'var(--surfaceAlt)',
+      border: '1px solid var(--border)',
+      borderRadius: 10,
+      padding: '12px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)', flexShrink: 0 }}>
+        Promene od poslednjeg osvežavanja{previousTime ? ` (pre ${fmtLastRefresh(previousTime)})` : ''}:
+      </span>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
+        {changes.map((c, i) => (
+          <span key={i} style={{
+            fontFamily: "'TW Cen MT', 'Century Gothic'",
+            fontSize: 13,
+            fontWeight: 600,
+            color: c.color,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            {c.icon} {c.text}
+          </span>
+        ))}
+      </div>
+      <button
+        onClick={onClose}
+        style={{
+          marginLeft: 'auto',
+          flexShrink: 0,
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          border: '1px solid var(--border)',
+          background: 'transparent',
+          color: 'var(--textMuted)',
+          fontSize: 14,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
 export default function ProjectCard({
   project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
+  previousData, previousTime,
 }) {
+  const [changeBannerDismissed, setChangeBannerDismissed] = useState(false)
+
+  useEffect(() => {
+    setChangeBannerDismissed(false)
+  }, [previousTime])
+
   if (loading) {
     return (
       <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
@@ -50,7 +149,6 @@ export default function ProjectCard({
     )
   }
 
-  const [activeTab, setActiveTab] = useState('taskovi')
   const { isMobile, isTablet } = useWindowSize()
   const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
 
@@ -189,45 +287,16 @@ export default function ProjectCard({
         )}
       </div>
 
-      {/* Tab bar */}
-      <div className="glass-card" style={{
-        display: 'flex',
-        gap: 4,
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 10,
-        padding: 4,
-      }}>
-        {[
-          { key: 'taskovi',  label: '📋 Taskovi'  },
-          { key: 'napredak', label: '📈 Napredak'  },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              borderRadius: 7,
-              border: 'none',
-              background: activeTab === tab.key ? 'var(--accent)' : 'transparent',
-              color: activeTab === tab.key ? '#fff' : 'var(--textMuted)',
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
-              fontSize: 13,
-              fontWeight: activeTab === tab.key ? 600 : 400,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Change summary banner */}
+      {!changeBannerDismissed && (
+        <ChangeSummaryBanner
+          data={data}
+          previousData={previousData}
+          previousTime={previousTime}
+          onClose={() => setChangeBannerDismissed(true)}
+        />
+      )}
 
-      {activeTab === 'napredak' ? (
-        <ProgressTab epicKey={project.epicKey} />
-      ) : (
-        <>
       {/* Metric cards */}
       <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} />
 
@@ -272,8 +341,6 @@ export default function ProjectCard({
 
       {/* Task table */}
       <TaskTable tasks={tasks} overTasks={overTasks} />
-        </>
-      )}
     </div>
   )
 }
