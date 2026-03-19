@@ -15,13 +15,14 @@ async function request(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   })
 
-  if (res.status === 401) {
+  const data = await res.json()
+
+  if (res.status === 401 && !path.startsWith('/auth/')) {
     localStorage.removeItem('jt_token')
     window.location.href = '/login'
     return
   }
 
-  const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Greška servera')
   return data
 }
