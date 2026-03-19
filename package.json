@@ -4,6 +4,7 @@
   "description": "Jira Project Tracker Web App",
   "type": "module",
   "main": "server/index.js",
+  "engines": { "node": ">=22.5.0" },
   "scripts": {
     "dev": "concurrently \"node server/index.js\" \"vite --config client/vite.config.js\"",
     "build": "vite build --config client/vite.config.js",
