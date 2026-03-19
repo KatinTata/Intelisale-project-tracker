@@ -115,6 +115,7 @@ export default function ProjectCard({
   previousData, previousTime,
 }) {
   const [changeBannerDismissed, setChangeBannerDismissed] = useState(false)
+  const { isMobile, isTablet } = useWindowSize()
 
   useEffect(() => {
     setChangeBannerDismissed(false)
@@ -149,7 +150,6 @@ export default function ProjectCard({
     )
   }
 
-  const { isMobile, isTablet } = useWindowSize()
   const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
 
   const donePct = total > 0 ? done / total : 0
