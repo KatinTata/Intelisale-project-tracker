@@ -172,7 +172,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         activeId={activeId}
         onSelect={setActiveId}
         onAdd={hasJira ? () => setAddingProject(true) : undefined}
-        onArchive={hasJira ? handleArchiveProject : undefined}
+        onArchive={handleArchiveProject}
         onOpenArchive={() => setArchiveOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         projectData={projectData}
