@@ -208,19 +208,96 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
           )}
         </div>
       ) : (
-        <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center', padding: '0 16px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🚀</div>
-          <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 12 }}>
-            Nema projekata
-          </h2>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", marginBottom: 24 }}>
-            {hasJira
-              ? 'Dodajte prvi projekat klikom na "+" u tab baru.'
-              : 'Podesite Jira konekciju u podešavanjima da biste dodali projekte.'}
-          </p>
+        <div style={{ maxWidth: 560, margin: '60px auto', padding: '0 16px' }}>
+          {/* Welcome header */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <img
+              src="/logo-white.png"
+              alt="Intelisale"
+              style={{ height: 36, marginBottom: 20, opacity: 0.9 }}
+            />
+            <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 26, color: 'var(--text)', marginBottom: 10 }}>
+              Dobrodošli u Project Hub
+            </h2>
+            <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 15, lineHeight: 1.6 }}>
+              Pratite napredak vaših Jira projekata na jednom mestu.
+            </p>
+          </div>
+
+          {/* Steps */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+            {[
+              {
+                step: '1',
+                done: hasJira,
+                title: 'Povežite Jira nalog',
+                desc: 'Unesite vaš Jira URL, email i API token u Podešavanjima.',
+                action: { label: 'Otvori podešavanja', onClick: () => setSettingsOpen(true) },
+              },
+              {
+                step: '2',
+                done: false,
+                title: 'Dodajte projekat',
+                desc: 'Kliknite "+" u tab baru i unesite Epic key vašeg projekta.',
+                disabled: !hasJira,
+              },
+              {
+                step: '3',
+                done: false,
+                title: 'Pratite napredak',
+                desc: 'Pregledajte metrike, grafikone i dnevni napredak po projektu.',
+                disabled: !hasJira,
+              },
+            ].map(s => (
+              <div key={s.step} className="glass-card" style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 16,
+                padding: '16px 20px',
+                background: 'var(--surface)',
+                border: `1px solid ${s.done ? 'var(--green)' : 'var(--border)'}`,
+                borderRadius: 12,
+                opacity: s.disabled ? 0.45 : 1,
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                  background: s.done ? 'var(--green)' : 'var(--accent)',
+                  color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Syne', fontWeight: 800, fontSize: 14,
+                }}>
+                  {s.done ? '✓' : s.step}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 3 }}>
+                    {s.title}
+                  </div>
+                  <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.5 }}>
+                    {s.desc}
+                  </div>
+                  {s.action && (
+                    <button
+                      onClick={s.action.onClick}
+                      style={{
+                        marginTop: 10,
+                        background: 'var(--accent)', color: '#fff', border: 'none',
+                        borderRadius: 7, padding: '7px 16px',
+                        fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 600, fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {s.action.label} →
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <button
             onClick={() => setSettingsOpen(true)}
             style={{
+              display: 'none',
               background: 'var(--accent)',
               color: '#fff',
               borderRadius: 8,
