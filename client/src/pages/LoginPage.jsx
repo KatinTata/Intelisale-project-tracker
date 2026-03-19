@@ -48,7 +48,7 @@ export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
-            Jira Tracker
+            Project Hub
           </h1>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
             Prijavite se na vaš nalog

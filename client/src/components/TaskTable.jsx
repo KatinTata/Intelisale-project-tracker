@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Badge from './ui/Badge.jsx'
 import ProgressBar from './ui/ProgressBar.jsx'
 import { fmtHours, getStatusCategory } from '../utils.js'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
 function statusColor(name) {
   const cat = getStatusCategory(name)
@@ -11,11 +12,14 @@ function statusColor(name) {
   return 'gray'
 }
 
-const COL = '130px 1fr 130px 160px 80px 100px'
+const COL_DESKTOP = '130px 1fr 130px 160px 80px 100px'
+const COL_TABLET  = '120px 1fr 120px 140px 90px'
+const COL_MOBILE  = '100px 1fr 100px'
 
-function TaskRow({ task, expanded, onToggle }) {
+function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
   const pct = task.est > 0 ? Math.min(task.spent / task.est, 2) : 0
   const barColor = task.over ? 'var(--red)' : 'var(--accent)'
+  const col = isMobile ? COL_MOBILE : isTablet ? COL_TABLET : COL_DESKTOP
 
   return (
     <>
@@ -23,13 +27,14 @@ function TaskRow({ task, expanded, onToggle }) {
         onClick={onToggle}
         style={{
           display: 'grid',
-          gridTemplateColumns: COL,
+          gridTemplateColumns: col,
           alignItems: 'center',
-          padding: '12px 16px',
+          padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid var(--border)',
-          cursor: task.subtasks?.length ? 'pointer' : 'default',
+          cursor: task.subtasks?.length || isMobile ? 'pointer' : 'default',
           background: task.over ? 'var(--redTint)' : 'transparent',
           transition: 'background 0.15s',
+          minHeight: 44,
         }}
         onMouseEnter={e => { if (!task.over) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
         onMouseLeave={e => { if (!task.over) e.currentTarget.style.background = 'transparent' }}
@@ -38,13 +43,13 @@ function TaskRow({ task, expanded, onToggle }) {
         <div>
           <div style={{
             fontFamily: "'DM Mono'",
-            fontSize: 13,
+            fontSize: 12,
             color: task.over ? 'var(--red)' : 'var(--accent)',
             fontWeight: 500,
           }}>{task.key}</div>
-          {task.over && (
+          {task.over && !isMobile && (
             <div style={{ fontSize: 10, color: 'var(--red)', fontFamily: "'DM Mono'", marginTop: 2 }}>
-              +{task.overPct}% prekoračenje
+              +{task.overPct}%
             </div>
           )}
         </div>
@@ -52,15 +57,15 @@ function TaskRow({ task, expanded, onToggle }) {
         {/* Summary */}
         <div style={{
           fontFamily: "'TW Cen MT', 'Century Gothic'",
-          fontSize: 13,
+          fontSize: isMobile ? 12 : 13,
           color: 'var(--text)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
           paddingRight: 8,
         }}>
-          {task.subtasks?.length > 0 && (
-            <span style={{ marginRight: 6, opacity: 0.5 }}>{expanded ? '▼' : '▶'}</span>
+          {(task.subtasks?.length > 0 || isMobile) && (
+            <span style={{ marginRight: 6, opacity: 0.4, fontSize: 10 }}>{expanded ? '▼' : '▶'}</span>
           )}
           {task.summary}
         </div>
@@ -68,36 +73,98 @@ function TaskRow({ task, expanded, onToggle }) {
         {/* Status */}
         <div><Badge color={statusColor(task.status)}>{task.status}</Badge></div>
 
-        {/* Progress */}
-        <div style={{ paddingRight: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 11, color: 'var(--textMuted)' }}>
-            <span style={{ fontFamily: "'DM Mono'" }}>{task.est > 0 ? `${Math.round(pct * 100)}%` : '–'}</span>
+        {/* Progress — tablet + desktop */}
+        {!isMobile && (
+          <div style={{ paddingRight: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 11, color: 'var(--textMuted)' }}>
+              <span style={{ fontFamily: "'DM Mono'" }}>{task.est > 0 ? `${Math.round(pct * 100)}%` : '–'}</span>
+            </div>
+            {task.est > 0 && <ProgressBar value={pct} color={barColor} height={6} />}
           </div>
-          {task.est > 0 && <ProgressBar value={pct} color={barColor} height={6} />}
-        </div>
+        )}
 
-        {/* Est */}
-        <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
-          {task.est > 0 ? fmtHours(task.est) : '–'}
-        </div>
+        {/* Est — desktop only */}
+        {!isMobile && !isTablet && (
+          <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
+            {task.est > 0 ? fmtHours(task.est) : '–'}
+          </div>
+        )}
 
-        {/* Spent */}
-        <div style={{
-          fontFamily: "'DM Mono'",
-          fontSize: 12,
-          color: task.over ? 'var(--red)' : task.spent > 0 ? 'var(--green)' : 'var(--textMuted)',
-        }}>
-          {task.spent > 0 ? fmtHours(task.spent) : '–'}
-        </div>
+        {/* Spent — tablet + desktop */}
+        {!isMobile && (
+          <div style={{
+            fontFamily: "'DM Mono'",
+            fontSize: 12,
+            color: task.over ? 'var(--red)' : task.spent > 0 ? 'var(--green)' : 'var(--textMuted)',
+          }}>
+            {task.spent > 0 ? fmtHours(task.spent) : '–'}
+          </div>
+        )}
       </div>
 
-      {/* Subtasks */}
-      {expanded && task.subtasks?.map(sub => (
+      {/* Mobile expand: show detail info + subtasks */}
+      {isMobile && expanded && (
+        <div style={{
+          padding: '8px 12px 12px',
+          background: 'var(--surfaceAlt)',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          {/* Detail row */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: task.subtasks?.length ? 10 : 0 }}>
+            <div>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Napredak</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 80 }}><ProgressBar value={pct} color={barColor} height={6} /></div>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
+                  {task.est > 0 ? `${Math.round(pct * 100)}%` : '–'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Est.</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
+                {task.est > 0 ? fmtHours(task.est) : '–'}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Utrošeno</div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: task.over ? 'var(--red)' : task.spent > 0 ? 'var(--green)' : 'var(--textMuted)' }}>
+                {task.spent > 0 ? fmtHours(task.spent) : '–'}
+              </div>
+            </div>
+            {task.over && (
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--red)', textTransform: 'uppercase', marginBottom: 2 }}>Prekoračenje</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--red)' }}>+{task.overPct}%</div>
+              </div>
+            )}
+          </div>
+
+          {/* Subtasks on mobile */}
+          {task.subtasks?.map(sub => (
+            <div key={sub.key} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 0',
+              borderTop: '1px solid var(--border)',
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>{sub.key}</span>
+              <span style={{ fontSize: 12, color: 'var(--textMuted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.summary}</span>
+              <Badge color={statusColor(sub.status)}>{sub.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop/tablet subtasks */}
+      {!isMobile && expanded && task.subtasks?.map(sub => (
         <div key={sub.key} style={{
           display: 'grid',
-          gridTemplateColumns: '130px 1fr 130px 160px 80px 100px',
+          gridTemplateColumns: isTablet ? COL_TABLET : COL_DESKTOP,
           alignItems: 'center',
-          padding: '8px 16px 8px 48px',
+          padding: isTablet ? '8px 12px 8px 36px' : '8px 16px 8px 48px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--surfaceAlt)',
         }}>
@@ -108,9 +175,11 @@ function TaskRow({ task, expanded, onToggle }) {
           </div>
           <div><Badge color={statusColor(sub.status)}>{sub.status}</Badge></div>
           <div />
-          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-            {sub.timeoriginalestimate > 0 ? fmtHours(sub.timeoriginalestimate) : '–'}
-          </div>
+          {!isTablet && (
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
+              {sub.timeoriginalestimate > 0 ? fmtHours(sub.timeoriginalestimate) : '–'}
+            </div>
+          )}
           <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
             {sub.timespent > 0 ? fmtHours(sub.timespent) : '–'}
           </div>
@@ -124,6 +193,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState({})
+  const { isMobile, isTablet } = useWindowSize()
 
   const overKeys = new Set(overTasks.map(t => t.key))
 
@@ -139,78 +209,92 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
   })
 
   const counts = {
-    all: tasks.length,
-    done: tasks.filter(t => t.statusCategory === 'done').length,
+    all:     tasks.length,
+    done:    tasks.filter(t => t.statusCategory === 'done').length,
     testing: tasks.filter(t => t.statusCategory === 'testing').length,
-    inprog: tasks.filter(t => t.statusCategory === 'inprog').length,
-    todo: tasks.filter(t => t.statusCategory === 'todo').length,
-    over: overTasks.length,
+    inprog:  tasks.filter(t => t.statusCategory === 'inprog').length,
+    todo:    tasks.filter(t => t.statusCategory === 'todo').length,
+    over:    overTasks.length,
   }
 
   const filterPills = [
-    { key: 'all', label: `Svi ${counts.all}` },
-    { key: 'done', label: `✅ Završeni ${counts.done}` },
-    { key: 'testing', label: `🧪 Testing ${counts.testing}` },
-    { key: 'inprog', label: `🔄 In Progress ${counts.inprog}` },
-    { key: 'todo', label: `📋 To Do ${counts.todo}` },
-    { key: 'over', label: `⚠️ Prekoračenje ${counts.over}` },
+    { key: 'all',     label: `Svi ${counts.all}` },
+    { key: 'done',    label: `✅ ${counts.done}` },
+    { key: 'testing', label: `🧪 ${counts.testing}` },
+    { key: 'inprog',  label: `🔄 ${counts.inprog}` },
+    { key: 'todo',    label: `📋 ${counts.todo}` },
+    { key: 'over',    label: `⚠️ ${counts.over}` },
   ]
 
   function toggleExpand(key) {
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const col = isMobile ? COL_MOBILE : isTablet ? COL_TABLET : COL_DESKTOP
+
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Taskovi</span>
-            <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>({tasks.length})</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              placeholder="🔍 Pretraži taskove..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+      <div style={{ padding: isMobile ? '12px' : '16px 20px', borderBottom: '1px solid var(--border)' }}>
+        {/* Title + search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <span style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Taskovi</span>
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>({tasks.length})</span>
+          <input
+            placeholder="🔍 Pretraži..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              marginLeft: 'auto',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              color: 'var(--text)',
+              fontSize: 13,
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              width: isMobile ? '140px' : '200px',
+              minHeight: 36,
+            }}
+          />
+        </div>
+
+        {/* Filter pills — horizontal scroll on mobile */}
+        <div style={{
+          display: 'flex',
+          gap: 6,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          paddingBottom: 2,
+        }}>
+          {filterPills.map(p => (
+            <button
+              key={p.key}
+              onClick={() => setFilter(p.key)}
               style={{
-                background: 'var(--bg)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: '6px 12px',
-                color: 'var(--text)',
-                fontSize: 13,
                 fontFamily: "'TW Cen MT', 'Century Gothic'",
-                width: 200,
+                fontSize: 12,
+                padding: '6px 12px',
+                borderRadius: 20,
+                border: filter === p.key ? '1px solid var(--accent)' : '1px solid var(--border)',
+                background: filter === p.key ? 'rgba(79,142,247,0.1)' : 'transparent',
+                color: filter === p.key ? 'var(--accent)' : 'var(--textMuted)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                minHeight: 32,
               }}
-            />
-            {filterPills.map(p => (
-              <button
-                key={p.key}
-                onClick={() => setFilter(p.key)}
-                style={{
-                  fontFamily: "'TW Cen MT', 'Century Gothic'",
-                  fontSize: 12,
-                  padding: '5px 12px',
-                  borderRadius: 20,
-                  border: filter === p.key ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: filter === p.key ? 'rgba(79,142,247,0.1)' : 'transparent',
-                  color: filter === p.key ? 'var(--accent)' : 'var(--textMuted)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >{p.label}</button>
-            ))}
-          </div>
+            >{p.label}</button>
+          ))}
         </div>
       </div>
 
       {/* Column headers */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: COL,
-        padding: '8px 16px',
+        gridTemplateColumns: col,
+        padding: isMobile ? '8px 12px' : '8px 16px',
         background: 'var(--surfaceAlt)',
         borderBottom: '1px solid var(--border)',
         fontSize: 11,
@@ -222,9 +306,9 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
         <div>ID</div>
         <div>Naziv</div>
         <div>Status</div>
-        <div>Napredak</div>
-        <div>Est.</div>
-        <div>Utrošeno</div>
+        {!isMobile && <div>Napredak</div>}
+        {!isMobile && !isTablet && <div>Est.</div>}
+        {!isMobile && <div>Utrošeno</div>}
       </div>
 
       {/* Rows */}
@@ -239,6 +323,8 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
             task={task}
             expanded={!!expanded[task.key]}
             onToggle={() => toggleExpand(task.key)}
+            isMobile={isMobile}
+            isTablet={isTablet}
           />
         ))
       )}

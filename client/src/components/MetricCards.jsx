@@ -1,12 +1,13 @@
 import { fmtHours } from '../utils.js'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
-function MetricCard({ label, value, subtitle, icon, valueColor }) {
+function MetricCard({ label, value, subtitle, icon, valueColor, isMobile }) {
   return (
     <div style={{
       background: 'var(--surface)',
       border: '1px solid var(--border)',
       borderRadius: 12,
-      padding: '16px',
+      padding: isMobile ? '12px' : '16px',
       transition: 'all 0.2s ease',
       cursor: 'default',
     }}
@@ -21,26 +22,31 @@ function MetricCard({ label, value, subtitle, icon, valueColor }) {
         e.currentTarget.style.boxShadow = ''
       }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{
             fontFamily: "'DM Mono'",
-            fontSize: 10,
+            fontSize: isMobile ? 9 : 10,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             color: 'var(--textMuted)',
-            marginBottom: 8,
+            marginBottom: isMobile ? 4 : 8,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}>{label}</div>
           <div style={{
             fontFamily: 'Syne',
-            fontSize: 28,
+            fontSize: isMobile ? 20 : 28,
             fontWeight: 700,
             color: valueColor || 'var(--text)',
             lineHeight: 1,
             marginBottom: 4,
           }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>{subtitle}</div>
+          {!isMobile && (
+            <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>{subtitle}</div>
+          )}
         </div>
-        <span style={{ fontSize: 20, opacity: 0.7 }}>{icon}</span>
+        <span style={{ fontSize: isMobile ? 16 : 20, opacity: 0.7, flexShrink: 0, marginLeft: 4 }}>{icon}</span>
       </div>
     </div>
   )
@@ -48,6 +54,7 @@ function MetricCard({ label, value, subtitle, icon, valueColor }) {
 
 export default function MetricCards({ data }) {
   const { total, done, inprog, testing, todo, totalEst, totalSpent, overTasks } = data
+  const { isMobile, isTablet } = useWindowSize()
 
   const donePct = total > 0 ? Math.round(done / total * 100) : 0
   const diffSec = totalSpent - totalEst
@@ -55,20 +62,19 @@ export default function MetricCards({ data }) {
   const absDiffPct = totalEst > 0 ? Math.abs(Math.round((diffSec / totalEst) * 100)) : 0
   const isOver = diffSec > 0
 
+  const cols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(4, 1fr)' : 'repeat(9, minmax(0, 1fr))'
+
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(9, minmax(0, 1fr))',
-      gap: 12,
-    }}>
-      <MetricCard label="Ukupno taskova" value={total} subtitle="projekti i subtask" icon="📋" />
-      <MetricCard label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} icon="✅" valueColor="var(--green)" />
-      <MetricCard label="Testing" value={testing} subtitle="čeka QA / u testu" icon="🧪" valueColor="var(--amber)" />
-      <MetricCard label="In Progress" value={inprog} subtitle="aktivno u radu" icon="🔄" valueColor="var(--accent)" />
-      <MetricCard label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" icon="📋" valueColor="var(--textMuted)" />
-      <MetricCard label="Estimacija" value={fmtHours(totalEst)} subtitle="originalna procena" icon="📐" valueColor="var(--accent)" />
-      <MetricCard label="Utrošeno" value={fmtHours(totalSpent)} subtitle="logovano vreme" icon="⏱️" valueColor="var(--accent)" />
+    <div style={{ display: 'grid', gridTemplateColumns: cols, gap: isMobile ? 8 : 12 }}>
+      <MetricCard isMobile={isMobile} label="Ukupno taskova" value={total} subtitle="projekti i subtask" icon="📋" />
+      <MetricCard isMobile={isMobile} label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} icon="✅" valueColor="var(--green)" />
+      <MetricCard isMobile={isMobile} label="Testing" value={testing} subtitle="čeka QA / u testu" icon="🧪" valueColor="var(--amber)" />
+      <MetricCard isMobile={isMobile} label="In Progress" value={inprog} subtitle="aktivno u radu" icon="🔄" valueColor="var(--accent)" />
+      <MetricCard isMobile={isMobile} label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" icon="📋" valueColor="var(--textMuted)" />
+      <MetricCard isMobile={isMobile} label="Estimacija" value={fmtHours(totalEst)} subtitle="originalna procena" icon="📐" valueColor="var(--accent)" />
+      <MetricCard isMobile={isMobile} label="Utrošeno" value={fmtHours(totalSpent)} subtitle="logovano vreme" icon="⏱️" valueColor="var(--accent)" />
       <MetricCard
+        isMobile={isMobile}
         label="Razlika"
         value={`${absDiffH}h`}
         subtitle={`${absDiffPct}% ${isOver ? 'iznad' : 'ispod'} estimacije`}
@@ -76,6 +82,7 @@ export default function MetricCards({ data }) {
         valueColor={isOver ? 'var(--red)' : 'var(--green)'}
       />
       <MetricCard
+        isMobile={isMobile}
         label="Prekoračenja"
         value={overTasks.length}
         subtitle="taskova >15% over"

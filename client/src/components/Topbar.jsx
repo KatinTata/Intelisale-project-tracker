@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function Topbar({ user, theme, onToggleTheme, onOpenSettings, onLogout }) {
+export default function Topbar({ user, theme, onOpenSettings, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const { isMobile } = useWindowSize()
 
   useEffect(() => {
     function handleClick(e) {
@@ -29,7 +31,7 @@ export default function Topbar({ user, theme, onToggleTheme, onOpenSettings, onL
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: isMobile ? '0 16px' : '0 24px',
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -38,46 +40,17 @@ export default function Topbar({ user, theme, onToggleTheme, onOpenSettings, onL
           alt="Intelisale"
           style={{ height: 32 }}
         />
-        <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 18, color: 'var(--text)' }}>
-          Project Tracker
-        </span>
-      </div>
-
-      {/* Center: workspace badge */}
-      <div>
-        {user?.jiraUrl && (
-          <span style={{
-            fontFamily: "'DM Mono'",
-            fontSize: 12,
-            color: 'var(--textMuted)',
-            background: 'var(--surfaceAlt)',
-            border: '1px solid var(--border)',
-            borderRadius: 20,
-            padding: '3px 12px',
-          }}>
-            {user.jiraUrl}
+        {!isMobile && (
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 18, color: 'var(--text)' }}>
+            Project Hub
           </span>
         )}
       </div>
 
-      {/* Right: theme toggle + avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          onClick={onToggleTheme}
-          title={theme === 'dark' ? 'Svetla tema' : 'Tamna tema'}
-          style={{
-            fontSize: 18,
-            padding: '6px',
-            borderRadius: 8,
-            color: 'var(--textMuted)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--textMuted)'; e.currentTarget.style.background = 'transparent' }}
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
+      <div />
 
+      {/* Right: avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Avatar dropdown */}
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
@@ -130,11 +103,12 @@ export default function Topbar({ user, theme, onToggleTheme, onOpenSettings, onL
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
-                    padding: '10px 16px',
+                    padding: '12px 16px',
                     fontFamily: "'TW Cen MT', 'Century Gothic'",
                     fontSize: 14,
                     color: item.red ? 'var(--red)' : 'var(--text)',
                     transition: 'background 0.15s',
+                    minHeight: 44,
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

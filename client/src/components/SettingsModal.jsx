@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { api } from '../api.js'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function SettingsModal({ user, onClose, onUserUpdate }) {
+export default function SettingsModal({ user, theme, onToggleTheme, onClose, onUserUpdate }) {
   const [tab, setTab] = useState('profile')
   const [jiraUrl, setJiraUrl] = useState(user.jiraUrl || '')
   const [jiraEmail, setJiraEmail] = useState(user.jiraEmail || '')
@@ -15,6 +16,7 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
   const [pwMsg, setPwMsg] = useState(null)
   const [pwLoading, setPwLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const { isMobile } = useWindowSize()
 
   async function handleTestJira() {
     if (!jiraUrl || !jiraEmail || !jiraToken) {
@@ -76,159 +78,298 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
 
   const tabs = [
     { key: 'profile', label: '👤 Profil' },
-    { key: 'jira', label: '🔗 Jira konekcija' },
-    { key: 'danger', label: '⚠️ Opasna zona' },
+    { key: 'jira',    label: '🔗 Jira' },
+    { key: 'danger',  label: '⚠️ Opasna zona' },
   ]
 
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      display: 'flex',
+      alignItems: isMobile ? 'flex-end' : 'center',
+      justifyContent: 'center',
       zIndex: 1000,
-    }} onClick={onClose}>
+    }} onClick={isMobile ? undefined : onClose}>
       <div style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 16,
-        width: 560,
-        maxHeight: '85vh',
+        border: isMobile ? 'none' : '1px solid var(--border)',
+        borderRadius: isMobile ? '16px 16px 0 0' : 16,
+        width: isMobile ? '100%' : 560,
+        maxHeight: isMobile ? '92vh' : '85vh',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
       }} onClick={e => e.stopPropagation()}>
+
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 20, color: 'var(--text)' }}>Podešavanja</h2>
-          <button onClick={onClose} style={{ fontSize: 18, color: 'var(--textMuted)', padding: 4 }}>✕</button>
+        <div style={{
+          padding: isMobile ? '16px' : '20px 24px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexShrink: 0,
+        }}>
+          <h2 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: isMobile ? 18 : 20, color: 'var(--text)' }}>Podešavanja</h2>
+          <button onClick={onClose} style={{ fontSize: 18, color: 'var(--textMuted)', padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
 
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Sidebar tabs */}
-          <div style={{ width: 180, borderRight: '1px solid var(--border)', padding: '12px 8px', flexShrink: 0 }}>
-            {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  fontFamily: "'TW Cen MT', 'Century Gothic'",
-                  fontSize: 14,
-                  color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
-                  background: tab === t.key ? 'rgba(79,142,247,0.1)' : 'transparent',
-                  marginBottom: 2,
-                  transition: 'all 0.15s',
-                }}
-              >{t.label}</button>
-            ))}
+        {isMobile ? (
+          /* Mobile: horizontal tab bar at top */
+          <>
+            <div style={{
+              display: 'flex',
+              borderBottom: '1px solid var(--border)',
+              flexShrink: 0,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+            }}>
+              {tabs.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 8px',
+                    fontFamily: "'TW Cen MT', 'Century Gothic'",
+                    fontSize: 13,
+                    color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
+                    borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
+                    background: 'transparent',
+                    whiteSpace: 'nowrap',
+                    minHeight: 44,
+                    transition: 'all 0.15s',
+                  }}
+                >{t.label}</button>
+              ))}
+            </div>
+            <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+              <SettingsContent
+                tab={tab}
+                isMobile={isMobile}
+                user={user}
+                theme={theme} onToggleTheme={onToggleTheme}
+                jiraUrl={jiraUrl} setJiraUrl={setJiraUrl}
+                jiraEmail={jiraEmail} setJiraEmail={setJiraEmail}
+                jiraToken={jiraToken} setJiraToken={setJiraToken}
+                testStatus={testStatus} testLoading={testLoading} onTestJira={handleTestJira}
+                saving={saving} saveMsg={saveMsg} onSaveJira={handleSaveJira}
+                oldPassword={oldPassword} setOldPassword={setOldPassword}
+                newPassword={newPassword} setNewPassword={setNewPassword}
+                pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
+                deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
+                onDeleteAccount={handleDeleteAccount}
+              />
+            </div>
+          </>
+        ) : (
+          /* Desktop: sidebar + content */
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <div style={{ width: 180, borderRight: '1px solid var(--border)', padding: '12px 8px', flexShrink: 0 }}>
+              {tabs.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    fontFamily: "'TW Cen MT', 'Century Gothic'",
+                    fontSize: 14,
+                    color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
+                    background: tab === t.key ? 'rgba(79,142,247,0.1)' : 'transparent',
+                    marginBottom: 2,
+                    transition: 'all 0.15s',
+                  }}
+                >{t.label}</button>
+              ))}
+            </div>
+            <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+              <SettingsContent
+                tab={tab}
+                isMobile={isMobile}
+                user={user}
+                theme={theme} onToggleTheme={onToggleTheme}
+                jiraUrl={jiraUrl} setJiraUrl={setJiraUrl}
+                jiraEmail={jiraEmail} setJiraEmail={setJiraEmail}
+                jiraToken={jiraToken} setJiraToken={setJiraToken}
+                testStatus={testStatus} testLoading={testLoading} onTestJira={handleTestJira}
+                saving={saving} saveMsg={saveMsg} onSaveJira={handleSaveJira}
+                oldPassword={oldPassword} setOldPassword={setOldPassword}
+                newPassword={newPassword} setNewPassword={setNewPassword}
+                pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
+                deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
+                onDeleteAccount={handleDeleteAccount}
+              />
+            </div>
           </div>
-
-          {/* Content */}
-          <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
-            {tab === 'profile' && (
-              <div>
-                <h3 style={sectionTitle}>Profil</h3>
-                <div style={fieldGroup}>
-                  <label style={fieldLabel}>IME</label>
-                  <div style={fieldValue}>{user.name}</div>
-                </div>
-                <div style={fieldGroup}>
-                  <label style={fieldLabel}>EMAIL</label>
-                  <div style={fieldValue}>{user.email}</div>
-                </div>
-
-                <h3 style={{ ...sectionTitle, marginTop: 24 }}>Promena lozinke</h3>
-                <form onSubmit={handleChangePassword}>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={fieldLabel}>TRENUTNA LOZINKA</label>
-                    <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={inputStyle} />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={fieldLabel}>NOVA LOZINKA</label>
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inputStyle} />
-                  </div>
-                  {pwMsg && <div style={{ ...msgStyle, color: pwMsg.ok ? 'var(--green)' : 'var(--red)', background: pwMsg.ok ? 'var(--greenTint)' : 'var(--redTint)' }}>{pwMsg.msg}</div>}
-                  <button type="submit" disabled={pwLoading} style={{ ...btnPrimary, opacity: pwLoading ? 0.7 : 1 }}>
-                    {pwLoading ? 'Menjam...' : 'Promeni lozinku'}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {tab === 'jira' && (
-              <div>
-                <h3 style={sectionTitle}>Jira konekcija</h3>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={fieldLabel}>JIRA URL</label>
-                  <input value={jiraUrl} onChange={e => setJiraUrl(e.target.value)} placeholder="vas-workspace.atlassian.net" style={inputStyle} />
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={fieldLabel}>EMAIL</label>
-                  <input value={jiraEmail} onChange={e => setJiraEmail(e.target.value)} placeholder="vas@email.com" style={inputStyle} />
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={fieldLabel}>API TOKEN</label>
-                  <input type="password" value={jiraToken} onChange={e => setJiraToken(e.target.value)} placeholder="••••••••••••" style={inputStyle} />
-                  <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
-                    Token se čuva enkriptovan. Ostavite prazno da ne menjate.
-                  </div>
-                </div>
-                {testStatus && (
-                  <div style={{ ...msgStyle, color: testStatus.ok ? 'var(--green)' : 'var(--red)', background: testStatus.ok ? 'var(--greenTint)' : 'var(--redTint)', marginBottom: 12 }}>
-                    {testStatus.msg}
-                  </div>
-                )}
-                {saveMsg && (
-                  <div style={{ ...msgStyle, color: saveMsg.ok ? 'var(--green)' : 'var(--red)', background: saveMsg.ok ? 'var(--greenTint)' : 'var(--redTint)', marginBottom: 12 }}>
-                    {saveMsg.msg}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={handleTestJira} disabled={testLoading} style={{ ...btnSecondary, opacity: testLoading ? 0.7 : 1 }}>
-                    {testLoading ? 'Testiram...' : '🔌 Test konekcije'}
-                  </button>
-                  <button onClick={handleSaveJira} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.7 : 1 }}>
-                    {saving ? 'Čuvam...' : 'Sačuvaj'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {tab === 'danger' && (
-              <div>
-                <h3 style={{ ...sectionTitle, color: 'var(--red)' }}>Opasna zona</h3>
-                <div style={{ background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 10, padding: '16px 20px' }}>
-                  <div style={{ fontFamily: 'Syne', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Obriši nalog</div>
-                  <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
-                    Ova akcija je nepovratna. Svi projekti i podaci će biti trajno obrisani.
-                  </div>
-                  {!deleteConfirm ? (
-                    <button onClick={() => setDeleteConfirm(true)} style={{ ...btnDanger }}>
-                      Obriši nalog
-                    </button>
-                  ) : (
-                    <div>
-                      <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
-                        Da li si siguran? Ova akcija se ne može poništiti.
-                      </div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={() => setDeleteConfirm(false)} style={btnSecondary}>Otkaži</button>
-                        <button onClick={handleDeleteAccount} style={btnDanger}>Da, obriši sve</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
+}
+
+function SettingsContent({
+  tab, isMobile, user, theme, onToggleTheme,
+  jiraUrl, setJiraUrl, jiraEmail, setJiraEmail, jiraToken, setJiraToken,
+  testStatus, testLoading, onTestJira,
+  saving, saveMsg, onSaveJira,
+  oldPassword, setOldPassword, newPassword, setNewPassword,
+  pwMsg, pwLoading, onChangePassword,
+  deleteConfirm, setDeleteConfirm, onDeleteAccount,
+}) {
+  if (tab === 'profile') return (
+    <div>
+      <h3 style={sectionTitle}>Profil</h3>
+      <div style={fieldGroup}>
+        <label style={fieldLabel}>IME</label>
+        <div style={fieldValue}>{user.name}</div>
+      </div>
+      <div style={fieldGroup}>
+        <label style={fieldLabel}>EMAIL</label>
+        <div style={fieldValue}>{user.email}</div>
+      </div>
+
+      <h3 style={{ ...sectionTitle, marginTop: 24 }}>Izgled</h3>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 14px',
+        background: 'var(--surfaceAlt)',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+      }}>
+        <div>
+          <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>
+            {theme === 'dark' ? 'Tamna tema' : 'Svetla tema'}
+          </div>
+          <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)' }}>
+            Pritisnite da promenite temu
+          </div>
+        </div>
+        <button
+          onClick={onToggleTheme}
+          style={{
+            width: 52,
+            height: 28,
+            borderRadius: 14,
+            background: theme === 'dark' ? 'var(--accent)' : 'var(--border)',
+            position: 'relative',
+            transition: 'background 0.3s',
+            flexShrink: 0,
+            cursor: 'pointer',
+            border: 'none',
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            top: 3,
+            left: theme === 'dark' ? 27 : 3,
+            width: 22,
+            height: 22,
+            borderRadius: '50%',
+            background: '#fff',
+            transition: 'left 0.3s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 12,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+          }}>
+            {theme === 'dark' ? '🌙' : '☀️'}
+          </div>
+        </button>
+      </div>
+
+      <h3 style={{ ...sectionTitle, marginTop: 24 }}>Promena lozinke</h3>
+      <form onSubmit={onChangePassword}>
+        <div style={{ marginBottom: 12 }}>
+          <label style={fieldLabel}>TRENUTNA LOZINKA</label>
+          <input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={inputStyle} />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={fieldLabel}>NOVA LOZINKA</label>
+          <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inputStyle} />
+        </div>
+        {pwMsg && <div style={{ ...msgStyle, color: pwMsg.ok ? 'var(--green)' : 'var(--red)', background: pwMsg.ok ? 'var(--greenTint)' : 'var(--redTint)' }}>{pwMsg.msg}</div>}
+        <button type="submit" disabled={pwLoading} style={{ ...btnPrimary, opacity: pwLoading ? 0.7 : 1, width: isMobile ? '100%' : 'auto' }}>
+          {pwLoading ? 'Menjam...' : 'Promeni lozinku'}
+        </button>
+      </form>
+    </div>
+  )
+
+  if (tab === 'jira') return (
+    <div>
+      <h3 style={sectionTitle}>Jira konekcija</h3>
+      <div style={{ marginBottom: 12 }}>
+        <label style={fieldLabel}>JIRA URL</label>
+        <input value={jiraUrl} onChange={e => setJiraUrl(e.target.value)} placeholder="vas-workspace.atlassian.net" style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={fieldLabel}>EMAIL</label>
+        <input value={jiraEmail} onChange={e => setJiraEmail(e.target.value)} placeholder="vas@email.com" style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={fieldLabel}>API TOKEN</label>
+        <input type="password" value={jiraToken} onChange={e => setJiraToken(e.target.value)} placeholder="••••••••••••" style={inputStyle} />
+        <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+          Token se čuva enkriptovan. Ostavite prazno da ne menjate.
+        </div>
+      </div>
+      {testStatus && (
+        <div style={{ ...msgStyle, color: testStatus.ok ? 'var(--green)' : 'var(--red)', background: testStatus.ok ? 'var(--greenTint)' : 'var(--redTint)', marginBottom: 12 }}>
+          {testStatus.msg}
+        </div>
+      )}
+      {saveMsg && (
+        <div style={{ ...msgStyle, color: saveMsg.ok ? 'var(--green)' : 'var(--red)', background: saveMsg.ok ? 'var(--greenTint)' : 'var(--redTint)', marginBottom: 12 }}>
+          {saveMsg.msg}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
+        <button onClick={onTestJira} disabled={testLoading} style={{ ...btnSecondary, opacity: testLoading ? 0.7 : 1 }}>
+          {testLoading ? 'Testiram...' : '🔌 Test konekcije'}
+        </button>
+        <button onClick={onSaveJira} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Čuvam...' : 'Sačuvaj'}
+        </button>
+      </div>
+    </div>
+  )
+
+  if (tab === 'danger') return (
+    <div>
+      <h3 style={{ ...sectionTitle, color: 'var(--red)' }}>Opasna zona</h3>
+      <div style={{ background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 10, padding: '16px 20px' }}>
+        <div style={{ fontFamily: 'Syne', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Obriši nalog</div>
+        <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+          Ova akcija je nepovratna. Svi projekti i podaci će biti trajno obrisani.
+        </div>
+        {!deleteConfirm ? (
+          <button onClick={() => setDeleteConfirm(true)} style={btnDanger}>
+            Obriši nalog
+          </button>
+        ) : (
+          <div>
+            <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+              Da li si siguran? Ova akcija se ne može poništiti.
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
+              <button onClick={() => setDeleteConfirm(false)} style={btnSecondary}>Otkaži</button>
+              <button onClick={onDeleteAccount} style={btnDanger}>Da, obriši sve</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  return null
 }
 
 const sectionTitle = {
@@ -285,33 +426,36 @@ const btnPrimary = {
   background: 'var(--accent)',
   color: '#fff',
   borderRadius: 8,
-  padding: '9px 18px',
+  padding: '10px 18px',
   fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
   border: 'none',
+  minHeight: 44,
 }
 
 const btnSecondary = {
   background: 'transparent',
   color: 'var(--text)',
   borderRadius: 8,
-  padding: '9px 18px',
+  padding: '10px 18px',
   fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontSize: 14,
   cursor: 'pointer',
   border: '1px solid var(--border)',
+  minHeight: 44,
 }
 
 const btnDanger = {
   background: 'var(--red)',
   color: '#fff',
   borderRadius: 8,
-  padding: '9px 18px',
+  padding: '10px 18px',
   fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
   border: 'none',
+  minHeight: 44,
 }
