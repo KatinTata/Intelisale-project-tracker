@@ -12,7 +12,6 @@ function signToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' })
 }
 
-// Public routes
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body
@@ -26,10 +25,7 @@ router.post('/register', async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 12)
-    const stmt = db.prepare(
-      'INSERT INTO users (email, password, name, verified) VALUES (?, ?, ?, 1)'
-    )
-    stmt.run(email.toLowerCase(), hash, name)
+    db.prepare('INSERT INTO users (email, password, name) VALUES (?, ?, ?)').run(email.toLowerCase(), hash, name)
 
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase())
     const token = signToken(user.id)
@@ -66,7 +62,6 @@ router.post('/login', async (req, res) => {
   }
 })
 
-// Protected routes
 router.get('/me', authMiddleware, (req, res) => {
   const user = db.prepare('SELECT id, email, name, jira_url, jira_email FROM users WHERE id = ?').get(req.userId)
   if (!user) return res.status(404).json({ error: 'Korisnik nije pronađen' })

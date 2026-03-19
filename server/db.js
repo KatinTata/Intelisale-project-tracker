@@ -17,24 +17,18 @@ db.exec(`PRAGMA foreign_keys = ON`)
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-    email                 TEXT UNIQUE NOT NULL,
-    password              TEXT NOT NULL,
-    name                  TEXT NOT NULL,
-    jira_url              TEXT,
-    jira_email            TEXT,
-    jira_token            TEXT,
-    verified              INTEGER DEFAULT 0,
-    verification_code     TEXT,
-    verification_expires  INTEGER,
-    created_at            DATETIME DEFAULT CURRENT_TIMESTAMP
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    email       TEXT UNIQUE NOT NULL,
+    password    TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    jira_url    TEXT,
+    jira_email  TEXT,
+    jira_token  TEXT,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `)
 
 // Migrations for existing DBs
-try { db.exec(`ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0`) } catch {}
-try { db.exec(`ALTER TABLE users ADD COLUMN verification_code TEXT`) } catch {}
-try { db.exec(`ALTER TABLE users ADD COLUMN verification_expires INTEGER`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived INTEGER DEFAULT 0`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived_at TEXT`) } catch {}
 
