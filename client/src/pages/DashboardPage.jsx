@@ -147,7 +147,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
   if (!initialized) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans'", fontSize: 16 }}>Učitavam...</div>
+        <div style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 16 }}>Učitavam...</div>
       </div>
     )
   }
@@ -181,7 +181,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
               border: '1px solid var(--amber)',
               borderRadius: 10,
               fontSize: 14,
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
               color: 'var(--amber)',
               display: 'flex',
               alignItems: 'center',
@@ -224,7 +224,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
                   border: 'none',
                   borderRadius: 8,
                   padding: '8px 16px',
-                  fontFamily: "'DM Sans'",
+                  fontFamily: "'TW Cen MT', 'Century Gothic'",
                   fontWeight: 600,
                   fontSize: 14,
                   cursor: refreshing || isLoadingActive ? 'not-allowed' : 'pointer',
@@ -246,7 +246,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
 
               {/* Auto-refresh selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: "'DM Sans'", fontSize: 13, color: 'var(--textMuted)' }}>
+                <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13, color: 'var(--textMuted)' }}>
                   Auto-refresh:
                 </span>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -255,7 +255,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
                       key={opt.value}
                       onClick={() => setRefreshInterval(opt.value)}
                       style={{
-                        fontFamily: "'DM Sans'",
+                        fontFamily: "'TW Cen MT', 'Century Gothic'",
                         fontSize: 12,
                         padding: '4px 10px',
                         borderRadius: 6,
@@ -303,7 +303,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
           <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 12 }}>
             Nema projekata
           </h2>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans'", marginBottom: 24 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", marginBottom: 24 }}>
             {hasJira
               ? 'Dodajte prvi projekat klikom na "+ Dodaj projekat" u tab baru.'
               : 'Podesite Jira konekciju u podešavanjima da biste dodali projekte.'}
@@ -315,7 +315,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
               color: '#fff',
               borderRadius: 8,
               padding: '11px 24px',
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
               fontWeight: 600,
               fontSize: 15,
               cursor: 'pointer',

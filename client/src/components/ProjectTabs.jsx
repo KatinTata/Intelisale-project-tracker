@@ -57,18 +57,19 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '0 16px',
-                borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
+                padding: '0 18px',
+                borderBottom: active ? '3px solid var(--accent)' : '3px solid transparent',
+                background: active ? 'rgba(79,142,247,0.08)' : 'transparent',
                 color: active ? 'var(--accent)' : 'var(--textMuted)',
-                fontFamily: "'DM Sans'",
-                fontWeight: 500,
+                fontFamily: "'TW Cen MT', 'Century Gothic'",
+                fontWeight: active ? 600 : 500,
                 fontSize: 14,
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
                 flexShrink: 0,
               }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
             >
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, flexShrink: 0 }} />
               <span>{p.displayName || p.epicKey}</span>
@@ -95,7 +96,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
             padding: '0 16px',
             marginLeft: 'auto',
             color: 'var(--accent)',
-            fontFamily: "'DM Sans'",
+            fontFamily: "'TW Cen MT', 'Century Gothic'",
             fontSize: 14,
             fontWeight: 500,
             flexShrink: 0,
@@ -177,7 +178,7 @@ const inputStyle = {
   padding: '10px 12px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
 }
 
 const btnPrimary = {
@@ -185,7 +186,7 @@ const btnPrimary = {
   color: '#fff',
   borderRadius: 8,
   padding: '10px',
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
@@ -198,7 +199,7 @@ const btnSecondary = {
   color: 'var(--text)',
   borderRadius: 8,
   padding: '10px',
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontSize: 14,
   cursor: 'pointer',
   border: '1px solid var(--border)',

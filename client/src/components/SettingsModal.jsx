@@ -116,7 +116,7 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
                   textAlign: 'left',
                   padding: '9px 12px',
                   borderRadius: 8,
-                  fontFamily: "'DM Sans'",
+                  fontFamily: "'TW Cen MT', 'Century Gothic'",
                   fontSize: 14,
                   color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
                   background: tab === t.key ? 'rgba(79,142,247,0.1)' : 'transparent',
@@ -173,7 +173,7 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
                 <div style={{ marginBottom: 16 }}>
                   <label style={fieldLabel}>API TOKEN</label>
                   <input type="password" value={jiraToken} onChange={e => setJiraToken(e.target.value)} placeholder="••••••••••••" style={inputStyle} />
-                  <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'DM Sans'" }}>
+                  <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
                     Token se čuva enkriptovan. Ostavite prazno da ne menjate.
                   </div>
                 </div>
@@ -203,7 +203,7 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
                 <h3 style={{ ...sectionTitle, color: 'var(--red)' }}>Opasna zona</h3>
                 <div style={{ background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 10, padding: '16px 20px' }}>
                   <div style={{ fontFamily: 'Syne', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Obriši nalog</div>
-                  <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'DM Sans'" }}>
+                  <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
                     Ova akcija je nepovratna. Svi projekti i podaci će biti trajno obrisani.
                   </div>
                   {!deleteConfirm ? (
@@ -212,7 +212,7 @@ export default function SettingsModal({ user, onClose, onUserUpdate }) {
                     </button>
                   ) : (
                     <div>
-                      <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'DM Sans'" }}>
+                      <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
                         Da li si siguran? Ova akcija se ne može poništiti.
                       </div>
                       <div style={{ display: 'flex', gap: 10 }}>
@@ -252,7 +252,7 @@ const fieldLabel = {
 }
 
 const fieldValue = {
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontSize: 14,
   color: 'var(--text)',
   padding: '8px 12px',
@@ -269,14 +269,14 @@ const inputStyle = {
   padding: '9px 12px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
 }
 
 const msgStyle = {
   padding: '8px 12px',
   borderRadius: 6,
   fontSize: 13,
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   border: '1px solid transparent',
   marginBottom: 8,
 }
@@ -286,7 +286,7 @@ const btnPrimary = {
   color: '#fff',
   borderRadius: 8,
   padding: '9px 18px',
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
@@ -298,7 +298,7 @@ const btnSecondary = {
   color: 'var(--text)',
   borderRadius: 8,
   padding: '9px 18px',
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontSize: 14,
   cursor: 'pointer',
   border: '1px solid var(--border)',
@@ -309,7 +309,7 @@ const btnDanger = {
   color: '#fff',
   borderRadius: 8,
   padding: '9px 18px',
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',

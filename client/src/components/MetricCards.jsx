@@ -38,7 +38,7 @@ function MetricCard({ label, value, subtitle, icon, valueColor }) {
             lineHeight: 1,
             marginBottom: 4,
           }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'DM Sans'" }}>{subtitle}</div>
+          <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>{subtitle}</div>
         </div>
         <span style={{ fontSize: 20, opacity: 0.7 }}>{icon}</span>
       </div>
@@ -51,10 +51,9 @@ export default function MetricCards({ data }) {
 
   const donePct = total > 0 ? Math.round(done / total * 100) : 0
   const diffSec = totalSpent - totalEst
-  const diffH = (diffSec / 3600).toFixed(1)
-  const diffPct = totalEst > 0 ? Math.round((diffSec / totalEst) * 100) : 0
-  const diffColor = diffSec <= 0 ? 'var(--green)' : 'var(--red)'
-  const diffSign = diffSec > 0 ? '+' : ''
+  const absDiffH = Math.abs(diffSec / 3600).toFixed(1)
+  const absDiffPct = totalEst > 0 ? Math.abs(Math.round((diffSec / totalEst) * 100)) : 0
+  const isOver = diffSec > 0
 
   return (
     <div style={{
@@ -66,15 +65,15 @@ export default function MetricCards({ data }) {
       <MetricCard label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} icon="✅" valueColor="var(--green)" />
       <MetricCard label="Testing" value={testing} subtitle="čeka QA / u testu" icon="🧪" valueColor="var(--amber)" />
       <MetricCard label="In Progress" value={inprog} subtitle="aktivno u radu" icon="🔄" valueColor="var(--accent)" />
-      <MetricCard label="To Do" value={todo} subtitle="čeka planiranje" icon="📋" valueColor="var(--textMuted)" />
+      <MetricCard label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" icon="📋" valueColor="var(--textMuted)" />
       <MetricCard label="Estimacija" value={fmtHours(totalEst)} subtitle="originalna procena" icon="📐" valueColor="var(--accent)" />
       <MetricCard label="Utrošeno" value={fmtHours(totalSpent)} subtitle="logovano vreme" icon="⏱️" valueColor="var(--accent)" />
       <MetricCard
         label="Razlika"
-        value={`${diffSign}${diffH}h`}
-        subtitle={`${diffSign}${diffPct}% ${diffSec <= 0 ? 'ispod' : 'iznad'} est.`}
-        icon={diffSec <= 0 ? '📉' : '📈'}
-        valueColor={diffColor}
+        value={`${absDiffH}h`}
+        subtitle={`${absDiffPct}% ${isOver ? 'iznad' : 'ispod'} estimacije`}
+        icon={isOver ? '📈' : '📉'}
+        valueColor={isOver ? 'var(--red)' : 'var(--green)'}
       />
       <MetricCard
         label="Prekoračenja"

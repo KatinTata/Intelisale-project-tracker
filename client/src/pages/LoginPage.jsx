@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 
-export default function LoginPage({ onLogin, onGoRegister }) {
+export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,6 +16,11 @@ export default function LoginPage({ onLogin, onGoRegister }) {
       localStorage.setItem('jt_token', res.token)
       onLogin(res.user)
     } catch (err) {
+      // Check if unverified — backend returns 403 with unverified:true
+      if (err.message === 'Molimo verifikujte vaš email') {
+        onUnverified?.(email)
+        return
+      }
       setError(err.message)
     } finally {
       setLoading(false)
@@ -45,7 +50,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
             Jira Tracker
           </h1>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans'", fontSize: 14 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
             Prijavite se na vaš nalog
           </p>
         </div>
@@ -87,7 +92,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
               borderRadius: 8,
               color: 'var(--red)',
               fontSize: 13,
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
             }}>{error}</div>
           )}
 
@@ -100,7 +105,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
               color: '#fff',
               borderRadius: 8,
               padding: '11px',
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
               fontWeight: 600,
               fontSize: 15,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -113,7 +118,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'DM Sans'", fontSize: 14, color: 'var(--textMuted)' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)' }}>
           Nema naloga?{' '}
           <button onClick={onGoRegister} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
             Registruj se
@@ -142,6 +147,6 @@ const inputStyle = {
   padding: '10px 14px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   transition: 'border-color 0.2s',
 }

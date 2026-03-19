@@ -12,7 +12,7 @@ export default function OverrunBanner({ overTasks = [] }) {
       gap: 12,
       flexWrap: 'wrap',
     }}>
-      <span style={{ color: 'var(--red)', fontWeight: 600, fontFamily: "'DM Sans'", fontSize: 14 }}>
+      <span style={{ color: 'var(--red)', fontWeight: 600, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
         ⚠️  {overTasks.length} {overTasks.length === 1 ? 'task prekoračuje' : 'taska prekoračuju'} estimaciju za više od 15%
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -29,6 +29,8 @@ async function request(method, path, body) {
 export const api = {
   // Auth
   register: (body) => request('POST', '/auth/register', body),
+  verify: (body) => request('POST', '/auth/verify', body),
+  resendVerification: (body) => request('POST', '/auth/resend-verification', body),
   login: (body) => request('POST', '/auth/login', body),
   me: () => request('GET', '/auth/me'),
   updateJiraConfig: (body) => request('PUT', '/auth/jira-config', body),

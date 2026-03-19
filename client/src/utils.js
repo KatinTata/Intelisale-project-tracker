@@ -1,12 +1,12 @@
 const DONE    = new Set(['Resolved', 'Closed', 'Done'])
 const TESTING = new Set(['For Testing', 'TESTING STARTED', 'On Hold - Testing'])
-const IN_PROG = new Set(['In Progress', 'Development', 'Review', 'On Hold'])
+const TODO    = new Set(['To Do', 'For Grooming', 'Estimated'])
 
 export function getStatusCategory(statusName) {
   if (DONE.has(statusName)) return 'done'
   if (TESTING.has(statusName)) return 'testing'
-  if (IN_PROG.has(statusName)) return 'inprog'
-  return 'todo'
+  if (TODO.has(statusName)) return 'todo'
+  return 'inprog'
 }
 
 export function processEpicData(parents, subtasks) {
@@ -81,8 +81,8 @@ export function processEpicData(parents, subtasks) {
 
     if (statusCat === 'done') done++
     else if (statusCat === 'testing') testing++
-    else if (statusCat === 'inprog') inprog++
-    else todo++
+    else if (statusCat === 'todo') todo++
+    else inprog++
 
     if (over) overTasks.push(task)
   }
@@ -109,8 +109,8 @@ export const DEMO_PROJECTS = [
       totalEst: 221 * 3600,
       totalSpent: 189.6 * 3600,
       done: 20,
-      inprog: 4,
-      todo: 24,
+      testing: 4,
+      inprog: 24,
       total: 48,
       overTasks: [],
     },
@@ -125,8 +125,8 @@ export const DEMO_PROJECTS = [
       totalEst: 180 * 3600,
       totalSpent: 195 * 3600,
       done: 28,
-      inprog: 5,
-      todo: 2,
+      testing: 5,
+      inprog: 2,
       total: 35,
       overTasks: [],
     },
@@ -141,23 +141,23 @@ export const DEMO_PROJECTS = [
       totalEst: 140 * 3600,
       totalSpent: 88 * 3600,
       done: 8,
+      testing: 7,
       inprog: 7,
-      todo: 7,
       total: 22,
       overTasks: [],
     },
   },
 ]
 
-function generateDemoTasks(prefix, total, doneCount, inprogCount, todoCount) {
+function generateDemoTasks(prefix, total, doneCount, testingCount, inprogCount) {
   const tasks = []
   const statuses = [
     ...Array(doneCount).fill('Resolved'),
+    ...Array(testingCount).fill('For Testing'),
     ...Array(inprogCount).fill('In Progress'),
-    ...Array(todoCount).fill('For Grooming'),
   ]
   for (let i = 0; i < total; i++) {
-    const statusName = statuses[i] || 'For Grooming'
+    const statusName = statuses[i] || 'In Progress'
     const est = Math.floor(Math.random() * 14 + 2) * 3600
     const spent = Math.floor(est * (0.5 + Math.random() * 0.8))
     tasks.push({

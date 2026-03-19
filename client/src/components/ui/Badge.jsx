@@ -16,7 +16,7 @@ export default function Badge({ color = 'gray', children }) {
       borderRadius: 20,
       padding: '2px 8px',
       fontSize: 11,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'TW Cen MT', 'Century Gothic', sans-serif",
       fontWeight: 500,
       whiteSpace: 'nowrap',
     }}>

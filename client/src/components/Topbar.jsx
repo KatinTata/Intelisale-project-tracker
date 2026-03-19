@@ -131,7 +131,7 @@ export default function Topbar({ user, theme, onToggleTheme, onOpenSettings, onL
                     width: '100%',
                     textAlign: 'left',
                     padding: '10px 16px',
-                    fontFamily: "'DM Sans'",
+                    fontFamily: "'TW Cen MT', 'Century Gothic'",
                     fontSize: 14,
                     color: item.red ? 'var(--red)' : 'var(--text)',
                     transition: 'background 0.15s',

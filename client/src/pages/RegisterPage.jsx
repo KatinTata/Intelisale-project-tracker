@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 
-export default function RegisterPage({ onLogin, onGoLogin }) {
+export default function RegisterPage({ onRegistered, onGoLogin }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -14,8 +14,7 @@ export default function RegisterPage({ onLogin, onGoLogin }) {
     setLoading(true)
     try {
       const res = await api.register({ name, email, password })
-      localStorage.setItem('jt_token', res.token)
-      onLogin(res.user)
+      onRegistered(res.email)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -46,7 +45,7 @@ export default function RegisterPage({ onLogin, onGoLogin }) {
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
             Jira Tracker
           </h1>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans'", fontSize: 14 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
             Kreirajte novi nalog
           </p>
         </div>
@@ -102,7 +101,7 @@ export default function RegisterPage({ onLogin, onGoLogin }) {
               borderRadius: 8,
               color: 'var(--red)',
               fontSize: 13,
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
             }}>{error}</div>
           )}
 
@@ -115,7 +114,7 @@ export default function RegisterPage({ onLogin, onGoLogin }) {
               color: '#fff',
               borderRadius: 8,
               padding: '11px',
-              fontFamily: "'DM Sans'",
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
               fontWeight: 600,
               fontSize: 15,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -128,7 +127,7 @@ export default function RegisterPage({ onLogin, onGoLogin }) {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'DM Sans'", fontSize: 14, color: 'var(--textMuted)' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)' }}>
           Već imate nalog?{' '}
           <button onClick={onGoLogin} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
             Prijavite se
@@ -157,6 +156,6 @@ const inputStyle = {
   padding: '10px 14px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans'",
+  fontFamily: "'TW Cen MT', 'Century Gothic'",
   transition: 'border-color 0.2s',
 }

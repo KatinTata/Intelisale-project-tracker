@@ -51,7 +51,7 @@ function TaskRow({ task, expanded, onToggle }) {
 
         {/* Summary */}
         <div style={{
-          fontFamily: "'DM Sans'",
+          fontFamily: "'TW Cen MT', 'Century Gothic'",
           fontSize: 13,
           color: 'var(--text)',
           overflow: 'hidden',
@@ -181,7 +181,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
                 padding: '6px 12px',
                 color: 'var(--text)',
                 fontSize: 13,
-                fontFamily: "'DM Sans'",
+                fontFamily: "'TW Cen MT', 'Century Gothic'",
                 width: 200,
               }}
             />
@@ -190,7 +190,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
                 key={p.key}
                 onClick={() => setFilter(p.key)}
                 style={{
-                  fontFamily: "'DM Sans'",
+                  fontFamily: "'TW Cen MT', 'Century Gothic'",
                   fontSize: 12,
                   padding: '5px 12px',
                   borderRadius: 20,
@@ -229,7 +229,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
 
       {/* Rows */}
       {filtered.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans'" }}>
+        <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
           Nema taskova
         </div>
       ) : (
