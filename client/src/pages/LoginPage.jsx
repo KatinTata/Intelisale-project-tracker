@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 
-export default function LoginPage({ onLogin, onUnverified, onGoRegister, effectiveTheme = 'dark' }) {
+export default function LoginPage({ onLogin, onGoRegister, effectiveTheme = 'dark' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,11 +17,6 @@ export default function LoginPage({ onLogin, onUnverified, onGoRegister, effecti
       localStorage.setItem('jt_token', res.token)
       onLogin(res.user)
     } catch (err) {
-      // Check if unverified — backend returns 403 with unverified:true
-      if (err.message === 'Molimo verifikujte vaš email') {
-        onUnverified?.(email)
-        return
-      }
       setError(err.message)
     } finally {
       setLoading(false)

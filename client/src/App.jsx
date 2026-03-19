@@ -3,13 +3,11 @@ import { applyTheme, getEffectiveTheme } from './theme.js'
 import { api } from './api.js'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
-import VerificationPage from './pages/VerificationPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'register' | 'verify' | 'dashboard'
+  const [page, setPage] = useState('login') // 'login' | 'register' | 'dashboard'
   const [user, setUser] = useState(null)
-  const [pendingEmail, setPendingEmail] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
 
@@ -45,20 +43,9 @@ export default function App() {
     setPage('dashboard')
   }
 
-  function handleRegistered(email) {
-    setPendingEmail(email)
-    setPage('verify')
-  }
-
-  function handleVerified(userData) {
+  function handleRegistered(userData) {
     setUser(userData)
-    setPendingEmail(null)
     setPage('dashboard')
-  }
-
-  function handleUnverified(email) {
-    setPendingEmail(email)
-    setPage('verify')
   }
 
   function handleLogout() {
@@ -92,16 +79,6 @@ export default function App() {
     )
   }
 
-  if (page === 'verify') {
-    return (
-      <VerificationPage
-        email={pendingEmail}
-        onVerified={handleVerified}
-        onGoLogin={() => setPage('login')}
-      />
-    )
-  }
-
   if (page === 'register') {
     return (
       <RegisterPage
@@ -109,6 +86,7 @@ export default function App() {
         onRegistered={handleRegistered}
         onGoLogin={() => setPage('login')}
       />
+
     )
   }
 
@@ -116,7 +94,6 @@ export default function App() {
     <LoginPage
       effectiveTheme={effectiveTheme}
       onLogin={handleLogin}
-      onUnverified={handleUnverified}
       onGoRegister={() => setPage('register')}
     />
   )

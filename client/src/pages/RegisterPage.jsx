@@ -15,7 +15,8 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
     setLoading(true)
     try {
       const res = await api.register({ name, email, password })
-      onRegistered(res.email)
+      localStorage.setItem('jt_token', res.token)
+      onRegistered(res.user)
     } catch (err) {
       setError(err.message)
     } finally {
