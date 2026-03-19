@@ -8,6 +8,7 @@ import { authMiddleware } from './auth.js'
 import authRoutes from './routes/auth.js'
 import projectRoutes from './routes/projects.js'
 import jiraRoutes from './routes/jira.js'
+import snapshotRoutes from './routes/snapshots.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -20,6 +21,7 @@ const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 10 })
 app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/projects', authMiddleware, projectRoutes)
 app.use('/api/jira', authMiddleware, jiraRoutes)
+app.use('/api/snapshots', authMiddleware, snapshotRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../client/dist')

@@ -65,6 +65,17 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       const { parents, subtasks } = await api.getTasks(project.epicKey)
       const data = processEpicData(parents, subtasks)
       setProjectData(prev => ({ ...prev, [project.id]: data }))
+      // Auto-save daily snapshot (silent — never blocks UI)
+      api.saveSnapshot(project.epicKey, {
+        total:       data.total,
+        done:        data.done,
+        testing:     data.testing,
+        inprog:      data.inprog,
+        todo:        data.todo,
+        total_est:   data.totalEst / 3600,
+        total_spent: data.totalSpent / 3600,
+        over_count:  data.overTasks.length,
+      }).catch(() => {})
     } catch (err) {
       setErrorProjects(prev => ({ ...prev, [project.id]: err.message }))
     } finally {

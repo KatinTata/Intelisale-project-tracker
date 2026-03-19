@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import MetricCards from './MetricCards.jsx'
 import DonutChart from './DonutChart.jsx'
 import BarChart from './BarChart.jsx'
 import OverrunBanner from './OverrunBanner.jsx'
 import TaskTable from './TaskTable.jsx'
-import ProgressBar from './ui/ProgressBar.jsx'
+import ProgressTab from './ProgressTab.jsx'
 import Badge from './ui/Badge.jsx'
 import { fmtHours } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
@@ -49,6 +50,7 @@ export default function ProjectCard({
     )
   }
 
+  const [activeTab, setActiveTab] = useState('taskovi')
   const { isMobile, isTablet } = useWindowSize()
   const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
 
@@ -187,6 +189,45 @@ export default function ProjectCard({
         )}
       </div>
 
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex',
+        gap: 4,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        padding: 4,
+      }}>
+        {[
+          { key: 'taskovi',  label: '📋 Taskovi'  },
+          { key: 'napredak', label: '📈 Napredak'  },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: 7,
+              border: 'none',
+              background: activeTab === tab.key ? 'var(--accent)' : 'transparent',
+              color: activeTab === tab.key ? '#fff' : 'var(--textMuted)',
+              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontSize: 13,
+              fontWeight: activeTab === tab.key ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'napredak' ? (
+        <ProgressTab epicKey={project.epicKey} />
+      ) : (
+        <>
       {/* Metric cards */}
       <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} />
 
@@ -231,6 +272,8 @@ export default function ProjectCard({
 
       {/* Task table */}
       <TaskTable tasks={tasks} overTasks={overTasks} />
+        </>
+      )}
     </div>
   )
 }

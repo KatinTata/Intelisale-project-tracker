@@ -37,6 +37,24 @@ try { db.exec(`ALTER TABLE users ADD COLUMN verification_code TEXT`) } catch {}
 try { db.exec(`ALTER TABLE users ADD COLUMN verification_expires INTEGER`) } catch {}
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS snapshots (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    epic_key     TEXT NOT NULL,
+    date         TEXT NOT NULL,
+    total        INTEGER,
+    done         INTEGER,
+    testing      INTEGER,
+    inprog       INTEGER,
+    todo         INTEGER,
+    total_est    REAL,
+    total_spent  REAL,
+    over_count   INTEGER,
+    UNIQUE(user_id, epic_key, date)
+  )
+`)
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS projects (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
