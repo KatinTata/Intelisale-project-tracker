@@ -75,7 +75,7 @@ export default function ProjectCard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Project header */}
-      <div style={{
+      <div className="glass-card" style={{
         padding: isMobile ? '16px' : '20px 24px',
         background: 'var(--surface)',
         border: '1px solid var(--border)',
@@ -190,7 +190,7 @@ export default function ProjectCard({
       </div>
 
       {/* Tab bar */}
-      <div style={{
+      <div className="glass-card" style={{
         display: 'flex',
         gap: 4,
         background: 'var(--surface)',
@@ -238,7 +238,7 @@ export default function ProjectCard({
         gap: 16,
       }}>
         {/* Donut */}
-        <div style={{
+        <div className="glass-card" style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 12,
@@ -251,7 +251,7 @@ export default function ProjectCard({
         </div>
 
         {/* Bar chart */}
-        <div style={{
+        <div className="glass-card" style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 12,

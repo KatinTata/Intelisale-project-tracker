@@ -233,7 +233,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
   const col = isMobile ? COL_MOBILE : isTablet ? COL_TABLET : COL_DESKTOP
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+    <div className="glass-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: isMobile ? '12px' : '16px 20px', borderBottom: '1px solid var(--border)' }}>
         {/* Title + search */}

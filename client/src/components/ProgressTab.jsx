@@ -96,7 +96,7 @@ export default function ProgressTab({ epicKey }) {
         </div>
 
         {showForm && (
-          <div style={{
+          <div className="glass-card" style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 12, padding: '20px 24px',
           }}>
@@ -290,7 +290,7 @@ export default function ProgressTab({ epicKey }) {
       </div>
 
       {showForm && (
-        <div style={{
+        <div className="glass-card" style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: 12, padding: '20px 24px',
         }}>
@@ -368,7 +368,7 @@ export default function ProgressTab({ epicKey }) {
           { label: 'TREND (7 DANA)',   value: trendLabel,          icon: '📈', color: trendColor       },
           { label: 'UKUPNO ZAVRŠENO',  value: `+${totalCompleted}`,icon: '✅', color: 'var(--green)',  sub: 'od starta praćenja' },
         ].map(c => (
-          <div key={c.label} style={{
+          <div key={c.label} className="glass-card" style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 12,
@@ -390,7 +390,7 @@ export default function ProgressTab({ epicKey }) {
       </div>
 
       {/* ── Burn-down chart ── */}
-      <div style={{
+      <div className="glass-card" style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 12,
@@ -513,7 +513,7 @@ export default function ProgressTab({ epicKey }) {
       </div>
 
       {/* ── Daily table ── */}
-      <div style={{
+      <div className="glass-card" style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 12,

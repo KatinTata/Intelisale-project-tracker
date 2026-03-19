@@ -146,7 +146,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Global background animation */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <BrainAnimation opacity={0.18} fullscreen />
+        <BrainAnimation opacity={0.45} fullscreen />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <Topbar
@@ -168,7 +168,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       {projects.length > 0 ? (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? '16px' : '28px' }}>
           {!hasJira && (
-            <div style={{
+            <div className="glass-card" style={{
               marginBottom: 20,
               padding: '12px 16px',
               background: 'var(--amberTint)',
@@ -254,6 +254,10 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .glass-card {
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+        }
       `}</style>
       </div>
     </div>

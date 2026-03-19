@@ -2,7 +2,7 @@ export default function OverrunBanner({ overTasks = [] }) {
   if (overTasks.length === 0) return null
 
   return (
-    <div style={{
+    <div className="glass-card" style={{
       background: '#EF444408',
       border: '1px solid #EF444430',
       borderRadius: 10,

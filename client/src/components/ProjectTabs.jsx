@@ -83,7 +83,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
               {dropdownOpen && (
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 100 }} onClick={() => setDropdownOpen(false)} />
-                  <div style={{
+                  <div className="glass-card" style={{
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     left: 0,

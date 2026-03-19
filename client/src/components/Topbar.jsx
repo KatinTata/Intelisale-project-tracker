@@ -76,7 +76,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout }) {
           </button>
 
           {menuOpen && (
-            <div style={{
+            <div className="glass-card" style={{
               position: 'absolute',
               right: 0,
               top: 44,

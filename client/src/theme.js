@@ -1,8 +1,8 @@
 export const themes = {
   dark: {
     '--bg':          '#0A0C10',
-    '--surface':     '#111318',
-    '--surfaceAlt':  '#15181F',
+    '--surface':     'rgba(17,19,24,0.75)',
+    '--surfaceAlt':  'rgba(21,24,31,0.80)',
     '--border':      '#1E2433',
     '--borderHover': '#2D3550',
     '--text':        '#E8EBF2',

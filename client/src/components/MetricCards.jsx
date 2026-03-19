@@ -3,7 +3,7 @@ import { useWindowSize } from '../hooks/useWindowSize.js'
 
 function MetricCard({ label, value, subtitle, icon, valueColor, isMobile }) {
   return (
-    <div style={{
+    <div className="glass-card" style={{
       background: 'var(--surface)',
       border: '1px solid var(--border)',
       borderRadius: 12,
