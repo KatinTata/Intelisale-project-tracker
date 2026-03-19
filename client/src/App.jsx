@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react'
 import { applyTheme, getEffectiveTheme } from './theme.js'
 import { api } from './api.js'
 import LoginPage from './pages/LoginPage.jsx'
-import RegisterPage from './pages/RegisterPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'register' | 'dashboard'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard'
   const [user, setUser] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
@@ -43,11 +42,6 @@ export default function App() {
     setPage('dashboard')
   }
 
-  function handleRegistered(userData) {
-    setUser(userData)
-    setPage('dashboard')
-  }
-
   function handleLogout() {
     setUser(null)
     setPage('login')
@@ -79,22 +73,10 @@ export default function App() {
     )
   }
 
-  if (page === 'register') {
-    return (
-      <RegisterPage
-        effectiveTheme={effectiveTheme}
-        onRegistered={handleRegistered}
-        onGoLogin={() => setPage('login')}
-      />
-
-    )
-  }
-
   return (
     <LoginPage
       effectiveTheme={effectiveTheme}
       onLogin={handleLogin}
-      onGoRegister={() => setPage('register')}
     />
   )
 }

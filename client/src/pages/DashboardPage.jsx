@@ -4,6 +4,7 @@ import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import SettingsModal from '../components/SettingsModal.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
+import UserManagementModal from '../components/UserManagementModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
@@ -19,6 +20,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [errorProjects, setErrorProjects] = useState({})
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [usersOpen, setUsersOpen] = useState(false)
   const [addingProject, setAddingProject] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
@@ -27,6 +29,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const projectsRef = useRef([])
 
   const hasJira = !!(user.jiraUrl && user.jiraEmail)
+  const isClient = user.role === 'client'
   const { isMobile } = useWindowSize()
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }, [])
 
   async function loadProjects() {
-    if (!hasJira) {
+    if (!hasJira && !isClient) {
       setProjects(DEMO_PROJECTS)
       projectsRef.current = DEMO_PROJECTS
       setActiveId(DEMO_PROJECTS[0].id)
@@ -165,15 +168,16 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         theme={theme}
         onOpenSettings={() => setSettingsOpen(true)}
         onLogout={handleLogout}
+        onOpenUsers={isClient ? undefined : () => setUsersOpen(true)}
       />
 
       <ProjectTabs
         projects={projects}
         activeId={activeId}
         onSelect={setActiveId}
-        onAdd={hasJira ? () => setAddingProject(true) : undefined}
-        onArchive={handleArchiveProject}
-        onOpenArchive={() => setArchiveOpen(true)}
+        onAdd={hasJira && !isClient ? () => setAddingProject(true) : undefined}
+        onArchive={isClient ? undefined : handleArchiveProject}
+        onOpenArchive={isClient ? undefined : () => setArchiveOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         projectData={projectData}
       />
@@ -213,12 +217,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               loading={!!loadingProjects[activeProject.id]}
               error={errorProjects[activeProject.id]}
               onArchive={() => handleArchiveProject(activeProject.id)}
-              hasJira={hasJira}
+              hasJira={hasJira || isClient}
               refreshing={refreshing}
               lastRefresh={lastRefresh}
               onRefresh={handleRefreshClick}
               previousData={prevProjectData[activeProject.id]?.data}
               previousTime={prevProjectData[activeProject.id]?.time}
+              isClient={isClient}
             />
           )}
         </div>
@@ -333,6 +338,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         <ArchiveModal
           onClose={() => setArchiveOpen(false)}
           onRestore={handleRestoreProject}
+        />
+      )}
+
+      {usersOpen && (
+        <UserManagementModal
+          projects={projects}
+          onClose={() => setUsersOpen(false)}
         />
       )}
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 
-export default function LoginPage({ onLogin, onGoRegister, effectiveTheme = 'dark' }) {
+export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -125,12 +125,6 @@ export default function LoginPage({ onLogin, onGoRegister, effectiveTheme = 'dar
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)' }}>
-          Nema naloga?{' '}
-          <button onClick={onGoRegister} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
-            Registruj se
-          </button>
-        </div>
       </div>
     </div>
   )

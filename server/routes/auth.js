@@ -6,41 +6,11 @@ import { authMiddleware } from '../auth.js'
 import { encryptToken, makeJiraAuth, jiraGet } from '../jiraClient.js'
 
 const router = Router()
-const ALLOWED_DOMAIN = 'intelisale.com'
 
 function signToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' })
 }
 
-router.post('/register', async (req, res) => {
-  try {
-    const { email, password, name } = req.body
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Sva polja su obavezna' })
-    }
-
-    const domain = email.toLowerCase().split('@')[1]
-    if (domain !== ALLOWED_DOMAIN) {
-      return res.status(403).json({ error: 'Registracija je dostupna samo za Intelisale tim' })
-    }
-
-    const hash = await bcrypt.hash(password, 12)
-    db.prepare('INSERT INTO users (email, password, name) VALUES (?, ?, ?)').run(email.toLowerCase(), hash, name)
-
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase())
-    const token = signToken(user.id)
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, name: user.name, jiraUrl: user.jira_url, jiraEmail: user.jira_email },
-    })
-  } catch (err) {
-    if (err.message?.includes('UNIQUE')) {
-      return res.status(409).json({ error: 'Email je već registrovan' })
-    }
-    console.error(err)
-    res.status(500).json({ error: 'Greška servera' })
-  }
-})
 
 router.post('/login', async (req, res) => {
   try {
@@ -54,7 +24,7 @@ router.post('/login', async (req, res) => {
     const token = signToken(user.id)
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, jiraUrl: user.jira_url, jiraEmail: user.jira_email },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role || 'admin', jiraUrl: user.jira_url, jiraEmail: user.jira_email },
     })
   } catch (err) {
     console.error(err)
@@ -63,9 +33,9 @@ router.post('/login', async (req, res) => {
 })
 
 router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare('SELECT id, email, name, jira_url, jira_email FROM users WHERE id = ?').get(req.userId)
+  const user = db.prepare('SELECT id, email, name, role, jira_url, jira_email FROM users WHERE id = ?').get(req.userId)
   if (!user) return res.status(404).json({ error: 'Korisnik nije pronađen' })
-  res.json({ user: { id: user.id, email: user.email, name: user.name, jiraUrl: user.jira_url, jiraEmail: user.jira_email } })
+  res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role || 'admin', jiraUrl: user.jira_url, jiraEmail: user.jira_email } })
 })
 
 router.put('/jira-config', authMiddleware, async (req, res) => {

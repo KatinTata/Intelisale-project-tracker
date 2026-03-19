@@ -3,7 +3,23 @@ import db from '../db.js'
 
 const router = Router()
 
+function getUserRole(userId) {
+  return db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role || 'admin'
+}
+
 router.get('/', (req, res) => {
+  const role = getUserRole(req.userId)
+  if (role === 'client') {
+    // Return projects assigned to this client via project_clients
+    const projects = db.prepare(`
+      SELECT p.id, p.epic_key as epicKey, p.display_name as displayName, p.position, p.user_id as ownerId
+      FROM project_clients pc
+      JOIN projects p ON p.id = pc.project_id
+      WHERE pc.client_user_id = ? AND (p.archived IS NULL OR p.archived = 0)
+      ORDER BY p.position ASC, p.id ASC
+    `).all(req.userId)
+    return res.json(projects)
+  }
   const projects = db.prepare(
     'SELECT id, epic_key as epicKey, display_name as displayName, position FROM projects WHERE user_id = ? AND (archived IS NULL OR archived = 0) ORDER BY position ASC, id ASC'
   ).all(req.userId)
@@ -11,6 +27,7 @@ router.get('/', (req, res) => {
 })
 
 router.post('/', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   try {
     const { epicKey, displayName } = req.body
     if (!epicKey) return res.status(400).json({ error: 'epicKey je obavezan' })
@@ -37,6 +54,7 @@ router.post('/', (req, res) => {
 
 // Archive (soft delete)
 router.delete('/:id', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   const project = db.prepare('SELECT id FROM projects WHERE id = ? AND user_id = ?').get(req.params.id, req.userId)
   if (!project) return res.status(404).json({ error: 'Projekat nije pronađen' })
   const now = new Date().toISOString()
@@ -46,6 +64,7 @@ router.delete('/:id', (req, res) => {
 
 // Get archived projects
 router.get('/archived', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   const projects = db.prepare(
     'SELECT id, epic_key as epicKey, display_name as displayName, archived_at as archivedAt FROM projects WHERE user_id = ? AND archived = 1 ORDER BY archived_at DESC'
   ).all(req.userId)
@@ -54,6 +73,7 @@ router.get('/archived', (req, res) => {
 
 // Restore from archive
 router.put('/:id/restore', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   const project = db.prepare('SELECT id FROM projects WHERE id = ? AND user_id = ?').get(req.params.id, req.userId)
   if (!project) return res.status(404).json({ error: 'Projekat nije pronađen' })
   db.prepare('UPDATE projects SET archived = 0, archived_at = NULL WHERE id = ?').run(req.params.id)
@@ -65,6 +85,7 @@ router.put('/:id/restore', (req, res) => {
 
 // Permanent delete
 router.delete('/:id/permanent', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   const project = db.prepare('SELECT id FROM projects WHERE id = ? AND user_id = ?').get(req.params.id, req.userId)
   if (!project) return res.status(404).json({ error: 'Projekat nije pronađen' })
   db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id)
@@ -72,6 +93,7 @@ router.delete('/:id/permanent', (req, res) => {
 })
 
 router.put('/reorder', (req, res) => {
+  if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   try {
     const { ids } = req.body
     if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids mora biti niz' })

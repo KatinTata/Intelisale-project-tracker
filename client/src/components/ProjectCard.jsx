@@ -112,7 +112,7 @@ function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
 export default function ProjectCard({
   project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
-  previousData, previousTime,
+  previousData, previousTime, isClient,
 }) {
   const [changeBannerDismissed, setChangeBannerDismissed] = useState(false)
   const { isMobile, isTablet } = useWindowSize()
@@ -242,7 +242,7 @@ export default function ProjectCard({
         </div>
 
         {/* Refresh strip */}
-        {hasJira && (
+        {hasJira && !isClient && (
           <div style={{
             borderTop: '1px solid var(--border)',
             marginTop: 16,
@@ -298,12 +298,12 @@ export default function ProjectCard({
       )}
 
       {/* Metric cards */}
-      <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} />
+      <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} isClient={isClient} />
 
       {/* Charts row */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile || isTablet ? '1fr' : '340px 1fr',
+        gridTemplateColumns: isClient ? '1fr' : (isMobile || isTablet ? '1fr' : '340px 1fr'),
         gap: 16,
       }}>
         {/* Donut */}
@@ -319,28 +319,30 @@ export default function ProjectCard({
           <DonutChart segments={donutSegments} size={isMobile ? 150 : 200} innerRadius={isMobile ? 52 : 70} />
         </div>
 
-        {/* Bar chart */}
-        <div className="glass-card" style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: isMobile ? '16px' : '20px 24px',
-          overflow: 'hidden',
-        }}>
-          <h3 style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
-            Estimacija vs Utrošeno (top taskovi)
-          </h3>
-          <div style={{ overflowX: isMobile ? 'auto' : 'hidden' }}>
-            <BarChart data={barData} width={isMobile ? 480 : 600} height={isMobile ? 200 : 260} />
+        {/* Bar chart — admin only */}
+        {!isClient && (
+          <div className="glass-card" style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: isMobile ? '16px' : '20px 24px',
+            overflow: 'hidden',
+          }}>
+            <h3 style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
+              Estimacija vs Utrošeno (top taskovi)
+            </h3>
+            <div style={{ overflowX: isMobile ? 'auto' : 'hidden' }}>
+              <BarChart data={barData} width={isMobile ? 480 : 600} height={isMobile ? 200 : 260} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Overrun banner */}
-      <OverrunBanner overTasks={overTasks} />
+      {/* Overrun banner — admin only */}
+      {!isClient && <OverrunBanner overTasks={overTasks} />}
 
       {/* Task table */}
-      <TaskTable tasks={tasks} overTasks={overTasks} />
+      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} />
     </div>
   )
 }

@@ -21,6 +21,7 @@ db.exec(`
     email       TEXT UNIQUE NOT NULL,
     password    TEXT NOT NULL,
     name        TEXT NOT NULL,
+    role        TEXT DEFAULT 'admin',
     jira_url    TEXT,
     jira_email  TEXT,
     jira_token  TEXT,
@@ -31,6 +32,7 @@ db.exec(`
 // Migrations for existing DBs
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived INTEGER DEFAULT 0`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived_at TEXT`) } catch {}
+try { db.exec(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'`) } catch {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS projects (
@@ -41,6 +43,15 @@ db.exec(`
     position     INTEGER DEFAULT 0,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, epic_key)
+  )
+`)
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS project_clients (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id     INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    client_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(project_id, client_user_id)
   )
 `)
 

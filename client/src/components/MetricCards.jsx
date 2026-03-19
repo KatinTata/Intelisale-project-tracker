@@ -52,7 +52,7 @@ function MetricCard({ label, value, subtitle, icon, valueColor, isMobile }) {
   )
 }
 
-export default function MetricCards({ data }) {
+export default function MetricCards({ data, isClient }) {
   const { total, done, inprog, testing, todo, totalEst, totalSpent, overTasks } = data
   const { isMobile, isTablet } = useWindowSize()
 
@@ -61,6 +61,19 @@ export default function MetricCards({ data }) {
   const absDiffH = Math.abs(diffSec / 3600).toFixed(1)
   const absDiffPct = totalEst > 0 ? Math.abs(Math.round((diffSec / totalEst) * 100)) : 0
   const isOver = diffSec > 0
+
+  if (isClient) {
+    const clientCols = isMobile ? 'repeat(2, 1fr)' : 'repeat(5, minmax(0, 1fr))'
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: clientCols, gap: isMobile ? 8 : 12 }}>
+        <MetricCard isMobile={isMobile} label="Ukupno taskova" value={total} subtitle="projekti i subtask" icon="📋" />
+        <MetricCard isMobile={isMobile} label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} icon="✅" valueColor="var(--green)" />
+        <MetricCard isMobile={isMobile} label="Testing" value={testing} subtitle="čeka QA / u testu" icon="🧪" valueColor="var(--amber)" />
+        <MetricCard isMobile={isMobile} label="In Progress" value={inprog} subtitle="aktivno u radu" icon="🔄" valueColor="var(--accent)" />
+        <MetricCard isMobile={isMobile} label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" icon="📋" valueColor="var(--textMuted)" />
+      </div>
+    )
+  }
 
   const cols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(4, 1fr)' : 'repeat(9, minmax(0, 1fr))'
 

@@ -12,14 +12,20 @@ function statusColor(name) {
   return 'gray'
 }
 
-const COL_DESKTOP = '130px 1fr 130px 160px 80px 100px'
-const COL_TABLET  = '120px 1fr 120px 140px 90px'
-const COL_MOBILE  = '100px 1fr 100px'
+const COL_DESKTOP        = '130px 1fr 130px 160px 80px 100px'
+const COL_DESKTOP_CLIENT = '130px 1fr 130px 160px'
+const COL_TABLET         = '120px 1fr 120px 140px 90px'
+const COL_TABLET_CLIENT  = '120px 1fr 120px 140px'
+const COL_MOBILE         = '100px 1fr 100px'
 
-function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
+function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient }) {
   const pct = task.est > 0 ? Math.min(task.spent / task.est, 2) : 0
-  const barColor = task.over ? 'var(--red)' : 'var(--accent)'
-  const col = isMobile ? COL_MOBILE : isTablet ? COL_TABLET : COL_DESKTOP
+  const barColor = (!isClient && task.over) ? 'var(--red)' : 'var(--accent)'
+  const col = isMobile
+    ? COL_MOBILE
+    : isTablet
+      ? (isClient ? COL_TABLET_CLIENT : COL_TABLET)
+      : (isClient ? COL_DESKTOP_CLIENT : COL_DESKTOP)
 
   return (
     <>
@@ -32,22 +38,22 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
           padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid var(--border)',
           cursor: task.subtasks?.length || isMobile ? 'pointer' : 'default',
-          background: task.over ? 'var(--redTint)' : 'transparent',
+          background: (!isClient && task.over) ? 'var(--redTint)' : 'transparent',
           transition: 'background 0.15s',
           minHeight: 44,
         }}
-        onMouseEnter={e => { if (!task.over) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-        onMouseLeave={e => { if (!task.over) e.currentTarget.style.background = 'transparent' }}
+        onMouseEnter={e => { if (isClient || !task.over) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = (!isClient && task.over) ? 'var(--redTint)' : 'transparent' }}
       >
         {/* ID */}
         <div>
           <div style={{
             fontFamily: "'DM Mono'",
             fontSize: 12,
-            color: task.over ? 'var(--red)' : 'var(--accent)',
+            color: (!isClient && task.over) ? 'var(--red)' : 'var(--accent)',
             fontWeight: 500,
           }}>{task.key}</div>
-          {task.over && !isMobile && (
+          {!isClient && task.over && !isMobile && (
             <div style={{ fontSize: 10, color: 'var(--red)', fontFamily: "'DM Mono'", marginTop: 2 }}>
               +{task.overPct}%
             </div>
@@ -83,15 +89,15 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
           </div>
         )}
 
-        {/* Est — desktop only */}
-        {!isMobile && !isTablet && (
+        {/* Est — desktop only, admin only */}
+        {!isClient && !isMobile && !isTablet && (
           <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
             {task.est > 0 ? fmtHours(task.est) : '–'}
           </div>
         )}
 
-        {/* Spent — tablet + desktop */}
-        {!isMobile && (
+        {/* Spent — tablet + desktop, admin only */}
+        {!isClient && !isMobile && (
           <div style={{
             fontFamily: "'DM Mono'",
             fontSize: 12,
@@ -111,28 +117,34 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
         }}>
           {/* Detail row */}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: task.subtasks?.length ? 10 : 0 }}>
-            <div>
-              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Napredak</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 80 }}><ProgressBar value={pct} color={barColor} height={6} /></div>
-                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-                  {task.est > 0 ? `${Math.round(pct * 100)}%` : '–'}
-                </span>
+            {!isClient && (
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Napredak</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 80 }}><ProgressBar value={pct} color={barColor} height={6} /></div>
+                  <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
+                    {task.est > 0 ? `${Math.round(pct * 100)}%` : '–'}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Est.</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
-                {task.est > 0 ? fmtHours(task.est) : '–'}
+            )}
+            {!isClient && (
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Est.</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
+                  {task.est > 0 ? fmtHours(task.est) : '–'}
+                </div>
               </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Utrošeno</div>
-              <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: task.over ? 'var(--red)' : task.spent > 0 ? 'var(--green)' : 'var(--textMuted)' }}>
-                {task.spent > 0 ? fmtHours(task.spent) : '–'}
+            )}
+            {!isClient && (
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 2 }}>Utrošeno</div>
+                <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: task.over ? 'var(--red)' : task.spent > 0 ? 'var(--green)' : 'var(--textMuted)' }}>
+                  {task.spent > 0 ? fmtHours(task.spent) : '–'}
+                </div>
               </div>
-            </div>
-            {task.over && (
+            )}
+            {!isClient && task.over && (
               <div>
                 <div style={{ fontSize: 10, fontFamily: "'DM Mono'", color: 'var(--red)', textTransform: 'uppercase', marginBottom: 2 }}>Prekoračenje</div>
                 <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--red)' }}>+{task.overPct}%</div>
@@ -162,7 +174,9 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
       {!isMobile && expanded && task.subtasks?.map(sub => (
         <div key={sub.key} style={{
           display: 'grid',
-          gridTemplateColumns: isTablet ? COL_TABLET : COL_DESKTOP,
+          gridTemplateColumns: isClient
+            ? (isTablet ? COL_TABLET_CLIENT : COL_DESKTOP_CLIENT)
+            : (isTablet ? COL_TABLET : COL_DESKTOP),
           alignItems: 'center',
           padding: isTablet ? '8px 12px 8px 36px' : '8px 16px 8px 48px',
           borderBottom: '1px solid var(--border)',
@@ -175,21 +189,23 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet }) {
           </div>
           <div><Badge color={statusColor(sub.status)}>{sub.status}</Badge></div>
           <div />
-          {!isTablet && (
+          {!isClient && !isTablet && (
             <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
               {sub.timeoriginalestimate > 0 ? fmtHours(sub.timeoriginalestimate) : '–'}
             </div>
           )}
-          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-            {sub.timespent > 0 ? fmtHours(sub.timespent) : '–'}
-          </div>
+          {!isClient && (
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
+              {sub.timespent > 0 ? fmtHours(sub.timespent) : '–'}
+            </div>
+          )}
         </div>
       ))}
     </>
   )
 }
 
-export default function TaskTable({ tasks = [], overTasks = [] }) {
+export default function TaskTable({ tasks = [], overTasks = [], isClient }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState({})
@@ -223,14 +239,18 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
     { key: 'testing', label: `🧪 ${counts.testing}` },
     { key: 'inprog',  label: `🔄 ${counts.inprog}` },
     { key: 'todo',    label: `📋 ${counts.todo}` },
-    { key: 'over',    label: `⚠️ ${counts.over}` },
+    ...(!isClient ? [{ key: 'over', label: `⚠️ ${counts.over}` }] : []),
   ]
 
   function toggleExpand(key) {
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const col = isMobile ? COL_MOBILE : isTablet ? COL_TABLET : COL_DESKTOP
+  const col = isMobile
+    ? COL_MOBILE
+    : isTablet
+      ? (isClient ? COL_TABLET_CLIENT : COL_TABLET)
+      : (isClient ? COL_DESKTOP_CLIENT : COL_DESKTOP)
 
   return (
     <div className="glass-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
@@ -307,8 +327,8 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
         <div>Naziv</div>
         <div>Status</div>
         {!isMobile && <div>Napredak</div>}
-        {!isMobile && !isTablet && <div>Est.</div>}
-        {!isMobile && <div>Utrošeno</div>}
+        {!isMobile && !isTablet && !isClient && <div>Est.</div>}
+        {!isMobile && !isClient && <div>Utrošeno</div>}
       </div>
 
       {/* Rows */}
@@ -325,6 +345,7 @@ export default function TaskTable({ tasks = [], overTasks = [] }) {
             onToggle={() => toggleExpand(task.key)}
             isMobile={isMobile}
             isTablet={isTablet}
+            isClient={isClient}
           />
         ))
       )}

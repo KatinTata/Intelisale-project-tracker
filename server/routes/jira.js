@@ -14,9 +14,27 @@ function getUserJira(userId) {
   return { jiraUrl: user.jira_url, auth }
 }
 
+function getUserRole(userId) {
+  return db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role || 'admin'
+}
+
+function getClientOwnerJira(clientUserId, epicKey) {
+  // Find which admin owns the project this client is assigned to
+  const assignment = db.prepare(`
+    SELECT p.user_id as ownerId FROM project_clients pc
+    JOIN projects p ON p.id = pc.project_id
+    WHERE pc.client_user_id = ? AND p.epic_key = ?
+  `).get(clientUserId, epicKey)
+  if (!assignment) return null
+  return getUserJira(assignment.ownerId)
+}
+
 router.get('/epic/:epicKey', async (req, res) => {
   try {
-    const jira = getUserJira(req.userId)
+    const role = getUserRole(req.userId)
+    const jira = role === 'client'
+      ? getClientOwnerJira(req.userId, req.params.epicKey)
+      : getUserJira(req.userId)
     if (!jira) return res.status(400).json({ error: 'Jira nije konfigurisan' })
 
     const data = await jiraGet(jira.jiraUrl, `/issue/${req.params.epicKey}`, jira.auth)
@@ -28,7 +46,10 @@ router.get('/epic/:epicKey', async (req, res) => {
 
 router.get('/tasks/:epicKey', async (req, res) => {
   try {
-    const jira = getUserJira(req.userId)
+    const role = getUserRole(req.userId)
+    const jira = role === 'client'
+      ? getClientOwnerJira(req.userId, req.params.epicKey)
+      : getUserJira(req.userId)
     if (!jira) return res.status(400).json({ error: 'Jira nije konfigurisan' })
 
     const parents = await fetchEpicTasks(jira.jiraUrl, req.params.epicKey, jira.auth)

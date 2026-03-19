@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function Topbar({ user, theme, onOpenSettings, onLogout }) {
+export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUsers }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const { isMobile } = useWindowSize()
@@ -93,6 +93,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout }) {
                 <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>{user?.email}</div>
               </div>
               {[
+                ...(onOpenUsers ? [{ label: '👥  Korisnici', action: () => { onOpenUsers(); setMenuOpen(false) } }] : []),
                 { label: '⚙️  Podešavanja', action: () => { onOpenSettings(); setMenuOpen(false) } },
                 { label: '🚪  Odjava', action: () => { onLogout(); setMenuOpen(false) }, red: true },
               ].map(item => (

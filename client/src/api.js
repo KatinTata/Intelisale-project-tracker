@@ -29,9 +29,6 @@ async function request(method, path, body) {
 
 export const api = {
   // Auth
-  register: (body) => request('POST', '/auth/register', body),
-  verify: (body) => request('POST', '/auth/verify', body),
-  resendVerification: (body) => request('POST', '/auth/resend-verification', body),
   login: (body) => request('POST', '/auth/login', body),
   me: () => request('GET', '/auth/me'),
   updateJiraConfig: (body) => request('PUT', '/auth/jira-config', body),
@@ -52,4 +49,11 @@ export const api = {
   getEpic: (key) => request('GET', `/jira/epic/${key}`),
   getTasks: (key) => request('GET', `/jira/tasks/${key}`),
 
+  // Users (admin only)
+  getUsers: () => request('GET', '/users'),
+  createUser: (body) => request('POST', '/users', body),
+  deleteUser: (id) => request('DELETE', `/users/${id}`),
+  getUserProjects: (id) => request('GET', `/users/${id}/projects`),
+  assignProject: (userId, projectId) => request('POST', `/users/${userId}/projects`, { projectId }),
+  unassignProject: (userId, projectId) => request('DELETE', `/users/${userId}/projects/${projectId}`),
 }
