@@ -4,7 +4,9 @@
   "description": "Jira Project Tracker Web App",
   "type": "module",
   "main": "server/index.js",
-  "engines": { "node": ">=22.5.0" },
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "concurrently \"node server/index.js\" \"vite --config client/vite.config.js\"",
     "build": "vite build --config client/vite.config.js",
@@ -14,6 +16,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "axios": "^1.13.6",
     "bcrypt": "^5.1.1",
+    "better-sqlite3": "^12.8.0",
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
