@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function DonutChart({ segments = [], size = 200, innerRadius = 70 }) {
+export default function DonutChart({ segments = [], size = 200, innerRadius = 70, horizontal = false }) {
   const [animated, setAnimated] = useState(false)
   const svgRef = useRef(null)
 
@@ -31,8 +31,8 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
   const donePct = total > 0 ? Math.round((doneSeg?.value || 0) / total * 100) : 0
 
   return (
-    <div>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} ref={svgRef}>
+    <div style={horizontal ? { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 24 } : {}}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} ref={svgRef} style={{ flexShrink: 0 }}>
         {/* Background ring */}
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border)" strokeWidth={20} />
 
@@ -68,7 +68,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
       </svg>
 
       {/* Legend bars */}
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ marginTop: horizontal ? 0 : 16, flex: horizontal ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {segments.map((seg, i) => {
           const pct = total > 0 ? Math.round(seg.value / total * 100) : 0
           return (

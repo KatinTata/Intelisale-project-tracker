@@ -317,7 +317,7 @@ export default function ProjectCard({
           <h3 style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
             Distribucija taskova
           </h3>
-          <DonutChart segments={donutSegments} size={isMobile ? 150 : 200} innerRadius={isMobile ? 52 : 70} />
+          <DonutChart segments={donutSegments} size={isMobile ? 150 : 200} innerRadius={isMobile ? 52 : 70} horizontal={isClient && !isMobile} />
         </div>
 
         {/* Bar chart — admin only */}
