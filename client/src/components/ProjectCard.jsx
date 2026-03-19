@@ -191,10 +191,11 @@ export default function ProjectCard({
             <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 18 : 24, color: 'var(--text)', marginBottom: 8 }}>
               {project.displayName || project.epicKey}
             </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <Badge color={statusColor}>{statusLabel}</Badge>
+              <FilterBadge project={project} />
               <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
-                {project.epicKey} · {total} taskova
+                {total} taskova
               </span>
             </div>
           </div>
@@ -344,5 +345,45 @@ export default function ProjectCard({
       {/* Task table */}
       <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} />
     </div>
+  )
+}
+
+function FilterBadge({ project }) {
+  const [showTooltip, setShowTooltip] = useState(false)
+  const ft = project.filterType || 'epic'
+
+  if (ft === 'epic') {
+    return (
+      <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 6px' }}>
+        Epic {project.epicKey}
+      </span>
+    )
+  }
+
+  const label = ft === 'jql' ? 'Custom JQL' : 'Kombinovani filteri'
+  const tooltip = project.filterJql || ''
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 4, padding: '2px 6px', cursor: 'default' }}>
+        {label}
+      </span>
+      {showTooltip && tooltip && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
+          padding: '8px 12px', minWidth: 260, maxWidth: 400,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)',
+          lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+        }}>
+          {tooltip}
+        </div>
+      )}
+    </span>
   )
 }

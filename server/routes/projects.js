@@ -10,9 +10,9 @@ function getUserRole(userId) {
 router.get('/', (req, res) => {
   const role = getUserRole(req.userId)
   if (role === 'client') {
-    // Return projects assigned to this client via project_clients
     const projects = db.prepare(`
-      SELECT p.id, p.epic_key as epicKey, p.display_name as displayName, p.position, p.user_id as ownerId
+      SELECT p.id, p.epic_key as epicKey, p.display_name as displayName, p.position, p.user_id as ownerId,
+             p.filter_type as filterType, p.filter_jql as filterJql, p.filter_meta as filterMeta
       FROM project_clients pc
       JOIN projects p ON p.id = pc.project_id
       WHERE pc.client_user_id = ? AND (p.archived IS NULL OR p.archived = 0)
@@ -21,7 +21,7 @@ router.get('/', (req, res) => {
     return res.json(projects)
   }
   const projects = db.prepare(
-    'SELECT id, epic_key as epicKey, display_name as displayName, position FROM projects WHERE user_id = ? AND (archived IS NULL OR archived = 0) ORDER BY position ASC, id ASC'
+    'SELECT id, epic_key as epicKey, display_name as displayName, position, filter_type as filterType, filter_jql as filterJql, filter_meta as filterMeta FROM projects WHERE user_id = ? AND (archived IS NULL OR archived = 0) ORDER BY position ASC, id ASC'
   ).all(req.userId)
   res.json(projects)
 })
@@ -29,18 +29,30 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   try {
-    const { epicKey, displayName } = req.body
-    if (!epicKey) return res.status(400).json({ error: 'epicKey je obavezan' })
+    const { epicKey, displayName, filterType = 'epic', filterJql, filterMeta } = req.body
+
+    // For epic mode, epicKey is required; for jql/combined, generate a unique key
+    let resolvedKey
+    if (filterType === 'epic') {
+      if (!epicKey) return res.status(400).json({ error: 'epicKey je obavezan za Epic mode' })
+      resolvedKey = epicKey.trim().toUpperCase()
+    } else {
+      resolvedKey = `${filterType.toUpperCase()}-${Date.now()}`
+    }
+
+    if (!displayName?.trim() && filterType !== 'epic') {
+      return res.status(400).json({ error: 'Naziv projekta je obavezan' })
+    }
 
     const maxPos = db.prepare('SELECT MAX(position) as m FROM projects WHERE user_id = ?').get(req.userId)
     const position = (maxPos?.m ?? -1) + 1
 
     const result = db.prepare(
-      'INSERT INTO projects (user_id, epic_key, display_name, position) VALUES (?, ?, ?, ?)'
-    ).run(req.userId, epicKey.trim().toUpperCase(), displayName || null, position)
+      'INSERT INTO projects (user_id, epic_key, display_name, position, filter_type, filter_jql, filter_meta) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(req.userId, resolvedKey, displayName?.trim() || null, position, filterType, filterJql || null, filterMeta ? JSON.stringify(filterMeta) : null)
 
     const project = db.prepare(
-      'SELECT id, epic_key as epicKey, display_name as displayName, position FROM projects WHERE id = ?'
+      'SELECT id, epic_key as epicKey, display_name as displayName, position, filter_type as filterType, filter_jql as filterJql, filter_meta as filterMeta FROM projects WHERE id = ?'
     ).get(result.lastInsertRowid)
 
     res.json({ project })
@@ -66,7 +78,7 @@ router.delete('/:id', (req, res) => {
 router.get('/archived', (req, res) => {
   if (getUserRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   const projects = db.prepare(
-    'SELECT id, epic_key as epicKey, display_name as displayName, archived_at as archivedAt FROM projects WHERE user_id = ? AND archived = 1 ORDER BY archived_at DESC'
+    'SELECT id, epic_key as epicKey, display_name as displayName, archived_at as archivedAt, filter_type as filterType FROM projects WHERE user_id = ? AND archived = 1 ORDER BY archived_at DESC'
   ).all(req.userId)
   res.json(projects)
 })
@@ -78,7 +90,7 @@ router.put('/:id/restore', (req, res) => {
   if (!project) return res.status(404).json({ error: 'Projekat nije pronađen' })
   db.prepare('UPDATE projects SET archived = 0, archived_at = NULL WHERE id = ?').run(req.params.id)
   const restored = db.prepare(
-    'SELECT id, epic_key as epicKey, display_name as displayName, position FROM projects WHERE id = ?'
+    'SELECT id, epic_key as epicKey, display_name as displayName, position, filter_type as filterType, filter_jql as filterJql, filter_meta as filterMeta FROM projects WHERE id = ?'
   ).get(req.params.id)
   res.json({ project: restored })
 })

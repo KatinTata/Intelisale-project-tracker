@@ -68,7 +68,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     setLoadingProjects(prev => ({ ...prev, [project.id]: true }))
     setErrorProjects(prev => ({ ...prev, [project.id]: null }))
     try {
-      const { parents, subtasks } = await api.getTasks(project.epicKey)
+      const { parents, subtasks } = await api.getTasks(project)
       const data = processEpicData(parents, subtasks)
       setProjectData(prev => {
         const current = prev[project.id]
@@ -97,7 +97,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }
 
   async function handleAddProject(payload) {
-    const { project } = await api.addProject(payload)
+    const { project } = await api.addProject({ ...payload })
     const next = [...projectsRef.current, project]
     setProjects(next)
     projectsRef.current = next

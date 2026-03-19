@@ -47,7 +47,13 @@ export const api = {
 
   // Jira
   getEpic: (key) => request('GET', `/jira/epic/${key}`),
-  getTasks: (key) => request('GET', `/jira/tasks/${key}`),
+  getTasks: (project) => request('POST', '/jira/tasks', {
+    filterType: project.filterType || 'epic',
+    epicKey: project.epicKey,
+    jql: project.filterJql,
+    projectId: project.id,
+  }),
+  testJql: (jql) => request('POST', '/jira/test-jql', { jql }),
 
   // Users (admin only)
   getUsers: () => request('GET', '/users'),

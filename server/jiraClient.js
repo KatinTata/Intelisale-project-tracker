@@ -78,6 +78,19 @@ export async function fetchEpicTasks(jiraUrl, epicKey, auth) {
   return results
 }
 
+export async function fetchByJql(jiraUrl, jql, auth) {
+  const fields = TASK_FIELDS
+  let results = []
+  let token = null
+  do {
+    const body = { jql, fields, maxResults: 100, ...(token ? { nextPageToken: token } : {}) }
+    const data = await jiraPost(jiraUrl, '/search/jql', body, auth)
+    results.push(...(data.issues || []))
+    token = data.isLast ? null : (data.nextPageToken || null)
+  } while (token)
+  return results
+}
+
 export async function fetchSubtasks(jiraUrl, subKeys, auth) {
   const fields = TASK_FIELDS
   const subs = []

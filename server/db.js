@@ -33,6 +33,9 @@ db.exec(`
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived INTEGER DEFAULT 0`) } catch {}
 try { db.exec(`ALTER TABLE projects ADD COLUMN archived_at TEXT`) } catch {}
 try { db.exec(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'`) } catch {}
+try { db.exec(`ALTER TABLE projects ADD COLUMN filter_type TEXT DEFAULT 'epic'`) } catch {}
+try { db.exec(`ALTER TABLE projects ADD COLUMN filter_jql TEXT`) } catch {}
+try { db.exec(`ALTER TABLE projects ADD COLUMN filter_meta TEXT`) } catch {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS projects (
