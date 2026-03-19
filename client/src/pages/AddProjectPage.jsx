@@ -32,7 +32,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
       justifyContent: 'center',
       padding: 20,
     }}>
-      <BrainAnimation opacity={0.35} />
+      <BrainAnimation opacity={0.35} fullscreen />
 
       {/* Back button */}
       <button

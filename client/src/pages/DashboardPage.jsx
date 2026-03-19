@@ -146,7 +146,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Global background animation */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <BrainAnimation opacity={0.08} />
+        <BrainAnimation opacity={0.18} fullscreen />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <Topbar

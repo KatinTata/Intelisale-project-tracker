@@ -12,22 +12,59 @@ function fmtDateShort(dateStr) {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+const EMPTY_FORM = { date: '', done: '', testing: '', inprog: '', todo: '', total_spent: '' }
+
 export default function ProgressTab({ epicKey }) {
   const [snapshots, setSnapshots] = useState([])
   const [loading, setLoading] = useState(true)
   const [tooltip, setTooltip] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [formSaving, setFormSaving] = useState(false)
+  const [formError, setFormError] = useState('')
   const svgRef = useRef(null)
   const containerRef = useRef(null)
   const { isMobile } = useWindowSize()
 
+  function loadSnapshots() {
+    return api.getSnapshots(epicKey)
+      .then(res => setSnapshots(res.snapshots || []))
+      .catch(() => {})
+  }
+
   useEffect(() => {
     setLoading(true)
     setSnapshots([])
-    api.getSnapshots(epicKey)
-      .then(res => setSnapshots(res.snapshots || []))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    loadSnapshots().finally(() => setLoading(false))
   }, [epicKey])
+
+  async function handleSaveManual(e) {
+    e.preventDefault()
+    if (!form.date) { setFormError('Datum je obavezan'); return }
+    const done    = parseInt(form.done)    || 0
+    const testing = parseInt(form.testing) || 0
+    const inprog  = parseInt(form.inprog)  || 0
+    const todo    = parseInt(form.todo)    || 0
+    setFormSaving(true)
+    setFormError('')
+    try {
+      await api.saveSnapshot(epicKey, {
+        date: form.date,
+        total: done + testing + inprog + todo,
+        done, testing, inprog, todo,
+        total_est: null,
+        total_spent: parseFloat(form.total_spent) || null,
+        over_count: 0,
+      })
+      await loadSnapshots()
+      setShowForm(false)
+      setForm(EMPTY_FORM)
+    } catch (err) {
+      setFormError(err.message)
+    } finally {
+      setFormSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -39,19 +76,97 @@ export default function ProgressTab({ epicKey }) {
 
   if (snapshots.length < 2) {
     return (
-      <div style={{ padding: 64, textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>📈</div>
-        <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 8 }}>
-          Nema dovoljno podataka
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* still show the manual snapshot button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => { setShowForm(f => !f); setFormError('') }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: showForm ? 'var(--surfaceAlt)' : 'var(--accent)',
+              color: showForm ? 'var(--textMuted)' : '#fff',
+              border: showForm ? '1px solid var(--border)' : 'none',
+              borderRadius: 8, padding: '7px 14px',
+              fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 600, fontSize: 13,
+              cursor: 'pointer', transition: 'all 0.2s ease',
+            }}
+          >
+            {showForm ? '✕ Otkaži' : '＋ Dodaj prošli snapshot'}
+          </button>
         </div>
-        <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)', maxWidth: 320, margin: '0 auto' }}>
-          Osvežavaj projekat svakodnevno da vidiš napredak
-        </div>
-        {snapshots.length === 1 && (
-          <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textSubtle)', marginTop: 12 }}>
-            Prikupljen 1 od 2 potrebna snapshots
+
+        {showForm && (
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 12, padding: '20px 24px',
+          }}>
+            <h4 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 4 }}>
+              Retroaktivni snapshot
+            </h4>
+            <p style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)', marginBottom: 16 }}>
+              Unesite podatke za prošli datum da biste popunili istoriju napretka.
+            </p>
+            <form onSubmit={handleSaveManual}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+                {[
+                  { key: 'date',        label: 'DATUM',        type: 'date',   placeholder: '' },
+                  { key: 'done',        label: 'ZAVRŠENO',     type: 'number', placeholder: '0' },
+                  { key: 'testing',     label: 'TESTING',      type: 'number', placeholder: '0' },
+                  { key: 'inprog',      label: 'IN PROGRESS',  type: 'number', placeholder: '0' },
+                  { key: 'todo',        label: 'TO DO',        type: 'number', placeholder: '0' },
+                  { key: 'total_spent', label: 'UTROŠENO (h)', type: 'number', placeholder: '0.0', step: '0.1' },
+                ].map(f => (
+                  <div key={f.key} style={isMobile && f.key === 'date' ? { gridColumn: '1 / -1' } : {}}>
+                    <label style={{ display: 'block', fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                      {f.label}
+                    </label>
+                    <input
+                      type={f.type} value={form[f.key]}
+                      onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder} step={f.step}
+                      min={f.type === 'number' ? 0 : undefined}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        background: 'var(--bg)', border: '1px solid var(--border)',
+                        borderRadius: 7, padding: '8px 10px',
+                        color: 'var(--text)', fontSize: 13, fontFamily: "'DM Mono'",
+                      }}
+                      onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                      onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                    />
+                  </div>
+                ))}
+              </div>
+              {formError && (
+                <div style={{ marginBottom: 10, padding: '7px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12 }}>
+                  {formError}
+                </div>
+              )}
+              <button type="submit" disabled={formSaving} style={{
+                background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8,
+                padding: '9px 20px', fontFamily: "'TW Cen MT', 'Century Gothic'",
+                fontWeight: 600, fontSize: 13, cursor: formSaving ? 'not-allowed' : 'pointer', opacity: formSaving ? 0.7 : 1,
+              }}>
+                {formSaving ? 'Čuvam...' : 'Sačuvaj snapshot'}
+              </button>
+            </form>
           </div>
         )}
+
+        <div style={{ padding: '40px 0', textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>📈</div>
+          <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 8 }}>
+            Nema dovoljno podataka
+          </div>
+          <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)', maxWidth: 320, margin: '0 auto' }}>
+            Osvežavaj projekat svakodnevno ili dodaj prošle snapshotove ručno.
+          </div>
+          {snapshots.length === 1 && (
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textSubtle)', marginTop: 12 }}>
+              Prikupljen 1 od 2 potrebna snapshots
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -155,6 +270,91 @@ export default function ProgressTab({ epicKey }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* ── Manual snapshot button + form ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => { setShowForm(f => !f); setFormError('') }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: showForm ? 'var(--surfaceAlt)' : 'var(--accent)',
+            color: showForm ? 'var(--textMuted)' : '#fff',
+            border: showForm ? '1px solid var(--border)' : 'none',
+            borderRadius: 8, padding: '7px 14px',
+            fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 600, fontSize: 13,
+            cursor: 'pointer', transition: 'all 0.2s ease',
+          }}
+        >
+          {showForm ? '✕ Otkaži' : '＋ Dodaj prošli snapshot'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 12, padding: '20px 24px',
+        }}>
+          <h4 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 4 }}>
+            Retroaktivni snapshot
+          </h4>
+          <p style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)', marginBottom: 16 }}>
+            Unesite podatke za prošli datum da biste popunili istoriju napretka.
+          </p>
+          <form onSubmit={handleSaveManual}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+              {[
+                { key: 'date',        label: 'DATUM',       type: 'date',   placeholder: '' },
+                { key: 'done',        label: 'ZAVRŠENO',    type: 'number', placeholder: '0' },
+                { key: 'testing',     label: 'TESTING',     type: 'number', placeholder: '0' },
+                { key: 'inprog',      label: 'IN PROGRESS', type: 'number', placeholder: '0' },
+                { key: 'todo',        label: 'TO DO',       type: 'number', placeholder: '0' },
+                { key: 'total_spent', label: 'UTROŠENO (h)', type: 'number', placeholder: '0.0', step: '0.1' },
+              ].map(f => (
+                <div key={f.key} style={isMobile && f.key === 'date' ? { gridColumn: '1 / -1' } : {}}>
+                  <label style={{ display: 'block', fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                    {f.label}
+                  </label>
+                  <input
+                    type={f.type}
+                    value={form[f.key]}
+                    onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    step={f.step}
+                    min={f.type === 'number' ? 0 : undefined}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: 'var(--bg)', border: '1px solid var(--border)',
+                      borderRadius: 7, padding: '8px 10px',
+                      color: 'var(--text)', fontSize: 13,
+                      fontFamily: "'DM Mono'",
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  />
+                </div>
+              ))}
+            </div>
+            {formError && (
+              <div style={{ marginBottom: 10, padding: '7px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12 }}>
+                {formError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={formSaving}
+              style={{
+                background: 'var(--accent)', color: '#fff', border: 'none',
+                borderRadius: 8, padding: '9px 20px',
+                fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 600, fontSize: 13,
+                cursor: formSaving ? 'not-allowed' : 'pointer',
+                opacity: formSaving ? 0.7 : 1,
+              }}
+            >
+              {formSaving ? 'Čuvam...' : 'Sačuvaj snapshot'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* ── Summary cards ── */}
       <div style={{

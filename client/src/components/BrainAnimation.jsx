@@ -1,4 +1,4 @@
-export default function BrainAnimation({ opacity = 0.35 }) {
+export default function BrainAnimation({ opacity = 0.35, fullscreen = false }) {
   return (
     <div style={{
       position: 'absolute',
@@ -48,7 +48,11 @@ export default function BrainAnimation({ opacity = 0.35 }) {
       <svg
         viewBox="0 0 150 140"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ width: 'min(80vmin, 600px)', height: 'auto', overflow: 'visible' }}
+        style={fullscreen
+          ? { width: '100%', height: '100%', overflow: 'visible' }
+          : { width: 'min(80vmin, 600px)', height: 'auto', overflow: 'visible' }
+        }
+        preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           <filter id="brainBlueGlow" x="-50%" y="-50%" width="200%" height="200%">

@@ -7,8 +7,8 @@ const router = Router()
 router.post('/:epicKey', (req, res) => {
   const userId = req.userId
   const epicKey = req.params.epicKey
-  const { total, done, testing, inprog, todo, total_est, total_spent, over_count } = req.body
-  const date = new Date().toISOString().slice(0, 10)
+  const { total, done, testing, inprog, todo, total_est, total_spent, over_count, date: bodyDate } = req.body
+  const date = bodyDate || new Date().toISOString().slice(0, 10)
 
   db.prepare(`
     INSERT INTO snapshots (user_id, epic_key, date, total, done, testing, inprog, todo, total_est, total_spent, over_count)
