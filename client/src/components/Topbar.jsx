@@ -94,7 +94,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUs
               </div>
               {[
                 ...(onOpenUsers ? [{ label: '👥  Korisnici', action: () => { onOpenUsers(); setMenuOpen(false) } }] : []),
-                { label: '⚙️  Podešavanja', action: () => { onOpenSettings(); setMenuOpen(false) } },
+                ...(onOpenSettings ? [{ label: '⚙️  Podešavanja', action: () => { onOpenSettings(); setMenuOpen(false) } }] : []),
                 { label: '🚪  Odjava', action: () => { onLogout(); setMenuOpen(false) }, red: true },
               ].map(item => (
                 <button

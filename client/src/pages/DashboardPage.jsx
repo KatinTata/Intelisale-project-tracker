@@ -85,7 +85,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }
 
   async function refreshAll(list) {
-    if (!hasJira) return
+    if (!hasJira && !isClient) return
     setRefreshing(true)
     await Promise.all(list.map(p => fetchProjectData(p)))
     setLastRefresh(Date.now())
@@ -166,7 +166,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       <Topbar
         user={user}
         theme={theme}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={isClient ? undefined : () => setSettingsOpen(true)}
         onLogout={handleLogout}
         onOpenUsers={isClient ? undefined : () => setUsersOpen(true)}
       />
