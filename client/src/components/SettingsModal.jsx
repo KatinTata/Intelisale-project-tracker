@@ -252,9 +252,8 @@ function SettingsContent({
           padding: 4,
         }}>
           {[
-            { value: 'light', label: '☀️ Svetla' },
-            { value: 'system', label: '💻 Sistem' },
             { value: 'dark',  label: '🌙 Tamna'  },
+            { value: 'light', label: '☀️ Svetla' },
           ].map(opt => (
             <button
               key={opt.value}
