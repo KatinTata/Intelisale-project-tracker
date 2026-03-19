@@ -18,7 +18,7 @@ function fmtLastRefresh(date) {
 }
 
 export default function ProjectCard({
-  project, data, onDelete, loading, error,
+  project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
 }) {
   if (loading) {
@@ -35,7 +35,7 @@ export default function ProjectCard({
       <div style={{ padding: 48, textAlign: 'center' }}>
         <div style={{ fontSize: 32, marginBottom: 16 }}>❌</div>
         <div style={{ color: 'var(--red)', fontFamily: "'TW Cen MT', 'Century Gothic'", marginBottom: 8 }}>{error}</div>
-        <button onClick={onDelete} style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13 }}>
+        <button onClick={onArchive} style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13 }}>
           Ukloni projekat
         </button>
       </div>

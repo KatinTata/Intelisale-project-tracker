@@ -41,7 +41,10 @@ export const api = {
   // Projects
   getProjects: () => request('GET', '/projects'),
   addProject: (body) => request('POST', '/projects', body),
-  deleteProject: (id) => request('DELETE', `/projects/${id}`),
+  archiveProject: (id) => request('DELETE', `/projects/${id}`),
+  getArchivedProjects: () => request('GET', '/projects/archived'),
+  restoreProject: (id) => request('PUT', `/projects/${id}/restore`),
+  permanentDeleteProject: (id) => request('DELETE', `/projects/${id}/permanent`),
   reorderProjects: (ids) => request('PUT', '/projects/reorder', { ids }),
 
   // Jira

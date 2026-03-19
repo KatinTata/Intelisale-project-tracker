@@ -35,6 +35,8 @@ db.exec(`
 try { db.exec(`ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0`) } catch {}
 try { db.exec(`ALTER TABLE users ADD COLUMN verification_code TEXT`) } catch {}
 try { db.exec(`ALTER TABLE users ADD COLUMN verification_expires INTEGER`) } catch {}
+try { db.exec(`ALTER TABLE projects ADD COLUMN archived INTEGER DEFAULT 0`) } catch {}
+try { db.exec(`ALTER TABLE projects ADD COLUMN archived_at TEXT`) } catch {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS snapshots (

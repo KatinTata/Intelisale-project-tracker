@@ -3,6 +3,7 @@ import Topbar from '../components/Topbar.jsx'
 import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import SettingsModal from '../components/SettingsModal.jsx'
+import ArchiveModal from '../components/ArchiveModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
@@ -17,6 +18,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [loadingProjects, setLoadingProjects] = useState({})
   const [errorProjects, setErrorProjects] = useState({})
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
   const [addingProject, setAddingProject] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
@@ -105,14 +107,27 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     fetchProjectData(project)
   }
 
-  async function handleDeleteProject(id) {
+  async function handleArchiveProject(id) {
     try {
-      await api.deleteProject(id)
+      await api.archiveProject(id)
       const next = projectsRef.current.filter(p => p.id !== id)
       setProjects(next)
       projectsRef.current = next
       if (activeId === id) setActiveId(next[0]?.id || null)
       setProjectData(prev => { const n = { ...prev }; delete n[id]; return n })
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  async function handleRestoreProject(project) {
+    try {
+      const { project: restored } = await api.restoreProject(project.id)
+      const next = [...projectsRef.current, restored]
+      setProjects(next)
+      projectsRef.current = next
+      setActiveId(restored.id)
+      fetchProjectData(restored)
     } catch (err) {
       alert(err.message)
     }
@@ -161,6 +176,8 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         activeId={activeId}
         onSelect={setActiveId}
         onAdd={hasJira ? () => setAddingProject(true) : undefined}
+        onArchive={hasJira ? handleArchiveProject : undefined}
+        onOpenArchive={() => setArchiveOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         projectData={projectData}
       />
@@ -199,7 +216,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               data={projectData[activeProject.id]}
               loading={!!loadingProjects[activeProject.id]}
               error={errorProjects[activeProject.id]}
-              onDelete={() => handleDeleteProject(activeProject.id)}
+              onArchive={() => handleArchiveProject(activeProject.id)}
               hasJira={hasJira}
               refreshing={refreshing}
               lastRefresh={lastRefresh}
@@ -312,6 +329,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
             Otvori podešavanja
           </button>
         </div>
+      )}
+
+      {archiveOpen && (
+        <ArchiveModal
+          onClose={() => setArchiveOpen(false)}
+          onRestore={handleRestoreProject}
+        />
       )}
 
       {settingsOpen && (
