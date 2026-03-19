@@ -11,6 +11,7 @@ import jiraRoutes from './routes/jira.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
+app.set('trust proxy', 1)
 const PORT = process.env.PORT || 3001
 
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }))
