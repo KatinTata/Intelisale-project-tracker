@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api.js'
+import BrainAnimation from '../components/BrainAnimation.jsx'
 
 export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
   const [email, setEmail] = useState('')
@@ -29,17 +30,24 @@ export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
 
   return (
     <div style={{
+      position: 'relative',
       minHeight: '100vh',
       background: 'var(--bg)',
+      overflow: 'hidden',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: 20,
     }}>
+      <BrainAnimation />
       <div style={{
+        position: 'relative',
+        zIndex: 1,
         width: '100%',
         maxWidth: 420,
         background: 'var(--surface)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '36px 40px',

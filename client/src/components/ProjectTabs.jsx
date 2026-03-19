@@ -11,30 +11,8 @@ function statusDot(data) {
 
 export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpenSettings, projectData }) {
   const { isMobile } = useWindowSize()
-  const [showAddModal, setShowAddModal] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [epicKey, setEpicKey] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [addHover, setAddHover] = useState(false)
-
-  async function handleAdd(e) {
-    e.preventDefault()
-    if (!epicKey.trim()) return
-    setLoading(true)
-    setError('')
-    try {
-      await onAdd({ epicKey: epicKey.trim(), displayName: displayName.trim() || undefined })
-      setShowAddModal(false)
-      setEpicKey('')
-      setDisplayName('')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const activeProject = projects.find(p => p.id === activeId)
 
@@ -173,7 +151,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
 
             {/* Add button — matches desktop circle style */}
             <button
-              onClick={() => onAdd ? setShowAddModal(true) : onOpenSettings?.()}
+              onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
               style={{
                 width: 36,
                 height: 36,
@@ -226,7 +204,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
             {/* Add button — desktop */}
             <div style={{ flexShrink: 0, paddingLeft: 16, borderLeft: projects.length > 0 ? '1px solid var(--border)' : 'none', marginLeft: 8, position: 'relative' }}>
               <button
-                onClick={() => onAdd ? setShowAddModal(true) : onOpenSettings?.()}
+                onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
                 onMouseEnter={() => setAddHover(true)}
                 onMouseLeave={() => setAddHover(false)}
                 style={{
@@ -270,65 +248,6 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onOpe
         )}
       </div>
 
-      {/* Add project modal */}
-      {showAddModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: isMobile ? 'flex-end' : 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }} onClick={() => setShowAddModal(false)}>
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: isMobile ? '16px 16px 0 0' : 14,
-            padding: 28,
-            width: isMobile ? '100%' : 400,
-            boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
-          }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 18, color: 'var(--text)', marginBottom: 20 }}>
-              Dodaj projekat
-            </h3>
-            <form onSubmit={handleAdd}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 12, fontFamily: "'DM Mono'", color: 'var(--textMuted)', marginBottom: 6 }}>
-                  EPIC KEY *
-                </label>
-                <input
-                  value={epicKey}
-                  onChange={e => setEpicKey(e.target.value)}
-                  placeholder="npr. PROJECT-184"
-                  required
-                  style={inputStyle}
-                />
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 12, fontFamily: "'DM Mono'", color: 'var(--textMuted)', marginBottom: 6 }}>
-                  NAZIV (opciono)
-                </label>
-                <input
-                  value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  placeholder="npr. Knjaz Miloš B2B Portal"
-                  style={inputStyle}
-                />
-              </div>
-              {error && (
-                <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--redTint)', border: '1px solid var(--red)', borderRadius: 6, color: 'var(--red)', fontSize: 13 }}>
-                  {error}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{ ...btnSecondary, flex: 1 }}>Otkaži</button>
-                <button type="submit" disabled={loading} style={{ ...btnPrimary, flex: 1, opacity: loading ? 0.7 : 1 }}>
-                  {loading ? 'Dodajem...' : 'Dodaj'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -381,40 +300,3 @@ function ProjectPill({ project, active, dot, onSelect }) {
   )
 }
 
-const inputStyle = {
-  width: '100%',
-  background: 'var(--bg)',
-  border: '1px solid var(--border)',
-  borderRadius: 8,
-  padding: '10px 12px',
-  color: 'var(--text)',
-  fontSize: 14,
-  fontFamily: "'TW Cen MT', 'Century Gothic'",
-}
-
-const btnPrimary = {
-  background: 'var(--accent)',
-  color: '#fff',
-  borderRadius: 8,
-  padding: '10px',
-  fontFamily: "'TW Cen MT', 'Century Gothic'",
-  fontWeight: 600,
-  fontSize: 14,
-  cursor: 'pointer',
-  border: 'none',
-  transition: 'all 0.2s ease',
-  minHeight: 44,
-}
-
-const btnSecondary = {
-  background: 'transparent',
-  color: 'var(--text)',
-  borderRadius: 8,
-  padding: '10px',
-  fontFamily: "'TW Cen MT', 'Century Gothic'",
-  fontSize: 14,
-  cursor: 'pointer',
-  border: '1px solid var(--border)',
-  transition: 'all 0.2s ease',
-  minHeight: 44,
-}

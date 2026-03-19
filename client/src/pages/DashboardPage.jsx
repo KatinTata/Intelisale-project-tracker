@@ -3,6 +3,8 @@ import Topbar from '../components/Topbar.jsx'
 import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import SettingsModal from '../components/SettingsModal.jsx'
+import BrainAnimation from '../components/BrainAnimation.jsx'
+import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
@@ -15,6 +17,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
   const [loadingProjects, setLoadingProjects] = useState({})
   const [errorProjects, setErrorProjects] = useState({})
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [addingProject, setAddingProject] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -87,6 +90,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
     setProjects(next)
     projectsRef.current = next
     setActiveId(project.id)
+    setAddingProject(false)
     fetchProjectData(project)
   }
 
@@ -118,8 +122,22 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
     )
   }
 
+  if (addingProject) {
+    return (
+      <AddProjectPage
+        onAdd={handleAddProject}
+        onCancel={() => setAddingProject(false)}
+      />
+    )
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+      {/* Global background animation */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <BrainAnimation opacity={0.08} />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <Topbar
         user={user}
         theme={theme}
@@ -131,7 +149,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
         projects={projects}
         activeId={activeId}
         onSelect={setActiveId}
-        onAdd={hasJira ? handleAddProject : undefined}
+        onAdd={hasJira ? () => setAddingProject(true) : undefined}
         onOpenSettings={() => setSettingsOpen(true)}
         projectData={projectData}
       />
@@ -226,6 +244,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
+      </div>
     </div>
   )
 }

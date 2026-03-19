@@ -1,99 +1,110 @@
 import { useState } from 'react'
-import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 
-export default function RegisterPage({ onRegistered, onGoLogin }) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+export default function AddProjectPage({ onAdd, onCancel }) {
+  const [epicKey, setEpicKey] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setError('')
+    if (!epicKey.trim()) return
     setLoading(true)
+    setError('')
     try {
-      const res = await api.register({ name, email, password })
-      onRegistered(res.email)
+      await onAdd({ epicKey: epicKey.trim(), displayName: displayName.trim() || undefined })
+      // onAdd success → parent will navigate away
     } catch (err) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
 
   return (
     <div style={{
-      position: 'relative',
-      minHeight: '100vh',
+      position: 'fixed',
+      inset: 0,
       background: 'var(--bg)',
-      overflow: 'hidden',
+      zIndex: 500,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: 20,
     }}>
-      <BrainAnimation />
+      <BrainAnimation opacity={0.35} />
+
+      {/* Back button */}
+      <button
+        onClick={onCancel}
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          background: 'transparent',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: '8px 14px',
+          color: 'var(--textMuted)',
+          fontFamily: "'TW Cen MT', 'Century Gothic'",
+          fontSize: 14,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
+      >
+        ← Nazad
+      </button>
+
+      {/* Card */}
       <div style={{
         position: 'relative',
         zIndex: 1,
         width: '100%',
-        maxWidth: 420,
+        maxWidth: 440,
         background: 'var(--surface)',
-        backdropFilter: 'blur(2px)',
-        WebkitBackdropFilter: 'blur(2px)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '36px 40px',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
-          <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
-            Project Hub
+          <div style={{ fontSize: 32, marginBottom: 8 }}>＋</div>
+          <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 4 }}>
+            Dodaj projekat
           </h1>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
-            Kreirajte novi nalog
+            Unesite Epic key iz vašeg Jira projekta
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>IME</label>
+            <label style={labelStyle}>EPIC KEY *</label>
             <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Vaše ime"
+              value={epicKey}
+              onChange={e => setEpicKey(e.target.value)}
+              placeholder="npr. PROJECT-184"
               required
+              autoFocus
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
             />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>EMAIL</label>
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>NAZIV (opciono)</label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="vas@email.com"
-              required
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
-            />
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>LOZINKA</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Minimum 6 karaktera"
-              required
-              minLength={6}
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="npr. Knjaz Miloš B2B Portal"
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -110,7 +121,9 @@ export default function RegisterPage({ onRegistered, onGoLogin }) {
               color: 'var(--red)',
               fontSize: 13,
               fontFamily: "'TW Cen MT', 'Century Gothic'",
-            }}>{error}</div>
+            }}>
+              {error}
+            </div>
           )}
 
           <button
@@ -131,16 +144,9 @@ export default function RegisterPage({ onRegistered, onGoLogin }) {
               transition: 'all 0.2s ease',
             }}
           >
-            {loading ? 'Kreiram nalog...' : 'Registruj se'}
+            {loading ? 'Dodajem...' : 'Dodaj projekat'}
           </button>
         </form>
-
-        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)' }}>
-          Već imate nalog?{' '}
-          <button onClick={onGoLogin} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
-            Prijavite se
-          </button>
-        </div>
       </div>
     </div>
   )
@@ -166,4 +172,5 @@ const inputStyle = {
   fontSize: 14,
   fontFamily: "'TW Cen MT', 'Century Gothic'",
   transition: 'border-color 0.2s',
+  boxSizing: 'border-box',
 }
