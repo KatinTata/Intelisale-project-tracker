@@ -9,7 +9,7 @@ import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function DashboardPage({ user: initialUser, theme, onToggleTheme, onLogout }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -230,7 +230,7 @@ export default function DashboardPage({ user: initialUser, theme, onToggleTheme,
         <SettingsModal
           user={user}
           theme={theme}
-          onToggleTheme={onToggleTheme}
+          onSetTheme={onSetTheme}
           onClose={() => setSettingsOpen(false)}
           onUserUpdate={(updated) => {
             setUser(updated)

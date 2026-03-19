@@ -37,8 +37,16 @@ export const themes = {
   },
 }
 
+export function getEffectiveTheme(mode) {
+  if (mode === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return mode
+}
+
 export function applyTheme(mode) {
-  const vars = themes[mode]
+  const effective = getEffectiveTheme(mode)
+  const vars = themes[effective]
   const root = document.documentElement
   Object.entries(vars).forEach(([key, val]) => root.style.setProperty(key, val))
 }

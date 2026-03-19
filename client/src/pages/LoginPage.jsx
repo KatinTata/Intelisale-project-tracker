@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 
-export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
+export default function LoginPage({ onLogin, onUnverified, onGoRegister, effectiveTheme = 'dark' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -54,7 +54,11 @@ export default function LoginPage({ onLogin, onUnverified, onGoRegister }) {
         boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
+          <img
+            src={effectiveTheme === 'dark' ? '/logo-white.png' : '/logo-dark.png'}
+            alt="Intelisale"
+            style={{ height: 40, marginBottom: 12, objectFit: 'contain' }}
+          />
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
             Project Hub
           </h1>

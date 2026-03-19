@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function SettingsModal({ user, theme, onToggleTheme, onClose, onUserUpdate }) {
+export default function SettingsModal({ user, theme, onSetTheme, onClose, onUserUpdate }) {
   const [tab, setTab] = useState('profile')
   const [jiraUrl, setJiraUrl] = useState(user.jiraUrl || '')
   const [jiraEmail, setJiraEmail] = useState(user.jiraEmail || '')
@@ -149,7 +149,7 @@ export default function SettingsModal({ user, theme, onToggleTheme, onClose, onU
                 tab={tab}
                 isMobile={isMobile}
                 user={user}
-                theme={theme} onToggleTheme={onToggleTheme}
+                theme={theme} onSetTheme={onSetTheme}
                 jiraUrl={jiraUrl} setJiraUrl={setJiraUrl}
                 jiraEmail={jiraEmail} setJiraEmail={setJiraEmail}
                 jiraToken={jiraToken} setJiraToken={setJiraToken}
@@ -192,7 +192,7 @@ export default function SettingsModal({ user, theme, onToggleTheme, onClose, onU
                 tab={tab}
                 isMobile={isMobile}
                 user={user}
-                theme={theme} onToggleTheme={onToggleTheme}
+                theme={theme} onSetTheme={onSetTheme}
                 jiraUrl={jiraUrl} setJiraUrl={setJiraUrl}
                 jiraEmail={jiraEmail} setJiraEmail={setJiraEmail}
                 jiraToken={jiraToken} setJiraToken={setJiraToken}
@@ -213,7 +213,7 @@ export default function SettingsModal({ user, theme, onToggleTheme, onClose, onU
 }
 
 function SettingsContent({
-  tab, isMobile, user, theme, onToggleTheme,
+  tab, isMobile, user, theme, onSetTheme,
   jiraUrl, setJiraUrl, jiraEmail, setJiraEmail, jiraToken, setJiraToken,
   testStatus, testLoading, onTestJira,
   saving, saveMsg, onSaveJira,
@@ -235,54 +235,49 @@ function SettingsContent({
 
       <h3 style={{ ...sectionTitle, marginTop: 24 }}>Izgled</h3>
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         padding: '12px 14px',
         background: 'var(--surfaceAlt)',
         border: '1px solid var(--border)',
         borderRadius: 10,
       }}>
-        <div>
-          <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>
-            {theme === 'dark' ? 'Tamna tema' : 'Svetla tema'}
-          </div>
-          <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)' }}>
-            Pritisnite da promenite temu
-          </div>
+        <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)', marginBottom: 10 }}>
+          Odaberite temu aplikacije
         </div>
-        <button
-          onClick={onToggleTheme}
-          style={{
-            width: 52,
-            height: 28,
-            borderRadius: 14,
-            background: theme === 'dark' ? 'var(--accent)' : 'var(--border)',
-            position: 'relative',
-            transition: 'background 0.3s',
-            flexShrink: 0,
-            cursor: 'pointer',
-            border: 'none',
-          }}
-        >
-          <div style={{
-            position: 'absolute',
-            top: 3,
-            left: theme === 'dark' ? 27 : 3,
-            width: 22,
-            height: 22,
-            borderRadius: '50%',
-            background: '#fff',
-            transition: 'left 0.3s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 12,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-          }}>
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </div>
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: 6,
+          background: 'var(--bg)',
+          border: '1px solid var(--border)',
+          borderRadius: 10,
+          padding: 4,
+        }}>
+          {[
+            { value: 'light', label: '☀️ Svetla' },
+            { value: 'system', label: '💻 Sistem' },
+            { value: 'dark',  label: '🌙 Tamna'  },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => onSetTheme(opt.value)}
+              style={{
+                flex: 1,
+                padding: '7px 8px',
+                borderRadius: 7,
+                border: 'none',
+                background: theme === opt.value ? 'var(--accent)' : 'transparent',
+                color: theme === opt.value ? '#fff' : 'var(--textMuted)',
+                fontFamily: "'TW Cen MT', 'Century Gothic'",
+                fontSize: 13,
+                fontWeight: theme === opt.value ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <h3 style={{ ...sectionTitle, marginTop: 24 }}>Promena lozinke</h3>
