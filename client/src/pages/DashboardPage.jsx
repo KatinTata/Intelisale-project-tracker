@@ -178,7 +178,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onAdd={hasJira && !isClient ? () => setAddingProject(true) : undefined}
         onArchive={isClient ? undefined : handleArchiveProject}
         onOpenArchive={isClient ? undefined : () => setArchiveOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={isClient ? undefined : () => setSettingsOpen(true)}
         projectData={projectData}
       />
 
@@ -226,6 +226,16 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               isClient={isClient}
             />
           )}
+        </div>
+      ) : isClient ? (
+        <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 16px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>📋</div>
+          <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 12 }}>
+            Nema dodeljenih projekata
+          </h2>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 15, lineHeight: 1.6 }}>
+            Administrator još nije dodelio projekte vašem nalogu. Kontaktirajte administratora.
+          </p>
         </div>
       ) : (
         <div style={{ maxWidth: 560, margin: '60px auto', padding: '0 16px' }}>
