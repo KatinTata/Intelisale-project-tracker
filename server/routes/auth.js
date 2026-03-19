@@ -12,6 +12,23 @@ function signToken(userId) {
 }
 
 
+// First-run setup — only works if no users exist yet
+router.post('/setup', async (req, res) => {
+  try {
+    const count = db.prepare('SELECT COUNT(*) as c FROM users').get().c
+    if (count > 0) return res.status(403).json({ error: 'Setup već obavljen' })
+    const { name, email, password } = req.body
+    if (!name || !email || !password) return res.status(400).json({ error: 'Sva polja su obavezna' })
+    const hash = await bcrypt.hash(password, 12)
+    const result = db.prepare("INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'admin')").run(email.toLowerCase(), hash, name)
+    const token = signToken(result.lastInsertRowid)
+    res.json({ token, user: { id: result.lastInsertRowid, email, name, role: 'admin' } })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Greška servera' })
+  }
+})
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
