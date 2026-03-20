@@ -36,6 +36,28 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const isClient = user.role === 'client'
   const { isMobile } = useWindowSize()
 
+  const [autoRefreshMinutes, setAutoRefreshMinutes] = useState(() =>
+    parseInt(localStorage.getItem('jt_autorefresh') || '0', 10)
+  )
+
+  // Listen for setting changes from SettingsModal
+  useEffect(() => {
+    function onChanged() {
+      setAutoRefreshMinutes(parseInt(localStorage.getItem('jt_autorefresh') || '0', 10))
+    }
+    window.addEventListener('jt-autorefresh-changed', onChanged)
+    return () => window.removeEventListener('jt-autorefresh-changed', onChanged)
+  }, [])
+
+  // Auto-refresh interval
+  useEffect(() => {
+    if (!autoRefreshMinutes) return
+    const id = setInterval(() => {
+      if (projectsRef.current.length > 0) refreshAll(projectsRef.current)
+    }, autoRefreshMinutes * 60 * 1000)
+    return () => clearInterval(id)
+  }, [autoRefreshMinutes])
+
   useEffect(() => { setUser(initialUser) }, [initialUser])
 
   useEffect(() => {
@@ -272,6 +294,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               previousTime={prevProjectData[activeProject.id]?.time}
               isClient={isClient}
               jiraUrl={user.jiraUrl}
+              autoRefreshMinutes={autoRefreshMinutes}
               onOpenMessages={(taskKey) => {
                 setChatTaskKey(taskKey || null)
                 setChatOpen(true)

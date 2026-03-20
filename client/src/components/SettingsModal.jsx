@@ -93,10 +93,21 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
     }
   }
 
+  const [autoRefreshMinutes, setAutoRefreshMinutes] = useState(() =>
+    parseInt(localStorage.getItem('jt_autorefresh') || '0', 10)
+  )
+
+  function handleAutoRefreshChange(minutes) {
+    localStorage.setItem('jt_autorefresh', String(minutes))
+    setAutoRefreshMinutes(minutes)
+    window.dispatchEvent(new Event('jt-autorefresh-changed'))
+  }
+
   const tabs = [
     { key: 'profile', label: '👤 Profil' },
     { key: 'jira',    label: '🔗 Jira' },
     { key: 'ai',      label: '🤖 AI' },
+    { key: 'refresh', label: 'Osvežavanje' },
     { key: 'danger',  label: '⚠️ Opasna zona' },
   ]
 
@@ -181,6 +192,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
                 deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
                 onDeleteAccount={handleDeleteAccount}
+                autoRefreshMinutes={autoRefreshMinutes} onAutoRefreshChange={handleAutoRefreshChange}
               />
             </div>
           </>
@@ -227,6 +239,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
                 deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
                 onDeleteAccount={handleDeleteAccount}
+                autoRefreshMinutes={autoRefreshMinutes} onAutoRefreshChange={handleAutoRefreshChange}
               />
             </div>
           </div>
@@ -235,6 +248,15 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
     </div>
   )
 }
+
+const REFRESH_OPTIONS = [
+  { value: 0,   label: 'Isključeno' },
+  { value: 15,  label: '15 min' },
+  { value: 30,  label: '30 min' },
+  { value: 60,  label: '1 sat' },
+  { value: 120, label: '2 sata' },
+  { value: 360, label: '6 sati' },
+]
 
 function SettingsContent({
   tab, isMobile, user, theme, onSetTheme,
@@ -245,6 +267,7 @@ function SettingsContent({
   oldPassword, setOldPassword, newPassword, setNewPassword,
   pwMsg, pwLoading, onChangePassword,
   deleteConfirm, setDeleteConfirm, onDeleteAccount,
+  autoRefreshMinutes, onAutoRefreshChange,
 }) {
   if (tab === 'profile') return (
     <div>
@@ -394,6 +417,57 @@ function SettingsContent({
       <button onClick={onSaveAi} disabled={aiSaving} style={{ ...btnPrimary, opacity: aiSaving ? 0.7 : 1 }}>
         {aiSaving ? 'Čuvam...' : 'Sačuvaj'}
       </button>
+    </div>
+  )
+
+  if (tab === 'refresh') return (
+    <div>
+      <h3 style={sectionTitle}>Automatsko osvežavanje</h3>
+      <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 20, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", lineHeight: 1.6 }}>
+        Podaci iz Jire će se automatski osvežavati u pozadini. Klijenti će uvek videti ažurne informacije bez ručnog klika na Osveži.
+      </div>
+
+      <label style={fieldLabel}>INTERVAL OSVEŽAVANJA</label>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, marginBottom: 20 }}>
+        {REFRESH_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => onAutoRefreshChange(opt.value)}
+            style={{
+              flex: 1,
+              minWidth: 60,
+              padding: '7px 8px',
+              borderRadius: 7,
+              border: 'none',
+              background: autoRefreshMinutes === opt.value ? 'var(--accent)' : 'transparent',
+              color: autoRefreshMinutes === opt.value ? '#fff' : 'var(--textMuted)',
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontSize: 13,
+              fontWeight: autoRefreshMinutes === opt.value ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{
+        padding: '12px 16px',
+        background: autoRefreshMinutes > 0 ? 'var(--greenTint)' : 'var(--surfaceAlt)',
+        border: `1px solid ${autoRefreshMinutes > 0 ? 'rgba(34,197,94,0.25)' : 'var(--border)'}`,
+        borderRadius: 10,
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontSize: 13,
+        color: autoRefreshMinutes > 0 ? 'var(--green)' : 'var(--textMuted)',
+        lineHeight: 1.5,
+      }}>
+        {autoRefreshMinutes > 0
+          ? `Aktivno — svi projekti se osvežavaju automatski svake ${REFRESH_OPTIONS.find(o => o.value === autoRefreshMinutes)?.label || `${autoRefreshMinutes} min`}.`
+          : 'Automatsko osvežavanje je isključeno. Podaci se osvežavaju samo ručno.'}
+      </div>
     </div>
   )
 
