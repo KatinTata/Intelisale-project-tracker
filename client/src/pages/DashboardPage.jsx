@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import Topbar from '../components/Topbar.jsx'
-import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import SettingsModal from '../components/SettingsModal.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
@@ -220,17 +219,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToEpicViewer={isClient ? undefined : onGoToEpicViewer}
-      />
-
-      <ProjectTabs
         projects={projects}
         activeId={activeId}
-        onSelect={setActiveId}
-        onAdd={hasJira && !isClient ? () => setAddingProject(true) : undefined}
-        onArchive={isClient ? undefined : handleArchiveProject}
+        onSelectProject={setActiveId}
+        onArchiveProject={isClient ? undefined : handleArchiveProject}
         onOpenArchive={isClient ? undefined : () => setArchiveOpen(true)}
-        onOpenSettings={isClient ? undefined : () => setSettingsOpen(true)}
         projectData={projectData}
+        onAddProject={hasJira && !isClient ? () => setAddingProject(true) : undefined}
       />
 
       {projects.length > 0 ? (

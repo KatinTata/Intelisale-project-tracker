@@ -282,13 +282,13 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
   }
 
   const filterPills = [
-    { key: 'all',     label: `Svi ${counts.all}`,                    title: 'Svi taskovi' },
-    { key: 'done',    label: `✅ ${counts.done}`,                     title: 'Završeni taskovi (Done / Resolved / Closed)' },
-    { key: 'testing', label: `🧪 ${counts.testing}`,                  title: 'Taskovi u testiranju (For Testing)' },
-    { key: 'inprog',  label: `🔄 ${counts.inprog}`,                   title: 'Taskovi aktivno u radu (In Progress)' },
-    { key: 'todo',    label: `📋 ${counts.todo}`,                     title: 'Taskovi čekaju (To Do / For Grooming)' },
-    ...(!isClient ? [{ key: 'over',  label: `⚠️ ${counts.over}`,      title: 'Taskovi sa prekoračenjem estimacije >15%' }] : []),
-    ...(!isClient ? [{ key: 'noest', label: `📐 Bez procene ${counts.noest}`, title: 'Taskovi bez unesene estimacije' }] : []),
+    { key: 'all',     label: 'Svi',          count: counts.all,     title: 'Svi taskovi' },
+    { key: 'done',    label: 'Završeni',      count: counts.done,    title: 'Done / Resolved / Closed' },
+    { key: 'testing', label: 'Testing',       count: counts.testing, title: 'Taskovi u testiranju (For Testing)' },
+    { key: 'inprog',  label: 'In Progress',   count: counts.inprog,  title: 'Aktivno u radu' },
+    { key: 'todo',    label: 'Grooming',      count: counts.todo,    title: 'To Do / For Grooming' },
+    ...(!isClient ? [{ key: 'over',  label: 'Prekoračenje', count: counts.over,  title: 'Prekoračenje estimacije >15%' }] : []),
+    ...(!isClient ? [{ key: 'noest', label: 'Bez procene',  count: counts.noest, title: 'Taskovi bez estimacije' }] : []),
   ]
 
   function toggleExpand(key) {
@@ -336,27 +336,35 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
           scrollbarWidth: 'none',
           paddingBottom: 2,
         }}>
-          {filterPills.map(p => (
-            <button
-              key={p.key}
-              title={p.title}
-              onClick={() => setFilter(p.key)}
-              style={{
-                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                fontSize: 12,
-                padding: '6px 12px',
-                borderRadius: 20,
-                border: filter === p.key ? '1px solid var(--accent)' : '1px solid var(--border)',
-                background: filter === p.key ? 'rgba(79,142,247,0.1)' : 'transparent',
-                color: filter === p.key ? 'var(--accent)' : 'var(--textMuted)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                minHeight: 32,
-              }}
-            >{p.label}</button>
-          ))}
+          {filterPills.map(p => {
+            const active = filter === p.key
+            return (
+              <button
+                key={p.key}
+                title={p.title}
+                onClick={() => setFilter(p.key)}
+                style={{
+                  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                  fontWeight: 500,
+                  fontSize: 12,
+                  height: 28,
+                  padding: '0 12px',
+                  borderRadius: 14,
+                  border: active ? 'none' : '1px solid var(--border)',
+                  background: active ? 'var(--accent)' : 'transparent',
+                  color: active ? '#fff' : 'var(--textMuted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surfaceAlt)'; e.currentTarget.style.color = 'var(--text)' } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--textMuted)' } }}
+              >
+                {p.label} · {p.count}
+              </button>
+            )
+          })}
         </div>
       </div>
 
