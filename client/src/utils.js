@@ -73,6 +73,7 @@ export function processEpicData(parents, subtasks) {
       over,
       overPct,
       subtasks: subs,
+      assignee: f.assignee?.displayName || null,
     }
 
     tasks.push(task)
@@ -90,6 +91,41 @@ export function processEpicData(parents, subtasks) {
   const total = tasks.length
 
   return { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks }
+}
+
+export function buildAssigneeData(tasks) {
+  const map = {}
+  for (const task of tasks) {
+    const name = task.assignee || 'Neraspoređeno'
+    if (!map[name]) {
+      map[name] = { name, totalSpent: 0, doneTasks: 0, inprogTasks: 0, todoTasks: 0, totalTasks: 0 }
+    }
+    const e = map[name]
+    e.totalSpent += task.spent
+    e.totalTasks++
+    if (task.statusCategory === 'done') e.doneTasks++
+    else if (task.statusCategory === 'todo') e.todoTasks++
+    else e.inprogTasks++ // inprog + testing
+  }
+  return Object.values(map).sort((a, b) => b.totalSpent - a.totalSpent)
+}
+
+export function buildComponentData(tasks) {
+  const map = {}
+  for (const task of tasks) {
+    for (const sub of (task.subtasks || [])) {
+      const comps = sub.components && sub.components.length > 0 ? sub.components : ['Ostalo']
+      for (const comp of comps) {
+        if (!map[comp]) map[comp] = { name: comp, totalSpent: 0, taskKeys: new Set() }
+        map[comp].totalSpent += sub.timespent
+        map[comp].taskKeys.add(task.key)
+      }
+    }
+  }
+  const totalSpentAll = Object.values(map).reduce((s, d) => s + d.totalSpent, 0)
+  return Object.values(map)
+    .map(d => ({ name: d.name, totalSpent: d.totalSpent, taskCount: d.taskKeys.size, pct: totalSpentAll > 0 ? d.totalSpent / totalSpentAll : 0, totalSpentAll }))
+    .sort((a, b) => b.totalSpent - a.totalSpent)
 }
 
 export function fmtHours(seconds) {

@@ -3,10 +3,12 @@ import { api } from '../api.js'
 import MetricCards from './MetricCards.jsx'
 import DonutChart from './DonutChart.jsx'
 import BarChart from './BarChart.jsx'
-import OverrunBanner from './OverrunBanner.jsx'
 import TaskTable from './TaskTable.jsx'
 import Badge from './ui/Badge.jsx'
-import { fmtHours } from '../utils.js'
+import { fmtHours, buildAssigneeData, buildComponentData } from '../utils.js'
+import AssigneeWorkload from './AssigneeWorkload.jsx'
+import ComponentBreakdown from './ComponentBreakdown.jsx'
+import OverrunHeatmap from './OverrunHeatmap.jsx'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
 function fmtLastRefresh(date) {
@@ -243,6 +245,9 @@ export default function ProjectCard({
 
   const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
 
+  const assigneeData   = !isClient ? buildAssigneeData(tasks)   : null
+  const componentData  = !isClient ? buildComponentData(tasks)  : null
+
   const donePct = total > 0 ? done / total : 0
   const inprogPct = total > 0 ? inprog / total : 0
   const testingPct = total > 0 ? testing / total : 0
@@ -431,8 +436,65 @@ export default function ProjectCard({
         )}
       </div>
 
-      {/* Overrun banner — admin only */}
-      {!isClient && <OverrunBanner overTasks={overTasks} />}
+      {/* Admin analytics charts */}
+      {!isClient && (
+        <>
+          {/* Assignee Workload — full width */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Opterećenje po članu tima
+                </div>
+                <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>
+                  Logovano vreme i distribucija taskova
+                </div>
+              </div>
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 8px' }}>
+                {assigneeData.filter(d => d.name !== 'Neraspoređeno').length} članova
+              </span>
+            </div>
+            <AssigneeWorkload data={assigneeData} />
+          </div>
+
+          {/* Component Breakdown + Overrun Heatmap — side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 1fr', gap: 16 }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Component Breakdown
+                  </div>
+                  <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>
+                    Distribucija logovanog vremena po komponenti
+                  </div>
+                </div>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 8px' }}>
+                  {componentData.length} komponenti
+                </span>
+              </div>
+              <ComponentBreakdown data={componentData} />
+            </div>
+
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Overrun Heatmap
+                  </div>
+                  <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>
+                    Prekoračenje estimacije po tasku
+                  </div>
+                </div>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 8px' }}>
+                  {tasks.filter(t => t.est > 0).length} taskova
+                </span>
+              </div>
+              <OverrunHeatmap tasks={tasks} />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Task table */}
       <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} jiraUrl={jiraUrl} />
