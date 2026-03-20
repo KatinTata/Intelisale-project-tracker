@@ -127,7 +127,7 @@ router.get('/:projectId/export', (req, res) => {
   const params = taskKey ? [projectId, taskKey] : [projectId]
 
   const messages = db.prepare(`
-    SELECT m.text, m.task_key, m.task_summary, m.created_at,
+    SELECT m.text, m.task_key, m.task_summary, m.subject, m.created_at,
            sender.name as sender_name,
            recip.name as recipient_name
     FROM messages m
@@ -140,7 +140,7 @@ router.get('/:projectId/export', (req, res) => {
   // Proper columns: Tema | Naziv taska | Datum i vreme | Pošiljalac | Primalac | Poruka
   const header = 'Tema;Naziv taska;Datum i vreme;Pošiljalac;Primalac;Poruka'
   const rows = messages.map(m => {
-    const tema = m.task_key || '(bez teme)'
+    const tema = m.subject || m.task_key || '(bez teme)'
     const naziv = m.task_summary || ''
     const date = new Date(m.created_at).toLocaleString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     const recipient = m.recipient_name || 'Svi klijenti'
@@ -168,7 +168,7 @@ router.get('/:projectId', (req, res) => {
     : ''
 
   const messages = db.prepare(`
-    SELECT m.id, m.text, m.task_key, m.task_summary, m.created_at, m.sender_id, m.recipient_user_id,
+    SELECT m.id, m.text, m.task_key, m.task_summary, m.subject, m.created_at, m.sender_id, m.recipient_user_id,
            sender.name as sender_name, sender.role as sender_role,
            recip.name as recipient_name,
            CASE WHEN mr.message_id IS NOT NULL OR m.sender_id = ? THEN 1 ELSE 0 END as is_read
@@ -196,7 +196,7 @@ router.post('/:projectId', (req, res) => {
   const role = getUserRole(req.userId)
   if (!checkProjectAccess(req.userId, projectId, role)) return res.status(403).json({ error: 'Forbidden' })
 
-  const { text, task_key, task_summary, recipient_user_id } = req.body
+  const { text, task_key, task_summary, subject, recipient_user_id } = req.body
   if (!text?.trim()) return res.status(400).json({ error: 'Tekst je obavezan' })
 
   // Validate recipient belongs to this project (admin only)
@@ -207,8 +207,8 @@ router.post('/:projectId', (req, res) => {
   }
 
   const result = db.prepare(
-    'INSERT INTO messages (project_id, sender_id, text, task_key, task_summary, recipient_user_id) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(projectId, req.userId, text.trim(), task_key || null, task_summary || null, resolvedRecipient)
+    'INSERT INTO messages (project_id, sender_id, text, task_key, task_summary, subject, recipient_user_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(projectId, req.userId, text.trim(), task_key || null, task_summary || null, subject?.trim() || null, resolvedRecipient)
 
   const user = db.prepare('SELECT name, role FROM users WHERE id = ?').get(req.userId)
   const recipUser = resolvedRecipient ? db.prepare('SELECT name FROM users WHERE id = ?').get(resolvedRecipient) : null
@@ -219,6 +219,7 @@ router.post('/:projectId', (req, res) => {
       text: text.trim(),
       task_key: task_key || null,
       task_summary: task_summary || null,
+      subject: subject?.trim() || null,
       recipient_user_id: resolvedRecipient,
       recipient_name: recipUser?.name || null,
       created_at: new Date().toISOString(),

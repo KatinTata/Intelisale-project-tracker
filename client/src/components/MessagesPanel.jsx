@@ -14,13 +14,17 @@ function fmtDate(dateStr) {
   return new Date(dateStr).toLocaleString('sr-RS', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
+// Returns the thread identifier for a message: subject takes priority, then task_key
+function threadId(m) { return m.subject || m.task_key || null }
+
 export default function MessagesPanel({ project, currentUser, isClient, initialTaskKey, onClose, onMessagesRead }) {
   const [messages, setMessages] = useState([])
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
-  const [taskFilter, setTaskFilter] = useState(initialTaskKey || 'all')
+  const [threadFilter, setThreadFilter] = useState(initialTaskKey || 'all')
   const [text, setText] = useState('')
   const [taskKey, setTaskKey] = useState(initialTaskKey || '')
+  const [subject, setSubject] = useState('')
   const [recipientId, setRecipientId] = useState('all') // 'all' or client user id
   const [sending, setSending] = useState(false)
   const bottomRef = useRef(null)
@@ -32,7 +36,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, taskFilter])
+  }, [messages, threadFilter])
 
   async function loadMessages() {
     setLoading(true)
@@ -59,11 +63,15 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
       const body = {
         text: text.trim(),
         task_key: taskKey.trim().toUpperCase() || undefined,
+        subject: subject.trim() || undefined,
         recipient_user_id: (!isClient && recipientId !== 'all') ? parseInt(recipientId) : undefined,
       }
       const { message } = await api.sendMessage(project.id, body)
       setMessages(prev => [...prev, message])
       setText('')
+      // After sending, switch filter to the thread we just sent to
+      const tid = message.subject || message.task_key
+      if (tid) setThreadFilter(tid)
     } catch (err) {
       alert(err.message)
     } finally {
@@ -88,10 +96,15 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
       .catch(() => alert('Greška pri eksportu'))
   }
 
-  // Unique task keys from messages (with at least one message)
-  const taskKeys = [...new Set(messages.filter(m => m.task_key).map(m => m.task_key))]
+  // Unique threads — keyed by subject (if set) or task_key
+  const threads = [...new Map(
+    messages.filter(m => threadId(m)).map(m => {
+      const id = threadId(m)
+      return [id, { id, label: m.subject || `🔗 ${m.task_key}`, taskKey: m.task_key, subject: m.subject }]
+    })
+  ).values()]
 
-  const filtered = taskFilter === 'all' ? messages : messages.filter(m => m.task_key === taskFilter)
+  const filtered = threadFilter === 'all' ? messages : messages.filter(m => threadId(m) === threadFilter)
 
   return (
     <div style={{
@@ -132,26 +145,36 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
         >×</button>
       </div>
 
-      {/* Task filter pills */}
+      {/* Thread filter pills */}
       <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0 }}>
-        {[{ key: 'all', label: `Sve (${messages.length})` }, ...taskKeys.map(k => ({ key: k, label: `🔗 ${k}` }))].map(p => (
+        {[{ id: 'all', label: `Sve (${messages.length})` }, ...threads].map(t => (
           <button
-            key={p.key}
-            onClick={() => setTaskFilter(p.key)}
+            key={t.id}
+            onClick={() => {
+              setThreadFilter(t.id)
+              if (t.id !== 'all') {
+                setSubject(t.subject || '')
+                setTaskKey(t.taskKey || '')
+              }
+            }}
             style={{
-              fontFamily: "'DM Mono'",
+              fontFamily: t.id === 'all' ? "'DM Mono'" : "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
               fontSize: 11,
               padding: '4px 10px',
               borderRadius: 12,
-              border: taskFilter === p.key ? '1px solid var(--accent)' : '1px solid var(--border)',
-              background: taskFilter === p.key ? 'rgba(79,142,247,0.1)' : 'transparent',
-              color: taskFilter === p.key ? 'var(--accent)' : 'var(--textMuted)',
+              border: threadFilter === t.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+              background: threadFilter === t.id ? 'rgba(79,142,247,0.1)' : 'transparent',
+              color: threadFilter === t.id ? 'var(--accent)' : 'var(--textMuted)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               transition: 'all 0.15s',
+              maxWidth: 160,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
-          >{p.label}</button>
+            title={t.label}
+          >{t.label}</button>
         ))}
       </div>
 
@@ -162,7 +185,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
         )}
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, padding: 40 }}>
-            {taskFilter === 'all' ? 'Nema poruka za ovaj projekat.' : `Nema poruka vezanih za ${taskFilter}.`}
+            {threadFilter === 'all' ? 'Nema poruka za ovaj projekat.' : `Nema poruka u ovom tredu.`}
           </div>
         )}
         {filtered.map((m, i) => {
@@ -190,10 +213,19 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                 flexDirection: 'column',
                 alignItems: isMe ? 'flex-end' : 'flex-start',
               }}>
-                {m.task_key && showSender && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--accent)', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 4, padding: '1px 6px', marginBottom: 3 }}>
-                    🔗 {m.task_key}
-                  </span>
+                {showSender && (m.subject || m.task_key) && (
+                  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2, marginBottom: 3, alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    {m.subject && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 11, color: 'var(--text)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 8px' }}>
+                        💬 {m.subject}
+                      </span>
+                    )}
+                    {m.task_key && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--accent)', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 4, padding: '1px 6px' }}>
+                        🔗 {m.task_key}
+                      </span>
+                    )}
+                  </div>
                 )}
                 <div style={{
                   maxWidth: '85%',
@@ -218,6 +250,15 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
 
       {/* Compose area */}
       <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Subject input */}
+        <input
+          value={subject}
+          onChange={e => setSubject(e.target.value)}
+          placeholder="Tema — opciono (npr. Pitanje oko dizajna)"
+          style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text)', fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", outline: 'none', width: '100%', boxSizing: 'border-box' }}
+          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        />
         {/* Task key input */}
         <input
           value={taskKey}
@@ -225,7 +266,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
           placeholder="Veži za task (npr. ECOM-1774) — opciono"
           style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text)', fontSize: 12, fontFamily: "'DM Mono'", outline: 'none', width: '100%', boxSizing: 'border-box' }}
           onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-          onBlur={e => { e.target.style.borderColor = 'var(--border)'; if (taskKey.trim()) setTaskFilter(taskKey.trim().toUpperCase()) }}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
 
         {/* Recipient selector (admin only, only if clients exist) */}

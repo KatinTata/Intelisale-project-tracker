@@ -58,6 +58,7 @@ db.exec(`
     text              TEXT NOT NULL,
     task_key          TEXT DEFAULT NULL,
     task_summary      TEXT DEFAULT NULL,
+    subject           TEXT DEFAULT NULL,
     recipient_user_id INTEGER DEFAULT NULL,
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP
   )
@@ -81,5 +82,6 @@ try { db.exec(`ALTER TABLE projects ADD COLUMN filter_meta TEXT`) } catch {}
 try { db.exec(`ALTER TABLE messages ADD COLUMN task_key TEXT DEFAULT NULL`) } catch {}
 try { db.exec(`ALTER TABLE messages ADD COLUMN recipient_user_id INTEGER DEFAULT NULL`) } catch {}
 try { db.exec(`ALTER TABLE messages ADD COLUMN task_summary TEXT DEFAULT NULL`) } catch {}
+try { db.exec(`ALTER TABLE messages ADD COLUMN subject TEXT DEFAULT NULL`) } catch {}
 
 export default db
