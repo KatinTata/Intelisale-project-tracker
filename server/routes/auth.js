@@ -50,9 +50,9 @@ router.post('/login', async (req, res) => {
 })
 
 router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare('SELECT id, email, name, role, jira_url, jira_email FROM users WHERE id = ?').get(req.userId)
+  const user = db.prepare('SELECT id, email, name, role, jira_url, jira_email, anthropic_key FROM users WHERE id = ?').get(req.userId)
   if (!user) return res.status(404).json({ error: 'Korisnik nije pronađen' })
-  res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role || 'admin', jiraUrl: user.jira_url, jiraEmail: user.jira_email } })
+  res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role || 'admin', jiraUrl: user.jira_url, jiraEmail: user.jira_email, hasAnthropicKey: !!user.anthropic_key } })
 })
 
 router.put('/jira-config', authMiddleware, async (req, res) => {
@@ -81,6 +81,23 @@ router.post('/jira-test', authMiddleware, async (req, res) => {
     res.json({ ok: true, displayName: data.displayName })
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message })
+  }
+})
+
+router.put('/ai-config', authMiddleware, (req, res) => {
+  try {
+    const { anthropicKey } = req.body
+    let encryptedKey = null
+    if (anthropicKey) {
+      encryptedKey = encryptToken(anthropicKey)
+    } else {
+      const existing = db.prepare('SELECT anthropic_key FROM users WHERE id = ?').get(req.userId)
+      encryptedKey = existing?.anthropic_key || null
+    }
+    db.prepare('UPDATE users SET anthropic_key = ? WHERE id = ?').run(encryptedKey, req.userId)
+    res.json({ ok: true })
+  } catch {
+    res.status(500).json({ error: 'Greška servera' })
   }
 })
 

@@ -3,9 +3,10 @@ import { applyTheme, getEffectiveTheme } from './theme.js'
 import { api } from './api.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
+import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'dashboard'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes'
   const [user, setUser] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
@@ -62,6 +63,15 @@ export default function App() {
     )
   }
 
+  if (page === 'releaseNotes' && user) {
+    return (
+      <ReleaseNotesPage
+        user={user}
+        onBack={() => setPage('dashboard')}
+      />
+    )
+  }
+
   if (page === 'dashboard' && user) {
     return (
       <DashboardPage
@@ -69,6 +79,7 @@ export default function App() {
         theme={theme}
         onSetTheme={handleSetTheme}
         onLogout={handleLogout}
+        onGoToReleaseNotes={() => setPage('releaseNotes')}
       />
     )
   }

@@ -45,6 +45,7 @@ export const api = {
   me: () => request('GET', '/auth/me'),
   updateJiraConfig: (body) => request('PUT', '/auth/jira-config', body),
   testJiraConnection: (body) => request('POST', '/auth/jira-test', body),
+  updateAiConfig: (body) => request('PUT', '/auth/ai-config', body),
   changePassword: (body) => request('PUT', '/auth/password', body),
   deleteAccount: () => request('DELETE', '/auth/account'),
 
@@ -76,6 +77,14 @@ export const api = {
   getProjectClients: (projectId) => request('GET', `/messages/${projectId}/clients`),
   getTaskInfo: (key) => request('GET', `/jira/task-info/${key}`),
   getChangelog: (key) => request('GET', `/jira/changelog/${key}`),
+
+  // Release Notes
+  getReleaseNotesList: () => request('GET', '/release-notes/list'),
+  getClientReleaseNotes: () => request('GET', '/release-notes/client-list'),
+  getReleaseNoteClients: (id) => request('GET', `/release-notes/${id}/clients`),
+  setReleaseNoteClients: (id, clientIds) => request('PUT', `/release-notes/${id}/clients`, { clientIds }),
+  markReleaseNoteReleased: (id) => request('PUT', `/release-notes/${id}/release`),
+  deleteReleaseNote: (id) => request('DELETE', `/release-notes/${id}`),
 
   // Users (admin only)
   getUsers: () => request('GET', '/users'),

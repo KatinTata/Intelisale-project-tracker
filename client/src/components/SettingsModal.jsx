@@ -7,6 +7,9 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
   const [jiraUrl, setJiraUrl] = useState(user.jiraUrl || '')
   const [jiraEmail, setJiraEmail] = useState(user.jiraEmail || '')
   const [jiraToken, setJiraToken] = useState('')
+  const [anthropicKey, setAnthropicKey] = useState('')
+  const [aiSaving, setAiSaving] = useState(false)
+  const [aiSaveMsg, setAiSaveMsg] = useState(null)
   const [testStatus, setTestStatus] = useState(null)
   const [testLoading, setTestLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -76,9 +79,24 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
     }
   }
 
+  async function handleSaveAi() {
+    setAiSaving(true)
+    setAiSaveMsg(null)
+    try {
+      await api.updateAiConfig({ anthropicKey: anthropicKey || undefined })
+      setAnthropicKey('')
+      setAiSaveMsg({ ok: true, msg: 'Sačuvano!' })
+    } catch (err) {
+      setAiSaveMsg({ ok: false, msg: err.message })
+    } finally {
+      setAiSaving(false)
+    }
+  }
+
   const tabs = [
     { key: 'profile', label: '👤 Profil' },
     { key: 'jira',    label: '🔗 Jira' },
+    { key: 'ai',      label: '🤖 AI' },
     { key: 'danger',  label: '⚠️ Opasna zona' },
   ]
 
@@ -155,6 +173,9 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 jiraToken={jiraToken} setJiraToken={setJiraToken}
                 testStatus={testStatus} testLoading={testLoading} onTestJira={handleTestJira}
                 saving={saving} saveMsg={saveMsg} onSaveJira={handleSaveJira}
+                anthropicKey={anthropicKey} setAnthropicKey={setAnthropicKey}
+                aiSaving={aiSaving} aiSaveMsg={aiSaveMsg} onSaveAi={handleSaveAi}
+                hasAnthropicKey={user.hasAnthropicKey}
                 oldPassword={oldPassword} setOldPassword={setOldPassword}
                 newPassword={newPassword} setNewPassword={setNewPassword}
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
@@ -198,6 +219,9 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 jiraToken={jiraToken} setJiraToken={setJiraToken}
                 testStatus={testStatus} testLoading={testLoading} onTestJira={handleTestJira}
                 saving={saving} saveMsg={saveMsg} onSaveJira={handleSaveJira}
+                anthropicKey={anthropicKey} setAnthropicKey={setAnthropicKey}
+                aiSaving={aiSaving} aiSaveMsg={aiSaveMsg} onSaveAi={handleSaveAi}
+                hasAnthropicKey={user.hasAnthropicKey}
                 oldPassword={oldPassword} setOldPassword={setOldPassword}
                 newPassword={newPassword} setNewPassword={setNewPassword}
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
@@ -217,6 +241,7 @@ function SettingsContent({
   jiraUrl, setJiraUrl, jiraEmail, setJiraEmail, jiraToken, setJiraToken,
   testStatus, testLoading, onTestJira,
   saving, saveMsg, onSaveJira,
+  anthropicKey, setAnthropicKey, aiSaving, aiSaveMsg, onSaveAi, hasAnthropicKey,
   oldPassword, setOldPassword, newPassword, setNewPassword,
   pwMsg, pwLoading, onChangePassword,
   deleteConfirm, setDeleteConfirm, onDeleteAccount,
@@ -333,6 +358,42 @@ function SettingsContent({
           {saving ? 'Čuvam...' : 'Sačuvaj'}
         </button>
       </div>
+    </div>
+  )
+
+  if (tab === 'ai') return (
+    <div>
+      <h3 style={sectionTitle}>Anthropic AI</h3>
+      <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", lineHeight: 1.6 }}>
+        API ključ se koristi za AI funkcije u Release Notes (sumiraj, simplifikuj, prevedi).
+        Ključ se čuva enkriptovan, kao i Jira token.
+      </div>
+      {hasAnthropicKey && (
+        <div style={{ ...msgStyle, color: 'var(--green)', background: 'var(--greenTint)', marginBottom: 16 }}>
+          ✅ API ključ je podešen
+        </div>
+      )}
+      <div style={{ marginBottom: 16 }}>
+        <label style={fieldLabel}>ANTHROPIC API KEY</label>
+        <input
+          type="password"
+          value={anthropicKey}
+          onChange={e => setAnthropicKey(e.target.value)}
+          placeholder={hasAnthropicKey ? '••••••••••••  (ostavite prazno da ne menjate)' : 'sk-ant-api03-...'}
+          style={inputStyle}
+        />
+        <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+          Ključ možete kreirati na console.anthropic.com
+        </div>
+      </div>
+      {aiSaveMsg && (
+        <div style={{ ...msgStyle, color: aiSaveMsg.ok ? 'var(--green)' : 'var(--red)', background: aiSaveMsg.ok ? 'var(--greenTint)' : 'var(--redTint)', marginBottom: 12 }}>
+          {aiSaveMsg.msg}
+        </div>
+      )}
+      <button onClick={onSaveAi} disabled={aiSaving} style={{ ...btnPrimary, opacity: aiSaving ? 0.7 : 1 }}>
+        {aiSaving ? 'Čuvam...' : 'Sačuvaj'}
+      </button>
     </div>
   )
 

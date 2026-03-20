@@ -4,11 +4,13 @@ import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { authMiddleware } from './auth.js'
+import db from './db.js'
 import authRoutes from './routes/auth.js'
 import projectRoutes from './routes/projects.js'
 import jiraRoutes from './routes/jira.js'
 import usersRoutes from './routes/users.js'
 import messagesRoutes from './routes/messages.js'
+import releaseNotesRoutes from './routes/releaseNotes.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -23,6 +25,13 @@ app.use('/api/projects', authMiddleware, projectRoutes)
 app.use('/api/jira', authMiddleware, jiraRoutes)
 app.use('/api/users', authMiddleware, usersRoutes)
 app.use('/api/messages', authMiddleware, messagesRoutes)
+app.use('/api/release-notes', authMiddleware, releaseNotesRoutes)
+app.get('/rn/:token', (req, res) => {
+  const row = db.prepare('SELECT html FROM published_notes WHERE token = ?').get(req.params.token)
+  if (!row) return res.status(404).send('<!DOCTYPE html><html><body><h2>Release notes nisu pronađeni.</h2></body></html>')
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.send(row.html)
+})
 
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../client/dist')

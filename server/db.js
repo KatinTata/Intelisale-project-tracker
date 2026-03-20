@@ -83,5 +83,31 @@ try { db.exec(`ALTER TABLE messages ADD COLUMN task_key TEXT DEFAULT NULL`) } ca
 try { db.exec(`ALTER TABLE messages ADD COLUMN recipient_user_id INTEGER DEFAULT NULL`) } catch {}
 try { db.exec(`ALTER TABLE messages ADD COLUMN task_summary TEXT DEFAULT NULL`) } catch {}
 try { db.exec(`ALTER TABLE messages ADD COLUMN subject TEXT DEFAULT NULL`) } catch {}
+try { db.exec(`ALTER TABLE users ADD COLUMN anthropic_key TEXT`) } catch {}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS published_notes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    token      TEXT UNIQUE NOT NULL,
+    project_id INTEGER,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title      TEXT,
+    html       TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+try { db.exec(`ALTER TABLE published_notes ADD COLUMN status TEXT DEFAULT 'published'`) } catch {}
+try { db.exec(`ALTER TABLE published_notes ADD COLUMN released_at DATETIME`) } catch {}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS release_note_clients (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    note_id        INTEGER NOT NULL REFERENCES published_notes(id) ON DELETE CASCADE,
+    client_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(note_id, client_user_id)
+  )
+`)
 
 export default db

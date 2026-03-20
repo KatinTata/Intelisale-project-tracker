@@ -13,7 +13,7 @@ import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onGoToReleaseNotes }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -218,6 +218,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onMarkAllRead={handleMarkAllRead}
         onNotificationClick={handleNotificationClick}
         onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
+        onGoToReleaseNotes={onGoToReleaseNotes}
       />
 
       <ProjectTabs
