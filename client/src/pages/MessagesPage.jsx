@@ -375,22 +375,17 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {[{ id: 'all', name: 'Svi klijenti', email: 'Svi klijenti na projektu' }, ...clients].map(c => {
                     const selected = recipientId === String(c.id)
-                    const isAll = c.id === 'all'
-                    const avatar = isAll ? '👥' : initials(c.name)
                     return (
                       <button
                         key={c.id}
                         type="button"
                         onClick={() => setRecipientId(String(c.id))}
                         title={c.email}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 6px', borderRadius: 20, border: selected ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: selected ? 'rgba(79,142,247,0.1)' : 'transparent', cursor: 'pointer', transition: 'all 0.15s' }}
+                        style={{ padding: '5px 14px', borderRadius: 20, border: selected ? '1.5px solid var(--accent)' : '1px solid var(--border)', background: selected ? 'rgba(79,142,247,0.1)' : 'transparent', cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: selected ? 'var(--accent)' : 'var(--text)', fontWeight: selected ? 600 : 400 }}
                         onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--borderHover)' }}
                         onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--border)' }}
                       >
-                        <span style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: selected ? 'var(--accent)' : 'var(--surfaceAlt)', color: selected ? '#fff' : 'var(--textMuted)', fontSize: isAll ? 13 : 9, fontWeight: 700, fontFamily: isAll ? 'inherit' : 'Syne', display: 'flex', alignItems: 'center', justifyContent: 'center', border: selected ? 'none' : '1px solid var(--border)' }}>{avatar}</span>
-                        <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: selected ? 'var(--accent)' : 'var(--text)', fontWeight: selected ? 600 : 400 }}>{c.name}</span>
-                        {!isAll && <span style={{ fontFamily: "'DM Mono'", fontSize: 9, fontWeight: 700, background: selected ? 'var(--accent)' : 'var(--surfaceAlt)', color: selected ? '#fff' : 'var(--textMuted)', border: selected ? 'none' : '1px solid var(--border)', borderRadius: 4, padding: '1px 4px' }}>K</span>}
-                        {selected && <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>}
+                        {c.name}
                       </button>
                     )
                   })}
