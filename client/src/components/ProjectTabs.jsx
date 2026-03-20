@@ -115,6 +115,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                             {onArchive && (
                               <button
                                 onClick={e => { e.stopPropagation(); setConfirmId(confirming ? null : p.id) }}
+                                title="Arhiviraj projekat"
                                 style={{
                                   width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                                   border: '1px solid var(--border)', background: confirming ? 'var(--redTint)' : 'transparent',
@@ -169,6 +170,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
 
             <button
               onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
+              title="Dodaj projekat"
               style={{
                 width: 36, height: 36, borderRadius: '50%',
                 border: '2px dashed var(--borderHover)', background: 'transparent',
@@ -330,6 +332,7 @@ function ProjectPill({ project, active, dot, onSelect, onArchive, confirmId, set
         {onArchive && (hover || active) && (
           <span
             onClick={e => { e.stopPropagation(); setConfirmId(confirmId === project.id ? null : project.id) }}
+            title="Arhiviraj projekat"
             style={{
               width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
               background: active ? 'rgba(255,255,255,0.25)' : 'var(--border)',

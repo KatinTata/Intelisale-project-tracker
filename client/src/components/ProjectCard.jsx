@@ -163,7 +163,10 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
               padding: '9px 16px',
               borderBottom: i < changes.length - 1 ? '1px solid var(--border)' : 'none',
             }}>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{changeIcon(c.type, c.to)}</span>
+              <span
+                title={c.type === 'new' ? 'Novi task' : c.type === 'status' ? 'Promena statusa' : c.type === 'est' ? 'Promena estimacije' : c.type === 'spent' ? 'Utrošeno vreme' : ''}
+                style={{ fontSize: 14, flexShrink: 0 }}
+              >{changeIcon(c.type, c.to)}</span>
               {link ? (
                 <a
                   href={link}

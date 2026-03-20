@@ -55,7 +55,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUs
         {onOpenChat && (
           <button
             onClick={onOpenChat}
-            title="Chat"
+            title="Poruke"
             style={{ width: 36, height: 36, borderRadius: '50%', background: 'transparent', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, transition: 'all 0.2s ease' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.background = 'var(--surfaceAlt)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
@@ -71,6 +71,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUs
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setMenuOpen(o => !o)}
+            title="Nalog i podešavanja"
             style={{
               width: 36,
               height: 36,

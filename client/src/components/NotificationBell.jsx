@@ -24,6 +24,7 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
+        title="Notifikacije"
         style={{
           position: 'relative',
           width: 36,

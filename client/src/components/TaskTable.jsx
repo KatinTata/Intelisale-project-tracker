@@ -282,13 +282,13 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
   }
 
   const filterPills = [
-    { key: 'all',     label: `Svi ${counts.all}` },
-    { key: 'done',    label: `✅ ${counts.done}` },
-    { key: 'testing', label: `🧪 ${counts.testing}` },
-    { key: 'inprog',  label: `🔄 ${counts.inprog}` },
-    { key: 'todo',    label: `📋 ${counts.todo}` },
-    ...(!isClient ? [{ key: 'over',  label: `⚠️ ${counts.over}` }] : []),
-    ...(!isClient ? [{ key: 'noest', label: `📐 Bez procene ${counts.noest}` }] : []),
+    { key: 'all',     label: `Svi ${counts.all}`,                    title: 'Svi taskovi' },
+    { key: 'done',    label: `✅ ${counts.done}`,                     title: 'Završeni taskovi (Done / Resolved / Closed)' },
+    { key: 'testing', label: `🧪 ${counts.testing}`,                  title: 'Taskovi u testiranju (For Testing)' },
+    { key: 'inprog',  label: `🔄 ${counts.inprog}`,                   title: 'Taskovi aktivno u radu (In Progress)' },
+    { key: 'todo',    label: `📋 ${counts.todo}`,                     title: 'Taskovi čekaju (To Do / For Grooming)' },
+    ...(!isClient ? [{ key: 'over',  label: `⚠️ ${counts.over}`,      title: 'Taskovi sa prekoračenjem estimacije >15%' }] : []),
+    ...(!isClient ? [{ key: 'noest', label: `📐 Bez procene ${counts.noest}`, title: 'Taskovi bez unesene estimacije' }] : []),
   ]
 
   function toggleExpand(key) {
@@ -339,6 +339,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
           {filterPills.map(p => (
             <button
               key={p.key}
+              title={p.title}
               onClick={() => setFilter(p.key)}
               style={{
                 fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
