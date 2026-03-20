@@ -123,7 +123,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
 
   function handleExport() {
     const token = localStorage.getItem('jt_token')
-    const qs = taskFilter !== 'all' ? `?taskKey=${encodeURIComponent(taskFilter)}` : ''
+    const qs = threadFilter !== 'all' ? `?taskKey=${encodeURIComponent(threadFilter)}` : ''
     fetch(`/api/messages/${project.id}/export${qs}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -132,7 +132,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        const suffix = taskFilter !== 'all' ? `-${taskFilter}` : ''
+        const suffix = threadFilter !== 'all' ? `-${threadFilter}` : ''
         a.download = `poruke-${project.epicKey}${suffix}-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
@@ -184,7 +184,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
-            ⬇ {taskFilter !== 'all' ? `Export: ${taskFilter}` : 'Eksportuj CSV'}
+            ⬇ {threadFilter !== 'all' ? `Export: ${threadFilter}` : 'Eksportuj CSV'}
           </button>
         )}
       </div>
