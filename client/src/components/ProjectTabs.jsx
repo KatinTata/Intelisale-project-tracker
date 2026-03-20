@@ -168,21 +168,23 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
               )}
             </div>
 
-            <button
-              onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
-              title="Dodaj projekat"
-              style={{
-                width: 36, height: 36, borderRadius: '50%',
-                border: '2px dashed var(--borderHover)', background: 'transparent',
-                color: 'var(--accent)', fontSize: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s ease',
-              }}
-              onTouchStart={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderStyle = 'solid' }}
-              onTouchEnd={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderStyle = 'dashed' }}
-            >
-              +
-            </button>
+            {(onAdd || onOpenSettings) && (
+              <button
+                onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
+                title="Dodaj projekat"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  border: '2px dashed var(--borderHover)', background: 'transparent',
+                  color: 'var(--accent)', fontSize: 20,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s ease',
+                }}
+                onTouchStart={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderStyle = 'solid' }}
+                onTouchEnd={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderStyle = 'dashed' }}
+              >
+                +
+              </button>
+            )}
           </>
         ) : (
           /* ── Desktop: pill tabs ── */
@@ -210,55 +212,61 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
               })}
             </div>
 
+            {(onOpenArchive || onAdd || onOpenSettings) && (
             <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 16, borderLeft: projects.length > 0 ? '1px solid var(--border)' : 'none', marginLeft: 8 }}>
               {/* Archive button */}
-              <button
-                onClick={onOpenArchive}
-                title="Arhiva projekata"
-                style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  border: '1px solid var(--border)', background: 'transparent',
-                  color: 'var(--textMuted)', fontSize: 15,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
-              >
-                📦
-              </button>
-
-              {/* Add button */}
-              <div style={{ position: 'relative' }}>
+              {onOpenArchive && (
                 <button
-                  onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
-                  onMouseEnter={() => setAddHover(true)}
-                  onMouseLeave={() => setAddHover(false)}
+                  onClick={onOpenArchive}
+                  title="Arhiva projekata"
                   style={{
                     width: 32, height: 32, borderRadius: '50%',
-                    border: addHover ? '2px solid var(--accent)' : '2px dashed var(--borderHover)',
-                    background: addHover ? 'var(--accent)' : 'transparent',
-                    color: addHover ? '#fff' : 'var(--accent)',
-                    fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid var(--border)', background: 'transparent',
+                    color: 'var(--textMuted)', fontSize: 15,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', transition: 'all 0.2s ease',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
                 >
-                  +
+                  📦
                 </button>
-                {addHover && (
-                  <div style={{
-                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'var(--text)', color: 'var(--bg)',
-                    fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                    padding: '5px 10px', borderRadius: 6,
-                    whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
-                  }}>
-                    Dodaj projekat
-                  </div>
-                )}
-              </div>
+              )}
+
+              {/* Add button */}
+              {(onAdd || onOpenSettings) && (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
+                    onMouseEnter={() => setAddHover(true)}
+                    onMouseLeave={() => setAddHover(false)}
+                    style={{
+                      width: 32, height: 32, borderRadius: '50%',
+                      border: addHover ? '2px solid var(--accent)' : '2px dashed var(--borderHover)',
+                      background: addHover ? 'var(--accent)' : 'transparent',
+                      color: addHover ? '#fff' : 'var(--accent)',
+                      fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', transition: 'all 0.2s ease',
+                    }}
+                  >
+                    +
+                  </button>
+                  {addHover && (
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'var(--text)', color: 'var(--bg)',
+                      fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                      padding: '5px 10px', borderRadius: 6,
+                      whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
+                    }}>
+                      Dodaj projekat
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+            )}
           </>
         )}
       </div>
