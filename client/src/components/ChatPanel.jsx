@@ -107,7 +107,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, marginTop: 40 }}>
+          <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, marginTop: 40 }}>
             Nema poruka. Budite prvi!
           </div>
         )}
@@ -115,7 +115,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
           const isMe = m.sender_id === currentUser.id
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-              <div style={{ fontSize: 11, color: 'var(--textSubtle)', fontFamily: "'DM Sans', sans-serif", marginBottom: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", marginBottom: 4 }}>
                 {isMe ? 'Vi' : m.sender_name} · {fmtTime(m.created_at)}
               </div>
               {m.task_key && (
@@ -127,7 +127,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
                 borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                 background: isMe ? 'var(--accent)' : 'var(--surfaceAlt)',
                 border: isMe ? 'none' : '1px solid var(--border)',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontSize: 13,
                 color: isMe ? '#fff' : 'var(--text)',
                 lineHeight: 1.5,
@@ -159,7 +159,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
           {taskInfo && (
             <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 6, padding: '3px 8px' }}>
               <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)' }}>🔗 {taskInfo.key}</span>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
+              <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
                 {taskInfo.summary.length > 40 ? taskInfo.summary.slice(0, 40) + '...' : taskInfo.summary}
               </span>
               <button onClick={() => { setTaskKey(''); setTaskInfo(null) }} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0 }}>×</button>
@@ -175,7 +175,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
             placeholder="Napišite poruku... (Enter za slanje)"
             rows={2}
-            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.4, outline: 'none' }}
+            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", resize: 'none', lineHeight: 1.4, outline: 'none' }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />

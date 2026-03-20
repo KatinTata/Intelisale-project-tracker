@@ -77,7 +77,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
             <h3 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: 'var(--text)', marginBottom: 2 }}>
               📦 Arhiva projekata
             </h3>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)' }}>
+            <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)' }}>
               Arhivirani projekti — istorija i snapshotovi su sačuvani
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
           {loading ? (
-            <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
               Učitavam...
             </div>
           ) : projects.length === 0 ? (
@@ -101,7 +101,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
               <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>
                 Arhiva je prazna
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
+              <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
                 Arhivirani projekti će se pojaviti ovde
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                         }}>
                           {p.epicKey}
                         </span>
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
+                        <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
                           Arhivirano {fmtDate(p.archivedAt)}
                         </span>
                       </div>
@@ -141,7 +141,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                         style={{
                           padding: '6px 14px', borderRadius: 7,
                           border: '1px solid var(--accent)', background: 'transparent',
-                          color: 'var(--accent)', fontFamily: "'DM Sans', sans-serif",
+                          color: 'var(--accent)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                           fontWeight: 600, fontSize: 12, cursor: working ? 'not-allowed' : 'pointer',
                           opacity: working ? 0.6 : 1, transition: 'all 0.2s',
                           whiteSpace: 'nowrap',
@@ -177,21 +177,21 @@ export default function ArchiveModal({ onClose, onRestore }) {
                       background: 'var(--redTint)', border: '1px solid #EF444430',
                       borderRadius: 8,
                     }}>
-                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
+                      <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
                         Trajno brisanje je nepovratno. Svi snapshotovi i podaci projekta biće izgubljeni.
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => setConfirmDeleteId(null)} style={{
                           flex: 1, padding: '8px', borderRadius: 7,
                           border: '1px solid var(--border)', background: 'transparent',
-                          color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer',
+                          color: 'var(--text)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer',
                         }}>
                           Otkaži
                         </button>
                         <button onClick={() => handlePermanentDelete(p.id)} disabled={working} style={{
                           flex: 1, padding: '8px', borderRadius: 7, border: 'none',
                           background: 'var(--red)', color: '#fff',
-                          fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13,
+                          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 13,
                           cursor: working ? 'not-allowed' : 'pointer', opacity: working ? 0.7 : 1,
                         }}>
                           Trajno izbriši

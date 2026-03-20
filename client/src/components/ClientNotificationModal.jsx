@@ -31,7 +31,7 @@ export default function ClientNotificationModal({ notifications, onClose, onOpen
               Imate {count} {count === 1 ? 'novu poruku' : count < 5 ? 'nove poruke' : 'novih poruka'}
             </h2>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)', marginLeft: 34 }}>
+          <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', marginLeft: 34 }}>
             Administrator je ostavio poruke za vas
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function ClientNotificationModal({ notifications, onClose, onOpen
                   </span>
                 )}
               </div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.5 }}>
+              <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.5 }}>
                 <span style={{ color: 'var(--text)', fontWeight: 600 }}>{n.sender_name}: </span>
                 {n.text.length > 100 ? n.text.slice(0, 100) + '...' : n.text}
               </p>
@@ -62,13 +62,13 @@ export default function ClientNotificationModal({ notifications, onClose, onOpen
         <div style={{ padding: '16px 24px', display: 'flex', gap: 10 }}>
           <button
             onClick={onOpenChat}
-            style={{ flex: 1, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+            style={{ flex: 1, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
           >
             Pogledaj sve →
           </button>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', color: 'var(--textMuted)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 16px', fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: 'pointer' }}
+            style={{ background: 'transparent', color: 'var(--textMuted)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 16px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, cursor: 'pointer' }}
           >
             Zatvori
           </button>

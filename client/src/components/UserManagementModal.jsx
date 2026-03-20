@@ -120,7 +120,7 @@ export default function UserManagementModal({ projects, onClose }) {
             <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 20, color: 'var(--text)', marginBottom: 2 }}>
               Upravljanje korisnicima
             </h2>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
+            <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
               Kreiranje i upravljanje client nalozima
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function UserManagementModal({ projects, onClose }) {
               marginBottom: 16, padding: '10px 14px',
               background: 'var(--redTint)', border: '1px solid #EF444430',
               borderRadius: 8, color: 'var(--red)', fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
             }}>{error}</div>
           )}
 
@@ -164,7 +164,7 @@ export default function UserManagementModal({ projects, onClose }) {
                 border: 'none',
                 borderRadius: 8,
                 padding: '8px 18px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: 'pointer',
@@ -245,7 +245,7 @@ export default function UserManagementModal({ projects, onClose }) {
                   marginBottom: 12, padding: '8px 12px',
                   background: 'var(--redTint)', border: '1px solid #EF444430',
                   borderRadius: 6, color: 'var(--red)', fontSize: 12,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 }}>{newError}</div>
               )}
               <div style={{ display: 'flex', gap: 8 }}>
@@ -255,7 +255,7 @@ export default function UserManagementModal({ projects, onClose }) {
                   style={{
                     background: 'var(--accent)', color: '#fff', border: 'none',
                     borderRadius: 7, padding: '7px 16px',
-                    fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13,
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 13,
                     cursor: newLoading ? 'not-allowed' : 'pointer',
                     opacity: newLoading ? 0.7 : 1,
                   }}
@@ -269,7 +269,7 @@ export default function UserManagementModal({ projects, onClose }) {
                     background: 'transparent', color: 'var(--textMuted)',
                     border: '1px solid var(--border)', borderRadius: 7,
                     padding: '7px 16px',
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer',
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer',
                   }}
                 >
                   Otkaži
@@ -280,11 +280,11 @@ export default function UserManagementModal({ projects, onClose }) {
 
           {/* Users list */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 32, color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
               Učitavam korisnike...
             </div>
           ) : users.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
               Nema klijent korisnika. Dodajte prvog klikom na dugme iznad.
             </div>
           ) : (
@@ -353,7 +353,7 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
             background: 'transparent', color: 'var(--red)',
             border: '1px solid #EF444430', borderRadius: 6,
             padding: '4px 10px',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer',
+            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--redTint)' }}
@@ -377,7 +377,7 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {user.projects.length === 0 ? (
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textSubtle)', fontStyle: 'italic' }}>
+            <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textSubtle)', fontStyle: 'italic' }}>
               Nema dodeljenih projekata
             </span>
           ) : (
@@ -419,7 +419,7 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
               background: 'var(--bg)', border: '1px solid var(--border)',
               borderRadius: 6, padding: '5px 10px',
               color: 'var(--text)', fontSize: 12,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
               cursor: 'pointer',
             }}
           >
@@ -443,7 +443,7 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
               color: selectedProject ? '#fff' : 'var(--textMuted)',
               border: 'none', borderRadius: 6,
               padding: '5px 12px',
-              fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12,
               cursor: selectedProject ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s ease',
             }}
@@ -474,6 +474,6 @@ const inputStyle = {
   padding: '8px 12px',
   color: 'var(--text)',
   fontSize: 13,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   transition: 'border-color 0.2s',
 }

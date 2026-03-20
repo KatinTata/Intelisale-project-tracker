@@ -136,7 +136,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
       <div style={{ height: 56, background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, flexShrink: 0 }}>
         <button
           onClick={onClose}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
         >← Nazad</button>
@@ -160,7 +160,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
         {!isClient && (
           <button
             onClick={handleExport}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
@@ -200,12 +200,12 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                 onMouseLeave={e => { if (taskFilter !== p.key) e.currentTarget.style.background = taskFilter === p.key ? 'rgba(79,142,247,0.08)' : 'transparent' }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: p.key === 'all' ? "'DM Sans', sans-serif" : "'DM Mono'", fontSize: p.key === 'all' ? 13 : 12, color: taskFilter === p.key ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontFamily: p.key === 'all' ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : "'DM Mono'", fontSize: p.key === 'all' ? 13 : 12, color: taskFilter === p.key ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {p.key !== 'all' && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
                     {p.label}
                   </div>
                   {p.summary && (
-                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                    <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
                       {p.summary}
                     </div>
                   )}
@@ -234,9 +234,9 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px' : '24px 32px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {loading ? (
-              <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, padding: 48 }}>Učitavam poruke...</div>
+              <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, padding: 48 }}>Učitavam poruke...</div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, padding: 64 }}>
+              <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, padding: 64 }}>
                 {taskFilter === 'all' ? 'Nema poruka za ovaj projekat.' : `Nema poruka vezanih za ${taskFilter}.`}
               </div>
             ) : (
@@ -273,7 +273,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 6, padding: '3px 10px', marginBottom: 4 }}>
                         <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>🔗 {m.task_key}</span>
                         {(m.task_summary || taskInfoMap[m.task_key]) && (
-                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
+                          <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
                             {(m.task_summary || taskInfoMap[m.task_key]).length > 50
                               ? (m.task_summary || taskInfoMap[m.task_key]).slice(0, 50) + '...'
                               : (m.task_summary || taskInfoMap[m.task_key])}
@@ -287,7 +287,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                       background: isMe ? 'var(--accent)' : 'var(--surface)',
                       border: isMe ? 'none' : '1px solid var(--border)',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                       fontSize: 14,
                       color: isMe ? '#fff' : 'var(--text)',
                       lineHeight: 1.55,
@@ -327,7 +327,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 6, padding: '2px 8px', marginLeft: 44 }}>
                       <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>🔗 {taskKeyInfo.key}</span>
                       {taskKeyInfo.summary && (
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
+                        <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
                           {taskKeyInfo.summary.length > 60 ? taskKeyInfo.summary.slice(0, 60) + '...' : taskKeyInfo.summary}
                         </span>
                       )}
@@ -348,7 +348,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                           onChange={() => setRecipientId(String(c.id))}
                           style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
                         />
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: String(recipientId) === String(c.id) ? 'var(--text)' : 'var(--textMuted)' }}>
+                        <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: String(recipientId) === String(c.id) ? 'var(--text)' : 'var(--textMuted)' }}>
                           {c.name}
                         </span>
                       </label>
@@ -365,14 +365,14 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
                   placeholder="Napišite poruku... (Enter za slanje, Shift+Enter novi red)"
                   rows={3}
-                  style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.5, outline: 'none' }}
+                  style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text)', fontSize: 14, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", resize: 'none', lineHeight: 1.5, outline: 'none' }}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
                 <button
                   type="submit"
                   disabled={!text.trim() || sending}
-                  style={{ background: sending || !text.trim() ? 'var(--surfaceAlt)' : 'var(--accent)', color: sending || !text.trim() ? 'var(--textMuted)' : '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: '0 20px', cursor: !text.trim() || sending ? 'not-allowed' : 'pointer', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, transition: 'all 0.2s ease', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+                  style={{ background: sending || !text.trim() ? 'var(--surfaceAlt)' : 'var(--accent)', color: sending || !text.trim() ? 'var(--textMuted)' : '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: '0 20px', cursor: !text.trim() || sending ? 'not-allowed' : 'pointer', fontSize: 13, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, transition: 'all 0.2s ease', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   {sending ? '...' : '→ Pošalji'}
                 </button>

@@ -93,7 +93,7 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
 
           {/* List */}
           {notifications.length === 0 ? (
-            <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+            <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13 }}>
               Nema novih poruka
             </div>
           ) : (
@@ -118,7 +118,7 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
                     🔗 {n.task_key}
                   </span>
                 )}
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: 'var(--text)', fontWeight: 600 }}>{n.sender_name}: </span>
                   {n.text.length > 60 ? n.text.slice(0, 60) + '...' : n.text}
                 </div>
@@ -130,7 +130,7 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
           <div style={{ padding: '10px 16px' }}>
             <button
               onClick={() => { onMarkAllRead(); setOpen(false) }}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+              style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
             >
               Označi sve kao pročitano
             </button>

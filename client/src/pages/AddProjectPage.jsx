@@ -84,7 +84,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
 
       <button
         onClick={onCancel}
-        style={{ position: 'absolute', top: 20, left: 20, zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: 'pointer', transition: 'all 0.2s ease' }}
+        style={{ position: 'absolute', top: 20, left: 20, zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, cursor: 'pointer', transition: 'all 0.2s ease' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
       >
@@ -95,7 +95,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
         {/* Header */}
         <div style={{ padding: '28px 32px 0' }}>
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 4 }}>Dodaj projekat</h1>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, marginBottom: 20 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, marginBottom: 20 }}>
             Izaberite način filtriranja taskova
           </p>
 
@@ -107,7 +107,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
                 onClick={() => setTab(t.id)}
                 style={{
                   padding: '10px 20px',
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: tab === t.id ? 600 : 400,
                   fontSize: 14,
                   color: tab === t.id ? 'var(--accent)' : 'var(--textMuted)',
@@ -153,7 +153,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
           )}
 
           {error && (
-            <div style={{ marginBottom: 16, padding: '10px 14px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 8, color: 'var(--red)', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ marginBottom: 16, padding: '10px 14px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 8, color: 'var(--red)', fontSize: 13, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
               {error}
             </div>
           )}
@@ -161,7 +161,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
           <button
             type="submit"
             disabled={loading}
-            style={{ width: '100%', background: 'var(--accent)', color: '#fff', borderRadius: 8, padding: '11px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', border: 'none', opacity: loading ? 0.7 : 1, transition: 'all 0.2s ease' }}
+            style={{ width: '100%', background: 'var(--accent)', color: '#fff', borderRadius: 8, padding: '11px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', border: 'none', opacity: loading ? 0.7 : 1, transition: 'all 0.2s ease' }}
           >
             {loading ? 'Dodajem...' : 'Dodaj projekat'}
           </button>
@@ -205,7 +205,7 @@ function JqlTab({ jql, setJql, name, setName, onTest, testLoading, testResult, t
             type="button"
             onClick={onTest}
             disabled={testLoading || !jql.trim()}
-            style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: testLoading || !jql.trim() ? 'not-allowed' : 'pointer', opacity: !jql.trim() ? 0.5 : 1, transition: 'all 0.2s ease' }}
+            style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: testLoading || !jql.trim() ? 'not-allowed' : 'pointer', opacity: !jql.trim() ? 0.5 : 1, transition: 'all 0.2s ease' }}
           >
             {testLoading ? 'Testiram...' : '▶ Test upita'}
           </button>
@@ -264,7 +264,7 @@ function CombinedTab({ epicKey, setEpicKey, fixVersion, setFixVersion, clientSco
                 type="button"
                 onClick={onTest}
                 disabled={testLoading}
-                style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: testLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}
+                style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: testLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}
               >
                 {testLoading ? 'Testiram...' : '▶ Test upita'}
               </button>
@@ -285,7 +285,7 @@ function CombinedTab({ epicKey, setEpicKey, fixVersion, setFixVersion, clientSco
 function TestResult({ result, error }) {
   if (error) {
     return (
-      <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
         {error}
       </div>
     )
@@ -299,7 +299,7 @@ function TestResult({ result, error }) {
       {result.preview.map(p => (
         <div key={p.key} style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 3 }}>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', flexShrink: 0 }}>{p.key}</span>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.summary}</span>
+          <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.summary}</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', flexShrink: 0 }}>{p.status}</span>
         </div>
       ))}
@@ -335,7 +335,7 @@ const inputStyle = {
   padding: '10px 14px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   transition: 'border-color 0.2s',
   boxSizing: 'border-box',
 }

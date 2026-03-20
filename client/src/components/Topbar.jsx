@@ -121,7 +121,7 @@ export default function Topbar({ user, theme, onOpenSettings, onLogout, onOpenUs
                     width: '100%',
                     textAlign: 'left',
                     padding: '12px 16px',
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     fontSize: 14,
                     color: item.red ? 'var(--red)' : 'var(--text)',
                     transition: 'background 0.15s',

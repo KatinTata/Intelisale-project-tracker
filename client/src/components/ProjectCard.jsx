@@ -66,13 +66,13 @@ function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
       gap: 12,
       flexWrap: 'wrap',
     }}>
-      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', flexShrink: 0 }}>
+      <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', flexShrink: 0 }}>
         Promene od poslednjeg osvežavanja{previousTime ? ` (pre ${fmtLastRefresh(previousTime)})` : ''}:
       </span>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
         {changes.map((c, i) => (
           <span key={i} style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
             fontSize: 13,
             fontWeight: 600,
             color: c.color,
@@ -123,7 +123,7 @@ export default function ProjectCard({
 
   if (loading) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
         <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
         Učitavam podatke iz Jire...
       </div>
@@ -134,8 +134,8 @@ export default function ProjectCard({
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
         <div style={{ fontSize: 32, marginBottom: 16 }}>❌</div>
-        <div style={{ color: 'var(--red)', fontFamily: "'DM Sans', sans-serif", marginBottom: 8 }}>{error}</div>
-        <button onClick={onArchive} style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+        <div style={{ color: 'var(--red)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", marginBottom: 8 }}>{error}</div>
+        <button onClick={onArchive} style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13 }}>
           Ukloni projekat
         </button>
       </div>
@@ -144,7 +144,7 @@ export default function ProjectCard({
 
   if (!data) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
         Nema podataka
       </div>
     )
@@ -205,15 +205,15 @@ export default function ProjectCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                 <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 20, color: 'var(--green)' }}>{Math.round(donePct * 100)}%</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>završeno</span>
+                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>završeno</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                 <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 20, color: 'var(--amber)' }}>{Math.round(testingPct * 100)}%</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>testing</span>
+                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>testing</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                 <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 20, color: 'var(--accent)' }}>{Math.round(inprogPct * 100)}%</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>in progress</span>
+                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>in progress</span>
               </div>
             </div>
 
@@ -234,7 +234,7 @@ export default function ProjectCard({
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>{s.label}</span>
+                  <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>{s.label}</span>
                   <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: s.color }}>{s.count}</span>
                 </div>
               ))}
@@ -264,7 +264,7 @@ export default function ProjectCard({
                 border: 'none',
                 borderRadius: 8,
                 padding: '6px 14px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: refreshing || loading ? 'not-allowed' : 'pointer',

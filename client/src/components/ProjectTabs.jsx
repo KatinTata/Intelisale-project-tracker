@@ -48,7 +48,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '8px 14px', borderRadius: 20, border: 'none',
                   background: 'var(--accent)', color: '#fff',
-                  fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14,
+                  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 14,
                   cursor: 'pointer', minHeight: 44,
                   boxShadow: '0 2px 12px rgba(79,142,247,0.35)', maxWidth: '100%',
                 }}
@@ -94,7 +94,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                                 border: active ? 'none' : '1px solid var(--border)',
                                 background: active ? 'var(--accent)' : 'transparent',
                                 color: active ? '#fff' : 'var(--text)',
-                                fontFamily: "'DM Sans', sans-serif",
+                                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                                 fontWeight: active ? 600 : 400, fontSize: 14,
                                 cursor: 'pointer', minHeight: 44, textAlign: 'left',
                                 boxShadow: active ? '0 2px 8px rgba(79,142,247,0.25)' : 'none',
@@ -133,14 +133,14 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                               background: 'var(--redTint)', border: '1px solid #EF444430',
                               borderRadius: 8,
                             }}>
-                              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
+                              <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
                                 Arhivirati projekat?
                               </div>
                               <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer' }}>
+                                <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer' }}>
                                   Otkaži
                                 </button>
-                                <button onClick={() => handleArchiveConfirm(p.id)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+                                <button onClick={() => handleArchiveConfirm(p.id)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
                                   Arhiviraj
                                 </button>
                               </div>
@@ -155,7 +155,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                       style={{
                         padding: '8px 12px', borderRadius: 8, border: 'none',
                         background: 'transparent', color: 'var(--textMuted)',
-                        fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+                        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12,
                         cursor: 'pointer', textAlign: 'left', marginTop: 4,
                         borderTop: '1px solid var(--border)', paddingTop: 10,
                       }}
@@ -248,7 +248,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                     position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
                     transform: 'translateX(-50%)',
                     background: 'var(--text)', color: 'var(--bg)',
-                    fontSize: 12, fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     padding: '5px 10px', borderRadius: 6,
                     whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
                   }}>
@@ -274,14 +274,14 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
             <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 6 }}>
               Arhivirati projekat?
             </div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)', marginBottom: 20 }}>
+            <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', marginBottom: 20 }}>
               Projekat će biti premešten u arhivu. Sve metrike i istorija ostaju sačuvani. Možete ga vratiti u bilo kom trenutku.
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, cursor: 'pointer' }}>
                 Otkaži
               </button>
-              <button onClick={() => handleArchiveConfirm(confirmId)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={() => handleArchiveConfirm(confirmId)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
                 Arhiviraj
               </button>
             </div>
@@ -308,7 +308,7 @@ function ProjectPill({ project, active, dot, onSelect, onArchive, confirmId, set
           border: active ? 'none' : `1px solid ${hover ? 'var(--borderHover)' : 'var(--border)'}`,
           background: active ? 'var(--accent)' : hover ? 'var(--surfaceAlt)' : 'transparent',
           color: active ? '#fff' : 'var(--text)',
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
           fontWeight: active ? 600 : 500, fontSize: 14,
           whiteSpace: 'nowrap', transition: 'all 0.2s ease',
           boxShadow: active ? '0 2px 12px rgba(79,142,247,0.35)' : 'none',

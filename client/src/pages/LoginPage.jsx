@@ -57,7 +57,7 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
             Project Hub
           </h1>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
             Prijavite se na vaš nalog
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
               borderRadius: 8,
               color: 'var(--red)',
               fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
             }}>{error}</div>
           )}
 
@@ -112,7 +112,7 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
               color: '#fff',
               borderRadius: 8,
               padding: '11px',
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
               fontWeight: 600,
               fontSize: 15,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -148,6 +148,6 @@ const inputStyle = {
   padding: '10px 14px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   transition: 'border-color 0.2s',
 }

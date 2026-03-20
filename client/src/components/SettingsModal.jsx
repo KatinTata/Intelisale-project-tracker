@@ -132,7 +132,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                   style={{
                     flex: 1,
                     padding: '12px 8px',
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     fontSize: 13,
                     color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
                     borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
@@ -177,7 +177,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                     textAlign: 'left',
                     padding: '9px 12px',
                     borderRadius: 8,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     fontSize: 14,
                     color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
                     background: tab === t.key ? 'rgba(79,142,247,0.1)' : 'transparent',
@@ -240,7 +240,7 @@ function SettingsContent({
         border: '1px solid var(--border)',
         borderRadius: 10,
       }}>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', marginBottom: 10 }}>
+        <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', marginBottom: 10 }}>
           Odaberite temu aplikacije
         </div>
         <div style={{
@@ -265,7 +265,7 @@ function SettingsContent({
                 border: 'none',
                 background: theme === opt.value ? 'var(--accent)' : 'transparent',
                 color: theme === opt.value ? '#fff' : 'var(--textMuted)',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontSize: 13,
                 fontWeight: theme === opt.value ? 600 : 400,
                 cursor: 'pointer',
@@ -311,7 +311,7 @@ function SettingsContent({
       <div style={{ marginBottom: 16 }}>
         <label style={fieldLabel}>API TOKEN</label>
         <input type="password" value={jiraToken} onChange={e => setJiraToken(e.target.value)} placeholder="••••••••••••" style={inputStyle} />
-        <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ fontSize: 11, color: 'var(--textMuted)', marginTop: 4, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
           Token se čuva enkriptovan. Ostavite prazno da ne menjate.
         </div>
       </div>
@@ -341,7 +341,7 @@ function SettingsContent({
       <h3 style={{ ...sectionTitle, color: 'var(--red)' }}>Opasna zona</h3>
       <div style={{ background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 10, padding: '16px 20px' }}>
         <div style={{ fontFamily: 'Syne', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Obriši nalog</div>
-        <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
           Ova akcija je nepovratna. Svi projekti i podaci će biti trajno obrisani.
         </div>
         {!deleteConfirm ? (
@@ -350,7 +350,7 @@ function SettingsContent({
           </button>
         ) : (
           <div>
-            <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
               Da li si siguran? Ova akcija se ne može poništiti.
             </div>
             <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -387,7 +387,7 @@ const fieldLabel = {
 }
 
 const fieldValue = {
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   fontSize: 14,
   color: 'var(--text)',
   padding: '8px 12px',
@@ -404,14 +404,14 @@ const inputStyle = {
   padding: '9px 12px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
 }
 
 const msgStyle = {
   padding: '8px 12px',
   borderRadius: 6,
   fontSize: 13,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   border: '1px solid transparent',
   marginBottom: 8,
 }
@@ -421,7 +421,7 @@ const btnPrimary = {
   color: '#fff',
   borderRadius: 8,
   padding: '10px 18px',
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
@@ -434,7 +434,7 @@ const btnSecondary = {
   color: 'var(--text)',
   borderRadius: 8,
   padding: '10px 18px',
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   fontSize: 14,
   cursor: 'pointer',
   border: '1px solid var(--border)',
@@ -446,7 +446,7 @@ const btnDanger = {
   color: '#fff',
   borderRadius: 8,
   padding: '10px 18px',
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   fontWeight: 600,
   fontSize: 14,
   cursor: 'pointer',
