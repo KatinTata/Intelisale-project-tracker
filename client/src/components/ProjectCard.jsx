@@ -71,11 +71,26 @@ function computeChanges(data, previousData) {
   return changes
 }
 
-function ChangesFeed({ data, previousData, previousTime, jiraUrl, onClose }) {
-  const [dismissed, setDismissed] = useState(false)
-  if (dismissed) return null
-  const changes = computeChanges(data, previousData)
-  if (changes.length === 0) return null
+function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
+  const storageKey = `task_changes_${projectId}`
+
+  const [stored, setStored] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey)) } catch { return null }
+  })
+
+  // When a refresh happens (previousTime changes), compute new changes and persist them
+  useEffect(() => {
+    if (!previousData?.tasks) return
+    const changes = computeChanges(data, previousData)
+    if (changes.length === 0) return
+    const entry = { changes, time: previousTime || Date.now() }
+    localStorage.setItem(storageKey, JSON.stringify(entry))
+    setStored(entry)
+  }, [previousTime])
+
+  const changes = stored?.changes
+  const time = stored?.time
+  if (!changes?.length) return null
 
   return (
     <div style={{
@@ -96,15 +111,11 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, onClose }) {
         <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
           📊 {changes.length} {changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja
         </span>
-        {previousTime && (
+        {time && (
           <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
-            pre {fmtLastRefresh(previousTime)}
+            {fmtLastRefresh(time)}
           </span>
         )}
-        <button
-          onClick={() => { setDismissed(true); onClose?.() }}
-          style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: '50%', border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-        >×</button>
       </div>
 
       {/* Change rows */}
@@ -372,6 +383,7 @@ export default function ProjectCard({
           previousData={previousData}
           previousTime={previousTime}
           jiraUrl={jiraUrl}
+          projectId={project.id}
         />
       )}
 
