@@ -50,7 +50,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
-      background: 'rgba(0,0,0,0.6)',
+      background: 'rgba(0,0,0,0.82)',
       display: 'flex',
       alignItems: isMobile ? 'flex-end' : 'center',
       justifyContent: 'center',

@@ -102,7 +102,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)',
       display: 'flex',
       alignItems: isMobile ? 'flex-end' : 'center',
       justifyContent: 'center',

@@ -92,7 +92,7 @@ export default function UserManagementModal({ projects, onClose }) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0,0,0,0.6)',
+      background: 'rgba(0,0,0,0.82)',
       zIndex: 1000,
       display: 'flex',
       alignItems: 'center',

@@ -7,7 +7,7 @@ export default function ClientNotificationModal({ notifications, onClose, onOpen
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0,0,0,0.6)',
+      background: 'rgba(0,0,0,0.82)',
       zIndex: 500,
       display: 'flex',
       alignItems: 'center',

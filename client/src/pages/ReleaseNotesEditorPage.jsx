@@ -1,304 +1,561 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
-import { categorizeIssue, generateMarkdown, generateStyledHtml } from '../utils/releaseNotesGenerator.js'
 import Topbar from '../components/Topbar.jsx'
 
+// ── Pure helpers ───────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+async function aiEnhance(action, content) {
+  const jt = localStorage.getItem('jt_token')
+  const res = await fetch('/api/release-notes/ai-enhance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
+    body: JSON.stringify({ action, content }),
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const d = await res.json()
+  if (d.error) throw new Error(d.error)
+  return d.result || ''
+}
+
+function statusCat(task) {
+  const s = task.fields?.status?.name || ''
+  if (['Resolved', 'Done', 'Closed'].includes(s)) return 'resolved'
+  if (['In Progress', 'Development', 'Review'].includes(s)) return 'inprog'
+  if (['For Testing', 'TESTING STARTED', 'On Hold - Testing'].includes(s)) return 'testing'
+  return 'other'
+}
+
+function statusBadgeStyle(cat) {
+  const m = {
+    resolved: { background: 'var(--greenTint)', color: 'var(--green)', border: '1px solid rgba(34,197,94,0.3)' },
+    inprog:   { background: 'rgba(79,142,247,0.12)', color: 'var(--accent)', border: '1px solid rgba(79,142,247,0.3)' },
+    testing:  { background: 'var(--amberTint)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,0.3)' },
+    other:    { background: 'var(--surfaceAlt)', color: 'var(--textMuted)', border: '1px solid var(--border)' },
+  }
+  return m[cat] || m.other
+}
+
+function statusLabel(task) {
+  return task.fields?.status?.name || '—'
+}
+
+function buildHelpUrl(key, jiraUrl) {
+  if (!key || !jiraUrl) return null
+  return 'https://' + jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') + '/browse/' + key
+}
+
+function todayStr() {
+  return new Date().toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const PREFIX_ORDER = ['ECOM', 'DB', 'DEVOPS', 'SRC']
+const GROUP_CONFIG = {
+  ECOM:   { label: 'Funkcionalnosti i UI',   icon: '🎨', color: '#4F8EF7' },
+  DB:     { label: 'Backend & Baza',          icon: '🗄️', color: '#A855F7' },
+  DEVOPS: { label: 'DevOps & Infrastruktura', icon: '⚙️', color: '#F59E0B' },
+  SRC:    { label: 'Support & Ostalo',        icon: '🛠️', color: '#22C55E' },
+}
+const KEY_COLORS = {
+  ECOM:   { bg: 'rgba(79,142,247,0.15)',  color: '#4F8EF7', border: 'rgba(79,142,247,0.35)'  },
+  DB:     { bg: 'rgba(168,85,247,0.15)',  color: '#A855F7', border: 'rgba(168,85,247,0.35)'  },
+  DEVOPS: { bg: 'rgba(245,158,11,0.15)',  color: '#F59E0B', border: 'rgba(245,158,11,0.35)'  },
+  SRC:    { bg: 'rgba(34,197,94,0.15)',   color: '#22C55E', border: 'rgba(34,197,94,0.35)'   },
+  OTHER:  { bg: 'rgba(107,122,153,0.15)', color: '#8B99B5', border: 'rgba(107,122,153,0.35)' },
+}
+
+function getHelpLinks(task) {
+  return (task.fields?.issuelinks || []).filter(l =>
+    (l.outwardIssue?.key || l.inwardIssue?.key || l.key || '').startsWith('HELP')
+  ).map(l => ({
+    key: l.outwardIssue?.key || l.inwardIssue?.key || l.key,
+    summary: l.outwardIssue?.fields?.summary || l.inwardIssue?.fields?.summary || l.summary || '',
+    status: l.outwardIssue?.fields?.status?.name || l.inwardIssue?.fields?.status?.name || l.status || '',
+  }))
+}
+
+function generatePublishHtml(selectedTasks, taskEdits, config, meta) {
+  const dateStr = esc(meta.date || todayStr())
+  const title = esc(`${meta.clientName || 'Release Notes'} ${config.version || ''}`.trim())
+  const jiraBase = meta.jiraUrl ? 'https://' + meta.jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') : null
+
+  const groups = {}
+  for (const task of selectedTasks) {
+    const prefix = (task.key || '').split('-')[0].toUpperCase()
+    if (!groups[prefix]) groups[prefix] = []
+    groups[prefix].push(task)
+  }
+  const groupOrder = [
+    ...PREFIX_ORDER.filter(p => groups[p]?.length),
+    ...Object.keys(groups).filter(p => !PREFIX_ORDER.includes(p) && groups[p]?.length),
+  ]
+
+  const sectionsHtml = groupOrder.map(prefix => {
+    const cfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+    const keyC = KEY_COLORS[prefix] || KEY_COLORS.OTHER
+    const cardsHtml = groups[prefix].map((task, idx) => {
+      const edit = taskEdits[task.id] || {}
+      const key = esc(task.key || '')
+      const name = esc(edit.name || task.fields?.summary || task.summary || '')
+      const desc = (edit.description || '').trim()
+      const cardId = `c-${prefix}-${idx}`
+      const hasDesc = !!desc
+      const images = edit.images || []
+      const helpLinks = getHelpLinks(task)
+      const hasExpand = hasDesc || images.length > 0
+
+      const imagesHtml = images.map(img => `
+        <div style="margin-top:12px">
+          <img src="${img.base64}" alt="${esc(img.desc || '')}" style="max-width:100%;max-height:400px;border-radius:8px;display:block">
+          ${img.desc ? `<div style="font-size:12px;color:#6B7A99;margin-top:6px;font-family:'DM Sans',sans-serif;line-height:1.5">${esc(img.desc)}</div>` : ''}
+        </div>`).join('')
+
+      const helpHtml = helpLinks.map(link => {
+        const url = jiraBase ? `${jiraBase}/browse/${esc(link.key)}` : null
+        const isDone = ['Done', 'Closed', 'Resolved'].includes(link.status)
+        const stBg  = isDone ? 'rgba(34,197,94,0.12)'  : 'rgba(79,142,247,0.12)'
+        const stCol = isDone ? '#22C55E' : '#4F8EF7'
+        const stBor = isDone ? 'rgba(34,197,94,0.3)'   : 'rgba(79,142,247,0.3)'
+        return `<div class="help-link-row">
+          <span>🔗</span>
+          <span class="key-badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)">${esc(link.key)}</span>
+          ${link.summary ? `<span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6B7A99;flex:1">${esc(link.summary)}</span>` : ''}
+          ${link.status ? `<span class="key-badge" style="background:${stBg};color:${stCol};border:1px solid ${stBor}">${esc(link.status)}</span>` : ''}
+          ${url ? `<a class="help-open" href="${url}" target="_blank" rel="noopener noreferrer">↗ Otvori</a>` : ''}
+        </div>`
+      }).join('')
+
+      return `<div class="task-card" id="${cardId}">
+        <div class="task-row">
+          <span class="key-badge" style="background:${keyC.bg};color:${keyC.color};border:1px solid ${keyC.border}">${key}</span>
+          <span class="task-summary">${name}</span>
+          ${hasExpand ? `<button class="expand-btn" onclick="toggle('${cardId}')" title="Prikaži/sakrij detalje">▾</button>` : ''}
+        </div>
+        ${hasExpand ? `<div class="task-desc" id="${cardId}-d">
+          <div class="task-desc-inner">
+            ${desc ? esc(desc).replace(/\n/g, '<br>') : ''}
+            ${imagesHtml}
+          </div>
+        </div>` : ''}
+        ${helpHtml}
+      </div>`
+    }).join('')
+
+    return `<section class="group">
+      <div class="section-hdr" style="border-bottom-color:${cfg.color}28">
+        <span class="sec-icon">${cfg.icon}</span>
+        <span class="sec-label" style="color:${cfg.color}">${cfg.label}</span>
+        <span class="sec-count" style="background:${cfg.color}18;color:${cfg.color};border:1px solid ${cfg.color}33">${groups[prefix].length}</span>
+      </div>
+      <div class="task-list">${cardsHtml}</div>
+    </section>`
+  }).join('')
+
+  return `<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0A0C10;--surface:#111318;--border:#1E2433;--border2:#2D3550;--text:#E8EBF2;--muted:#6B7A99;--subtle:#3D4A66;--accent:#4F8EF7}
+    body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+    .pbar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:10px 28px;gap:12px}
+    .pbar-left{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)}
+    .pbtn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:opacity 0.2s}
+    .pbtn:hover{opacity:0.85}
+    .wrap{max-width:860px;margin:0 auto;padding:84px 28px 80px}
+    .doc-hdr{margin-bottom:48px}
+    .doc-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+    .brand{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:10px}
+    .doc-title{font-family:'Syne',sans-serif;font-weight:800;font-size:40px;color:var(--text);line-height:1.1;letter-spacing:-0.02em}
+    .meta-col{display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:4px}
+    .badge-accent{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:5px 12px;border-radius:6px;background:rgba(79,142,247,0.1);color:var(--accent);border:1px solid rgba(79,142,247,0.25)}
+    .badge-green{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:5px 12px;border-radius:6px;background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.25)}
+    .doc-date,.doc-client{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+    .divider{height:2px;margin-top:24px;background:linear-gradient(90deg,var(--accent) 0%,transparent 70%);border-radius:2px;opacity:0.35}
+    .groups{display:flex;flex-direction:column;gap:44px}
+    .section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid}
+    .sec-icon{font-size:20px;line-height:1}
+    .sec-label{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}
+    .sec-count{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;margin-left:2px}
+    .task-list{display:flex;flex-direction:column;gap:8px}
+    .task-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 16px;transition:border-color 0.2s;break-inside:avoid}
+    .task-card.open{border-color:var(--border2)}
+    .task-row{display:flex;align-items:center;gap:12px}
+    .key-badge{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;flex-shrink:0;letter-spacing:0.04em;white-space:nowrap}
+    .task-summary{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);flex:1;line-height:1.4}
+    .expand-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:17px;padding:0 2px;flex-shrink:0;transition:transform 0.25s ease,color 0.2s;display:flex;align-items:center;line-height:1}
+    .expand-btn:hover{color:var(--text)}
+    .expand-btn.open{transform:rotate(180deg);color:var(--accent)}
+    .task-desc{max-height:0;overflow:hidden;transition:max-height 0.32s cubic-bezier(0.4,0,0.2,1)}
+    .task-desc.open{max-height:3000px}
+    .task-desc-inner{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);line-height:1.75}
+    .help-link-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+    .help-open{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid rgba(79,142,247,0.3);border-radius:6px;white-space:nowrap;flex-shrink:0}
+    .help-open:hover{background:rgba(79,142,247,0.1)}
+    .footer{margin-top:72px;padding-top:22px;border-top:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--subtle);letter-spacing:0.1em;text-transform:uppercase}
+    @media print{
+      .pbar{display:none !important}
+      .wrap{padding:0 28px 40px}
+      body{background:#fff;color:#111}
+      :root{--bg:#fff;--surface:#f8f9fc;--border:#e2e6f0;--border2:#c8cfdf;--text:#0F1523;--muted:#5A6480;--subtle:#A0AABF;--accent:#2563EB}
+      .task-desc{max-height:none !important;overflow:visible !important}
+      .expand-btn{display:none !important}
+    }
+  </style>
+</head>
+<body>
+  <div class="pbar">
+    <span class="pbar-left">${esc(meta.clientName || 'Intelisale')}${config.version ? ' · ' + esc(config.version) : ''} Release Notes</span>
+    <button class="pbtn" onclick="window.print()">↓ Export PDF</button>
+  </div>
+  <div class="wrap">
+    <div class="doc-hdr">
+      <div class="doc-hdr-top">
+        <div>
+          <div class="brand">INTELISALE</div>
+          <div class="doc-title">Release Notes</div>
+        </div>
+        <div class="meta-col">
+          ${meta.productName ? `<span class="badge-accent">${esc(meta.productName)}</span>` : ''}
+          ${config.version ? `<span class="badge-green">${esc(config.version)}</span>` : ''}
+          <span class="doc-date">${dateStr}</span>
+          ${meta.clientName ? `<span class="doc-client">${esc(meta.clientName)}</span>` : ''}
+        </div>
+      </div>
+      <div class="divider"></div>
+    </div>
+    <div class="groups">
+      ${sectionsHtml || '<p style="color:var(--muted);font-family:DM Sans,sans-serif;text-align:center;padding:40px 0">Nema taskova.</p>'}
+    </div>
+    <div class="footer">INTELISALE · Empowering Sales Excellence · www.intelisale.com</div>
+  </div>
+  <script>
+    function toggle(id){var card=document.getElementById(id),desc=document.getElementById(id+'-d'),btn=card?card.querySelector('.expand-btn'):null;if(!desc)return;var open=desc.classList.contains('open');desc.classList.toggle('open',!open);if(btn)btn.classList.toggle('open',!open);if(card)card.classList.toggle('open',!open)}
+  </script>
+</body>
+</html>`
+}
+
+// ── SVG Icons ─────────────────────────────────────────────────────────────────
+
+function IconSparkle() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ display: 'block', flexShrink: 0 }}>
+      <path d="M6 1L7.2 4.8L11 6L7.2 7.2L6 11L4.8 7.2L1 6L4.8 4.8L6 1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IconGlobe() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ display: 'block', flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M6 1C4.5 2.8 4 4.2 4 6s.5 3.2 2 5M6 1c1.5 1.8 2 3.2 2 5s-.5 3.2-2 5M1 6h10" stroke="currentColor" strokeWidth="1.2"/>
+    </svg>
+  )
+}
+
+function IconLink() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ display: 'block', flexShrink: 0 }}>
+      <path d="M5 7L7 5M3.5 8.5L2.2 9.8a2 2 0 0 1-2.83-2.83L.87 5.47A2 2 0 0 1 3.5 5M8.5 3.5l1.3-1.3a2 2 0 0 1 2.83 2.83l-.5.5A2 2 0 0 1 8.5 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+
 export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
+  // wizard
+  const [wizardStep, setWizardStep] = useState(1)
+  const [maxStep, setMaxStep] = useState(1)
+
+  // data
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [tasks, setTasks] = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
-  const [config, setConfig] = useState({ clientName: '', version: '', language: 'sr', showKeys: true })
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [markdown, setMarkdown] = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiAvailable, setAiAvailable] = useState(false)
   const [taskError, setTaskError] = useState(null)
-  const [expandedTaskId, setExpandedTaskId] = useState(null)
-  const [taskDetail, setTaskDetail] = useState({})
-  const [generatingAll, setGeneratingAll] = useState(false)
-  const [publishState, setPublishState] = useState(null)
-  const [publishModal, setPublishModal] = useState(null)
-  const [editModal, setEditModal] = useState(null)
+
+  // config (step 1)
+  const [config, setConfig] = useState({ clientName: '', version: '' })
   const [customJql, setCustomJql] = useState('')
   const [fetchTrigger, setFetchTrigger] = useState(0)
 
+  // step 1 selection
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedIds, setSelectedIds] = useState(new Set())
+
+  // step 2 editing
+  const [taskEdits, setTaskEdits] = useState({})
+  const [taskJiraDetails, setTaskJiraDetails] = useState({}) // { [id]: { description, loading, error } }
+  const [aiPreviews, setAiPreviews] = useState({}) // { [taskId]: string } — pending AI suggestion
+  const [expandedId, setExpandedId] = useState(null)
+  const [aiLoadingIds, setAiLoadingIds] = useState(new Set())
+  const [aiCooldownIds, setAiCooldownIds] = useState(new Set())
+  const [bulkProgress, setBulkProgress] = useState(null)
+
+  // step 3
+  const [previewTitle, setPreviewTitle] = useState('')
+  const [previewDate, setPreviewDate] = useState('')
+
+  // publish
+  const [publishModal, setPublishModal] = useState(null)
+  const [publishState, setPublishState] = useState(null)
+
+  // toast
+  const [toast, setToast] = useState(null)
+
   useEffect(() => {
     api.getProjects().then(setProjects).catch(() => {})
-    setAiAvailable(!!user?.hasAnthropicKey)
   }, [])
 
   useEffect(() => {
     if (!selectedProject) { setTasks([]); setTaskError(null); return }
     setLoadingTasks(true)
     setTaskError(null)
+    setSelectedIds(new Set())
     const token = localStorage.getItem('jt_token')
     fetch('/api/release-notes/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        projectId: selectedProject.id,
-        ...(customJql.trim() ? { customJql: customJql.trim() } : {}),
-      }),
+      body: JSON.stringify({ projectId: selectedProject.id, ...(customJql.trim() ? { customJql: customJql.trim() } : {}) }),
     })
       .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`); return d })
-      .then(data => {
-        setTasks((data.tasks || []).map(t => ({ ...t, included: true, category: categorizeIssue(t) })))
-        setTaskDetail({})
-      })
+      .then(data => setTasks(data.tasks || []))
       .catch(err => { setTaskError(err.message); setTasks([]) })
       .finally(() => setLoadingTasks(false))
   }, [selectedProject, fetchTrigger])
 
-  useEffect(() => {
-    const selected = tasks.filter(t => t.included)
-    setMarkdown(selected.length ? generateMarkdown(selected, config) : '')
-  }, [tasks, config])
-
-  const includedTasks = tasks.filter(t => t.included)
-  const html = includedTasks.length ? generateStyledHtml(includedTasks, config, {
-    clientName: config.clientName,
-    version: config.version,
-    productName: selectedProject?.displayName || selectedProject?.epicKey || '',
-    origin: window.location.origin,
-    jiraUrl: user?.jiraUrl || '',
-  }) : ''
-
-  function toggleTask(taskId) {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, included: !t.included } : t))
+  function showToast(message) {
+    setToast({ message })
+    setTimeout(() => setToast(null), 3500)
   }
 
-  function toggleExpand(task) {
-    setExpandedTaskId(prev => prev === task.id ? null : task.id)
+  function setConfigField(key, val) { setConfig(prev => ({ ...prev, [key]: val })) }
+
+  function toggleSelected(taskId) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(taskId) ? n.delete(taskId) : n.add(taskId); return n })
   }
 
-  async function loadTaskDetail(task) {
-    const id = task.id
-    if (taskDetail[id]) return
-    setTaskDetail(prev => ({ ...prev, [id]: { loading: true } }))
-    const jt = localStorage.getItem('jt_token')
+  function goToStep(n) {
+    if (n > maxStep) return
+    setWizardStep(n)
+  }
+
+  function goToStep2() {
+    if (selectedIds.size === 0) return
+    setTaskEdits(prev => {
+      const edits = { ...prev }
+      for (const task of tasks) {
+        if (selectedIds.has(task.id) && !edits[task.id]) {
+          edits[task.id] = { name: task.fields?.summary || task.summary || '', description: '', images: [] }
+        }
+      }
+      return edits
+    })
+    setExpandedId(null)
+    setWizardStep(2)
+    setMaxStep(s => Math.max(s, 2))
+    // Background-fetch Jira details for all selected tasks so descriptions are ready
+    setTimeout(() => {
+      for (const task of tasks.filter(t => selectedIds.has(t.id))) {
+        fetchAndSetDetail(task)
+      }
+    }, 0)
+  }
+
+  function goToStep3() {
+    setPreviewTitle(`${config.clientName || ''} ${config.version || ''}`.trim() || selectedProject?.displayName || selectedProject?.epicKey || 'Release Notes')
+    setPreviewDate(todayStr())
+    setWizardStep(3)
+    setMaxStep(s => Math.max(s, 3))
+  }
+
+  function removeFromSelection(taskId) {
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
+  }
+
+  function updateEdit(taskId, key, value) {
+    setTaskEdits(prev => ({ ...prev, [taskId]: { ...prev[taskId], [key]: value } }))
+  }
+
+  // Fetch Jira detail for a task, pre-fill description if empty
+  async function fetchAndSetDetail(task) {
+    if (taskJiraDetails[task.id]?.description !== undefined || taskJiraDetails[task.id]?.loading) return
+    setTaskJiraDetails(prev => ({ ...prev, [task.id]: { loading: true } }))
     try {
+      const jt = localStorage.getItem('jt_token')
       const res = await fetch('/api/release-notes/task-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-        body: JSON.stringify({ taskKey: task.key, projectId: selectedProject.id }),
+        body: JSON.stringify({ taskKey: task.key, projectId: selectedProject?.id }),
       })
       const d = await res.json()
-      if (!res.ok) throw new Error(d.error)
-      setTaskDetail(prev => ({ ...prev, [id]: d }))
-    } catch (err) {
-      setTaskDetail(prev => ({ ...prev, [id]: { loading: false, error: err.message } }))
-    }
-  }
-
-  async function generateDescription(task) {
-    const id = task.id
-    let detail = taskDetail[id]
-    if (!detail || detail.error) {
-      setTaskDetail(prev => ({ ...prev, [id]: { loading: true } }))
-      const jt = localStorage.getItem('jt_token')
-      try {
-        const res = await fetch('/api/release-notes/task-detail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-          body: JSON.stringify({ taskKey: task.key, projectId: selectedProject.id }),
-        })
-        detail = await res.json()
-        setTaskDetail(prev => ({ ...prev, [id]: detail }))
-      } catch (err) {
-        setTaskDetail(prev => ({ ...prev, [id]: { loading: false, error: err.message } }))
-        return
-      }
-    }
-    setTaskDetail(prev => ({ ...prev, [id]: { ...detail, generating: true } }))
-    const parts = [`Naziv taska: ${detail.summary || task.fields?.summary || ''}`]
-    if (detail.description) parts.push(`Opis: ${detail.description}`)
-    if (detail.comments?.length) parts.push(`Komentari:\n${detail.comments.map(c => `- ${c.author}: ${c.text}`).join('\n')}`)
-    const jt = localStorage.getItem('jt_token')
-    try {
-      const res = await fetch('/api/release-notes/ai-enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-        body: JSON.stringify({ action: 'generate_description', content: parts.join('\n\n') }),
-      })
-      const data = await res.json()
-      if (data.result) {
-        setTaskDetail(prev => ({ ...prev, [id]: { ...prev[id], generatedDesc: data.result, generating: false } }))
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, description: data.result } : t))
-      } else {
-        setTaskDetail(prev => ({ ...prev, [id]: { ...prev[id], generating: false } }))
-      }
-    } catch {
-      setTaskDetail(prev => ({ ...prev, [id]: { ...prev[id], generating: false } }))
-    }
-  }
-
-  function clearDescription(taskId) {
-    setTaskDetail(prev => ({ ...prev, [taskId]: { ...prev[taskId], generatedDesc: null } }))
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, description: null } : t))
-  }
-
-  function openEditModal(task) {
-    setEditModal({
-      taskId: task.id,
-      taskKey: task.key,
-      projectId: selectedProject?.id,
-      name: task.fields?.summary || task.summary || '',
-      description: task.description || '',
-    })
-  }
-
-  function saveEditModal(name, description) {
-    if (!editModal) return
-    const { taskId } = editModal
-    setTasks(prev => prev.map(t => t.id !== taskId ? t : {
-      ...t, description, fields: { ...t.fields, summary: name }, summary: name,
-    }))
-    setEditModal(null)
-  }
-
-  async function generateForModal(setAiResult, setGenerating) {
-    if (!editModal) return
-    const task = tasks.find(t => t.id === editModal.taskId)
-    if (!task) return
-    setGenerating(true)
-    const jt = localStorage.getItem('jt_token')
-    let detail = taskDetail[editModal.taskId]
-    if (!detail || detail.error) {
-      try {
-        const res = await fetch('/api/release-notes/task-detail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-          body: JSON.stringify({ taskKey: editModal.taskKey, projectId: editModal.projectId }),
-        })
-        detail = await res.json()
-        setTaskDetail(prev => ({ ...prev, [editModal.taskId]: detail }))
-      } catch { setGenerating(false); return }
-    }
-    const parts = [`Naziv taska: ${detail.summary || task.fields?.summary || ''}`]
-    if (detail.description) parts.push(`Opis: ${detail.description}`)
-    if (detail.comments?.length) parts.push(`Komentari:\n${detail.comments.map(c => `- ${c.author}: ${c.text}`).join('\n')}`)
-    try {
-      const res = await fetch('/api/release-notes/ai-enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-        body: JSON.stringify({ action: 'generate_description', content: parts.join('\n\n') }),
-      })
-      const data = await res.json()
-      if (data.result) {
-        setAiResult(data.result)
-        setTaskDetail(prev => ({ ...prev, [editModal.taskId]: { ...prev[editModal.taskId], generatedDesc: data.result } }))
-      }
-    } catch { /* ignore */ }
-    setGenerating(false)
-  }
-
-  const filteredTasks = tasks.filter(t => {
-    const matchSearch = !search ||
-      t.key?.toLowerCase().includes(search.toLowerCase()) ||
-      (t.fields?.summary || t.summary || '').toLowerCase().includes(search.toLowerCase())
-    const matchCat = categoryFilter === 'all' || t.category === categoryFilter
-    return matchSearch && matchCat
-  })
-
-  function getCategoryBadgeStyle(category) {
-    const map = {
-      feature:     { background: 'rgba(79,142,247,0.12)', color: 'var(--accent)' },
-      bug:         { background: 'var(--redTint)',        color: 'var(--red)' },
-      improvement: { background: 'var(--greenTint)',      color: 'var(--green)' },
-      technical:   { background: 'var(--surfaceAlt)',     color: 'var(--textMuted)' },
-      other:       { background: 'var(--surfaceAlt)',     color: 'var(--textSubtle)' },
-    }
-    return map[category] || map.other
-  }
-
-  function openInNewTab() {
-    if (!html) return
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
-  }
-
-  async function aiCall(action, content) {
-    const jt = localStorage.getItem('jt_token')
-    const res = await fetch('/api/release-notes/ai-enhance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-      body: JSON.stringify({ action, content }),
-    })
-    return res.json()
-  }
-
-  async function handleTranslate() {
-    const included = tasks.filter(t => t.included)
-    if (!included.length || aiLoading) return
-    setAiLoading(true)
-    try {
-      const updated = [...tasks]
-      for (const task of included) {
-        const content = [
-          `Summary: ${task.fields?.summary || task.summary || ''}`,
-          task.description ? `Description: ${task.description}` : '',
-        ].filter(Boolean).join('\n')
-        const data = await aiCall('translate_en', content)
-        if (data.result) {
-          const lines = data.result.split('\n')
-          const summaryLine = lines.find(l => l.startsWith('Summary:'))
-          const descLine = lines.findIndex(l => l.startsWith('Description:'))
-          const translatedSummary = summaryLine ? summaryLine.replace(/^Summary:\s*/, '') : null
-          const translatedDesc = descLine >= 0 ? lines.slice(descLine).join('\n').replace(/^Description:\s*/, '') : null
-          const idx = updated.findIndex(t => t.id === task.id)
-          if (idx >= 0) {
-            updated[idx] = {
-              ...updated[idx],
-              ...(translatedSummary ? { fields: { ...updated[idx].fields, summary: translatedSummary } } : {}),
-              ...(translatedDesc ? { description: translatedDesc } : {}),
-            }
-          }
+      setTaskJiraDetails(prev => ({ ...prev, [task.id]: d }))
+      // Pre-fill description if still empty
+      setTaskEdits(prev => {
+        const current = prev[task.id]
+        if (current && !current.description && d.description) {
+          return { ...prev, [task.id]: { ...current, description: d.description } }
         }
+        return prev
+      })
+    } catch {
+      setTaskJiraDetails(prev => ({ ...prev, [task.id]: { error: true } }))
+    }
+  }
+
+  function handleExpandTask(taskId) {
+    const isOpening = expandedId !== taskId
+    setExpandedId(isOpening ? taskId : null)
+    if (isOpening) {
+      const task = tasks.find(t => t.id === taskId)
+      if (task) fetchAndSetDetail(task)
+    }
+  }
+
+  async function generateTaskDesc(taskId, { applyDirectly = false } = {}) {
+    const edit = taskEdits[taskId]
+    if (!edit) return
+    const jiraDetail = taskJiraDetails[taskId]
+    setAiLoadingIds(prev => new Set([...prev, taskId]))
+    try {
+      const jiraDesc = jiraDetail?.description || ''
+      const content = `Naziv taska: ${edit.name}${jiraDesc ? `\n\nOriginalni Jira opis:\n${jiraDesc}` : ''}`
+      const result = await aiEnhance('generate_description', content)
+      if (applyDirectly) {
+        updateEdit(taskId, 'description', result)
+      } else {
+        setAiPreviews(prev => ({ ...prev, [taskId]: result }))
       }
-      setTasks(updated)
-      setConfigField('language', 'en')
-    } finally { setAiLoading(false) }
+    } catch (e) {
+      showToast('AI generisanje nije uspelo, pokušaj ponovo')
+    } finally {
+      setAiLoadingIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
+      setAiCooldownIds(prev => new Set([...prev, taskId]))
+      setTimeout(() => setAiCooldownIds(prev => { const n = new Set(prev); n.delete(taskId); return n }), 3000)
+    }
+  }
+
+  async function translateTask(taskId) {
+    const edit = taskEdits[taskId]
+    if (!edit) return
+    setAiLoadingIds(prev => new Set([...prev, taskId]))
+    try {
+      const images = edit.images || []
+      const parts = [`Summary: ${edit.name}`]
+      if (edit.description) parts.push(`Description: ${edit.description}`)
+      images.forEach((img, i) => { if (img.desc) parts.push(`Image${i + 1}: ${img.desc}`) })
+      const result = await aiEnhance('translate_en', parts.join('\n'))
+
+      const lines = result.split('\n')
+      const get = (prefix) => {
+        const line = lines.find(l => l.toLowerCase().startsWith(prefix.toLowerCase() + ':'))
+        return line ? line.slice(prefix.length + 1).trim() : null
+      }
+      const newName = get('Summary')
+      const newDesc = get('Description')
+      const newImageDescs = images.map((_, i) => get(`Image${i + 1}`))
+
+      setTaskEdits(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          ...(newName ? { name: newName } : {}),
+          ...(newDesc ? { description: newDesc } : {}),
+          images: prev[taskId].images.map((img, i) =>
+            newImageDescs[i] ? { ...img, desc: newImageDescs[i] } : img
+          ),
+        },
+      }))
+    } catch {
+      showToast('AI prevod nije uspeo, pokušaj ponovo')
+    } finally {
+      setAiLoadingIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
+      setAiCooldownIds(prev => new Set([...prev, taskId]))
+      setTimeout(() => setAiCooldownIds(prev => { const n = new Set(prev); n.delete(taskId); return n }), 3000)
+    }
   }
 
   async function generateAllDescriptions() {
-    if (generatingAll) return
-    const included = tasks.filter(t => t.included)
-    if (!included.length) return
-    setGeneratingAll(true)
-    for (const task of included) {
-      let detail = taskDetail[task.id]
-      if (!detail || detail.loading) {
-        const jt = localStorage.getItem('jt_token')
-        try {
-          const res = await fetch('/api/release-notes/task-detail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
-            body: JSON.stringify({ taskKey: task.key, projectId: selectedProject.id }),
-          })
-          detail = await res.json()
-          setTaskDetail(prev => ({ ...prev, [task.id]: detail }))
-        } catch { continue }
+    if (bulkProgress) return
+    const sel = tasks.filter(t => selectedIds.has(t.id))
+    for (let i = 0; i < sel.length; i++) {
+      setBulkProgress({ current: i + 1, total: sel.length, action: 'Generišem' })
+      const task = sel[i]
+      if (!taskJiraDetails[task.id]?.description && !taskJiraDetails[task.id]?.error) {
+        await fetchAndSetDetail(task)
       }
-      const parts = [`Naziv taska: ${detail.summary || task.fields?.summary || ''}`]
-      if (detail.description) parts.push(`Opis: ${detail.description}`)
-      if (detail.comments?.length) parts.push(`Komentari:\n${detail.comments.map(c => `- ${c.author}: ${c.text}`).join('\n')}`)
-      try {
-        const data = await aiCall('generate_description', parts.join('\n\n'))
-        if (data.result) setTasks(prev => prev.map(t => t.id === task.id ? { ...t, description: data.result } : t))
-      } catch { /* skip */ }
+      await generateTaskDesc(task.id, { applyDirectly: true })
     }
-    setGeneratingAll(false)
+    setBulkProgress(null)
   }
 
-  async function handlePublish() {
-    if (!html) {
-      setPublishState({ error: 'Nema sadržaja za objavljivanje. Izaberi projekat i uključi taskove.' })
-      return null
+  async function translateAll() {
+    if (bulkProgress) return
+    const sel = tasks.filter(t => selectedIds.has(t.id))
+    for (let i = 0; i < sel.length; i++) {
+      setBulkProgress({ current: i + 1, total: sel.length, action: 'Prevodim' })
+      await translateTask(sel[i].id)
     }
+    setBulkProgress(null)
+  }
+
+  function handleImageUpload(taskId, files) {
+    for (const file of Array.from(files)) {
+      if (file.size > 5 * 1024 * 1024) { showToast('Slika je prevelika (max 5MB)'); continue }
+      const reader = new FileReader()
+      reader.onload = e => {
+        setTaskEdits(prev => ({
+          ...prev,
+          [taskId]: { ...prev[taskId], images: [...(prev[taskId]?.images || []), { base64: e.target.result, mimeType: file.type, desc: '' }] },
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  function removeImage(taskId, idx) {
+    setTaskEdits(prev => ({ ...prev, [taskId]: { ...prev[taskId], images: prev[taskId].images.filter((_, i) => i !== idx) } }))
+  }
+
+  function updateImageDesc(taskId, idx, desc) {
+    setTaskEdits(prev => ({
+      ...prev,
+      [taskId]: { ...prev[taskId], images: prev[taskId].images.map((img, i) => i === idx ? { ...img, desc } : img) },
+    }))
+  }
+
+  async function openPublishModal() {
+    try {
+      const usersData = await api.getUsers().catch(() => [])
+      const clientUsers = (Array.isArray(usersData) ? usersData : []).filter(u => u.role === 'client')
+      setPublishModal({ clientUsers })
+    } catch (err) {
+      showToast(err.message)
+    }
+  }
+
+  async function handlePublish(selectedClientIds) {
+    const selectedTasks = tasks.filter(t => selectedIds.has(t.id))
+    const html = generatePublishHtml(selectedTasks, taskEdits, config, {
+      clientName: config.clientName,
+      version: config.version,
+      productName: selectedProject?.displayName || selectedProject?.epicKey || '',
+      jiraUrl: user?.jiraUrl || '',
+      date: previewDate || todayStr(),
+    })
     setPublishState({ loading: true })
     const jt = localStorage.getItem('jt_token')
     try {
@@ -307,287 +564,661 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jt}` },
         body: JSON.stringify({
           html,
-          title: `${config.clientName || ''} ${config.version || ''}`.trim(),
+          title: previewTitle || `${config.clientName || ''} ${config.version || ''}`.trim(),
           version: config.version || null,
           projectId: selectedProject?.id || null,
         }),
       })
       const ct = res.headers.get('content-type') || ''
-      if (!ct.includes('application/json')) {
-        setPublishState({ error: `Server greška ${res.status}` })
-        return null
-      }
+      if (!ct.includes('application/json')) { setPublishState({ error: `Server greška ${res.status}` }); return }
       const data = await res.json()
       if (data.token) {
-        setPublishState({ url: `${window.location.origin}/rn/${data.token}`, updated: data.updated })
-        return data
+        if (data.id && selectedClientIds.length > 0) {
+          await api.setReleaseNoteClients(data.id, selectedClientIds).catch(() => {})
+        }
+        setPublishState(null)
+        onGoToReleaseNotes()
       } else {
         setPublishState({ error: data.error || 'Server nije vratio token.' })
-        return null
       }
     } catch (err) {
       setPublishState({ error: err.message })
-      return null
     }
   }
 
-  function setConfigField(key, value) {
-    setConfig(prev => ({ ...prev, [key]: value }))
+  const hasAiKey = true // key stored server-side per user
+
+  // ── Step 1 ─────────────────────────────────────────────────────────────────
+
+  const filteredTasks = tasks.filter(t => {
+    const matchSearch = !search ||
+      (t.key || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.fields?.summary || t.summary || '').toLowerCase().includes(search.toLowerCase())
+    const matchFilter = statusFilter === 'all' || statusCat(t) === statusFilter
+    return matchSearch && matchFilter
+  })
+
+  const countByStatus = {
+    all: tasks.length,
+    resolved: tasks.filter(t => statusCat(t) === 'resolved').length,
+    inprog: tasks.filter(t => statusCat(t) === 'inprog').length,
+    testing: tasks.filter(t => statusCat(t) === 'testing').length,
   }
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
-
-  return (
-    <div className="page-in" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-
-      <Topbar
-        user={user}
-        theme={theme}
-        currentPage="releaseNotesEditor"
-        onLogout={onLogout}
-        onGoToDashboard={onGoToDashboard}
-        onGoToReleaseNotes={onGoToReleaseNotes}
-        onOpenSettings={onOpenSettings}
-        onOpenChat={onOpenChat}
-      />
-
-      <div style={{ padding: '20px 28px' }}>
-
-        {/* Config bar */}
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 12, padding: '16px 20px', marginBottom: 20,
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 12 }}>
-
-            <div>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Projekat</label>
-              <select
-                value={selectedProject?.id || ''}
-                onChange={e => setSelectedProject(projects.find(p => p.id == e.target.value) || null)}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14 }}
-              >
-                <option value="">Izaberi projekat...</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.displayName || p.epicKey}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Naziv klijenta</label>
-              <input value={config.clientName} onChange={e => setConfigField('clientName', e.target.value)} placeholder="npr. Knjaz Miloš"
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box' }} />
-            </div>
-
-            <div>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Verzija</label>
-              <input value={config.version} onChange={e => setConfigField('version', e.target.value)} placeholder="npr. v2.4.1"
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box' }} />
-            </div>
-
+  const renderStep1 = () => (
+    <div>
+      {/* Config bar */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={labelStyle}>Projekat</label>
+            <select value={selectedProject?.id || ''} onChange={e => setSelectedProject(projects.find(p => p.id == e.target.value) || null)}
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14 }}>
+              <option value="">Izaberi projekat...</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.displayName || p.epicKey}</option>)}
+            </select>
           </div>
-
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Prilagođeni JQL (opciono)</label>
-              <input value={customJql} onChange={e => setCustomJql(e.target.value)} placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Mono', fontSize: 12, boxSizing: 'border-box' }}
-                onKeyDown={e => { if (e.key === 'Enter' && selectedProject) setFetchTrigger(n => n + 1) }} />
-            </div>
-            <button
-              onClick={() => { if (selectedProject) setFetchTrigger(n => n + 1) }}
-              disabled={!selectedProject}
-              style={{
-                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600,
-                background: !selectedProject ? 'var(--surfaceAlt)' : 'var(--accent)',
-                color: !selectedProject ? 'var(--textMuted)' : '#fff',
-                border: 'none', cursor: !selectedProject ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease', whiteSpace: 'nowrap',
-              }}>↻ Primeni JQL</button>
+          <div>
+            <label style={labelStyle}>Naziv klijenta</label>
+            <input value={config.clientName} onChange={e => setConfigField('clientName', e.target.value)} placeholder="npr. Knjaz Miloš"
+              style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Verzija</label>
+            <input value={config.version} onChange={e => setConfigField('version', e.target.value)} placeholder="npr. v2.4.1"
+              style={inputStyle} />
           </div>
         </div>
-
-        {/* Two-column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 16, alignItems: 'start' }}>
-
-          {/* LEFT — tasks */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-              <input placeholder="🔍 Pretraži taskove..." value={search} onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {['all', 'feature', 'bug', 'improvement', 'technical'].map(cat => (
-                  <button key={cat} onClick={() => setCategoryFilter(cat)} style={{
-                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'DM Mono', cursor: 'pointer', transition: 'all 0.2s ease',
-                    border: categoryFilter === cat ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    color: categoryFilter === cat ? 'var(--accent)' : 'var(--textMuted)', background: 'transparent',
-                  }}>{cat === 'all' ? 'Svi' : cat}</button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ maxHeight: 600, overflowY: 'auto' }}>
-              {loadingTasks ? (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Učitavam taskove...</div>
-              ) : taskError ? (
-                <div style={{ padding: 24, margin: 16, borderRadius: 8, background: 'var(--redTint)', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'DM Sans', fontSize: 13 }}>
-                  <strong>Greška:</strong> {taskError}
-                </div>
-              ) : !selectedProject ? (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Izaberi projekat za prikaz taskova</div>
-              ) : filteredTasks.length === 0 ? (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Nema taskova koji odgovaraju filteru</div>
-              ) : filteredTasks.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onToggle={() => toggleTask(task.id)}
-                  onExpand={() => { toggleExpand(task); if (expandedTaskId !== task.id) loadTaskDetail(task) }}
-                  isExpanded={expandedTaskId === task.id}
-                  detail={taskDetail[task.id]}
-                  aiAvailable={aiAvailable}
-                  onGenerate={() => generateDescription(task)}
-                  onClearDesc={() => clearDescription(task.id)}
-                  onEdit={() => openEditModal(task)}
-                  getCategoryBadgeStyle={getCategoryBadgeStyle}
-                />
-              ))}
-            </div>
-
-            {tasks.length > 0 && (
-              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 12, fontFamily: 'DM Mono', color: 'var(--textMuted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Izabrano: {tasks.filter(t => t.included).length} / {tasks.length}</span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setTasks(prev => prev.map(t => ({ ...t, included: true })))}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 11, fontFamily: 'DM Mono', cursor: 'pointer', padding: 0 }}>
-                    Izaberi sve
-                  </button>
-                  <span style={{ color: 'var(--border)' }}>·</span>
-                  <button onClick={() => setTasks(prev => prev.map(t => ({ ...t, included: false })))}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 11, fontFamily: 'DM Mono', cursor: 'pointer', padding: 0 }}>
-                    Poništi
-                  </button>
-                </div>
-              </div>
-            )}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Prilagođeni JQL (opciono)</label>
+            <input value={customJql} onChange={e => setCustomJql(e.target.value)} placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
+              style={{ ...inputStyle, fontFamily: 'DM Mono', fontSize: 12 }}
+              onKeyDown={e => { if (e.key === 'Enter' && selectedProject) setFetchTrigger(n => n + 1) }} />
           </div>
-
-          {/* RIGHT — preview */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {aiAvailable && (
-                <>
-                  <button onClick={generateAllDescriptions} disabled={generatingAll || !tasks.filter(t => t.included).length}
-                    style={{
-                      padding: '8px 14px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans',
-                      background: 'var(--surface)', border: '1px solid var(--border)',
-                      color: generatingAll ? 'var(--textMuted)' : 'var(--text)',
-                      cursor: generatingAll ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
-                      opacity: !tasks.filter(t => t.included).length ? 0.4 : 1,
-                    }}>
-                    {generatingAll ? '⏳ Generišem opise...' : '✨ Generiši opise'}
-                  </button>
-                  <button onClick={handleTranslate} disabled={aiLoading || !tasks.filter(t => t.included).length}
-                    style={{
-                      padding: '8px 14px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans',
-                      background: 'var(--surface)', border: '1px solid var(--border)',
-                      color: aiLoading || !tasks.filter(t => t.included).length ? 'var(--textMuted)' : 'var(--text)',
-                      cursor: aiLoading || !tasks.filter(t => t.included).length ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
-                      opacity: aiLoading || !tasks.filter(t => t.included).length ? 0.4 : 1,
-                    }}>
-                    {aiLoading ? '⏳ Prevodim...' : '🌐 Prevedi na engleski'}
-                  </button>
-                </>
-              )}
-              <button
-                onClick={async () => {
-                  if (!html) {
-                    setPublishState({ error: 'Nema sadržaja za objavljivanje. Izaberi projekat i uključi taskove.' })
-                    return
-                  }
-                  try {
-                    const usersData = await api.getUsers().catch(() => [])
-                    const clientUsers = (Array.isArray(usersData) ? usersData : []).filter(u => u.role === 'client')
-                    setPublishModal({ clientUsers })
-                  } catch (err) {
-                    setPublishState({ error: err.message })
-                  }
-                }}
-                disabled={!html || publishState?.loading}
-                style={{
-                  padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600,
-                  background: !html ? 'var(--surfaceAlt)' : 'var(--accent)',
-                  color: !html ? 'var(--textMuted)' : '#fff',
-                  border: 'none', cursor: !html ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
-                  marginLeft: 'auto',
-                }}>
-                {publishState?.loading ? '⏳ Objavljujem...' : '📤 Publish'}
-              </button>
-            </div>
-
-            {publishState?.error && (
-              <div style={{ padding: '12px 16px', background: 'var(--redTint)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 13, color: 'var(--red)', fontFamily: 'DM Sans', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>⚠️ {publishState.error}</span>
-                <button onClick={() => setPublishState(null)} style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, padding: 0 }}>×</button>
-              </div>
-            )}
-
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Preview</span>
-                {html && (
-                  <button onClick={openInNewTab} style={{
-                    background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px',
-                    fontSize: 12, fontFamily: 'DM Sans', color: 'var(--textMuted)', cursor: 'pointer', transition: 'all 0.2s ease',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}>
-                    ↗ Otvori u novom tabu
-                  </button>
-                )}
-              </div>
-              {html ? (
-                <iframe srcDoc={html} style={{ width: '100%', height: 540, border: 'none', display: 'block', background: '#fff' }} title="Release Notes Preview" />
-              ) : (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontStyle: 'italic', fontFamily: 'DM Sans', fontSize: 14 }}>
-                  Izaberi projekat i taskove za prikaz...
-                </div>
-              )}
-            </div>
-          </div>
+          <button onClick={() => { if (selectedProject) setFetchTrigger(n => n + 1) }} disabled={!selectedProject}
+            style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', cursor: !selectedProject ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', background: !selectedProject ? 'var(--surfaceAlt)' : 'var(--accent)', color: !selectedProject ? 'var(--textMuted)' : '#fff', transition: 'all 0.2s ease' }}>
+            ↻ Primeni
+          </button>
         </div>
       </div>
 
+      {/* Task list */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginRight: 4 }}>
+              Izaberi taskove
+              {tasks.length > 0 && (
+                <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--textMuted)', fontWeight: 400, marginLeft: 8 }}>
+                  {selectedIds.size}/{tasks.length}
+                </span>
+              )}
+            </span>
+            {tasks.length > 0 && (
+              <>
+                <button onClick={() => setSelectedIds(new Set(tasks.map(t => t.id)))} style={pillBtnStyle}>Izaberi sve</button>
+                <button onClick={() => setSelectedIds(new Set())} style={pillBtnStyle}>Poništi sve</button>
+                <button onClick={() => setSelectedIds(new Set(tasks.filter(t => statusCat(t) === 'resolved').map(t => t.id)))} style={pillBtnStyle}>Samo Resolved</button>
+              </>
+            )}
+            <button onClick={goToStep2} disabled={selectedIds.size === 0}
+              style={{ marginLeft: 'auto', padding: '7px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', transition: 'all 0.2s ease', cursor: selectedIds.size === 0 ? 'not-allowed' : 'pointer', background: selectedIds.size === 0 ? 'var(--surfaceAlt)' : 'var(--accent)', color: selectedIds.size === 0 ? 'var(--textMuted)' : '#fff', whiteSpace: 'nowrap' }}>
+              Nastavi → {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+            </button>
+          </div>
+
+          <input placeholder="🔍 Pretraži po imenu ili ključu..." value={search} onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
+
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[
+              { key: 'all', label: `Svi (${countByStatus.all})` },
+              { key: 'resolved', label: `Resolved (${countByStatus.resolved})` },
+              { key: 'inprog', label: `In Progress (${countByStatus.inprog})` },
+              { key: 'testing', label: `For Testing (${countByStatus.testing})` },
+            ].map(f => (
+              <button key={f.key} onClick={() => setStatusFilter(f.key)} style={{
+                padding: '4px 12px', borderRadius: 20, fontSize: 11, fontFamily: 'DM Mono', cursor: 'pointer', transition: 'all 0.2s ease',
+                border: statusFilter === f.key ? '1px solid var(--accent)' : '1px solid var(--border)',
+                color: statusFilter === f.key ? 'var(--accent)' : 'var(--textMuted)', background: 'transparent',
+              }}>{f.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div>
+          {loadingTasks ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Učitavam taskove...</div>
+          ) : taskError ? (
+            <div style={{ padding: 24, margin: 16, borderRadius: 8, background: 'var(--redTint)', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'DM Sans', fontSize: 13 }}>
+              <strong>Greška:</strong> {taskError}
+            </div>
+          ) : !selectedProject ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Izaberi projekat za prikaz taskova</div>
+          ) : filteredTasks.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Nema taskova koji odgovaraju filteru</div>
+          ) : filteredTasks.map(task => (
+            <Step1Row key={task.id} task={task} selected={selectedIds.has(task.id)} onToggle={() => toggleSelected(task.id)} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Step 2 ─────────────────────────────────────────────────────────────────
+
+  const selectedTasks = tasks.filter(t => selectedIds.has(t.id))
+
+  const renderStep2 = () => (
+    <div style={{ paddingBottom: 80 }}>
+      {selectedTasks.length === 0 ? (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans' }}>
+          Nema izabranih taskova.{' '}
+          <button onClick={() => setWizardStep(1)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14 }}>← Nazad</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {selectedTasks.map(task => {
+            const edit = taskEdits[task.id] || {}
+            const isExpanded = expandedId === task.id
+            const isAiLoading = aiLoadingIds.has(task.id)
+            const isAiCooldown = aiCooldownIds.has(task.id)
+            const detail = taskJiraDetails[task.id]
+            const cat = statusCat(task)
+            const badgeStyle = { ...statusBadgeStyle(cat), fontSize: 10, fontFamily: 'DM Mono', padding: '2px 7px', borderRadius: 4, flexShrink: 0 }
+            const helpLinks = getHelpLinks(task)
+
+            return (
+              <div key={task.id} style={{
+                background: 'var(--surface)',
+                border: `1px solid ${isExpanded ? 'var(--borderHover)' : 'var(--border)'}`,
+                borderLeft: `3px solid ${isExpanded ? 'var(--accent)' : 'transparent'}`,
+                borderRadius: 10, overflow: 'hidden', transition: 'all 0.2s ease',
+              }}>
+                {/* Card header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer' }}
+                  onClick={() => handleExpandTask(task.id)}>
+                  <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', flexShrink: 0, minWidth: 70 }}>{task.key}</span>
+                  <input
+                    value={edit.name || ''}
+                    onChange={e => { e.stopPropagation(); updateEdit(task.id, 'name', e.target.value) }}
+                    onClick={e => e.stopPropagation()}
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, minWidth: 0 }}
+                    placeholder="Naziv taska..."
+                  />
+                  <span style={badgeStyle}>{statusLabel(task)}</span>
+                  {helpLinks.length > 0 && (
+                    <span style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--amber)', flexShrink: 0 }} title={helpLinks.map(h => h.key).join(', ')}>
+                      <IconLink /> {helpLinks.length}
+                    </span>
+                  )}
+                  <button onClick={e => { e.stopPropagation(); !isAiLoading && !isAiCooldown && !bulkProgress && generateTaskDesc(task.id) }}
+                    disabled={isAiLoading || isAiCooldown || !!bulkProgress}
+                    title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env' : 'Generiši AI opis'}
+                    style={{ ...iconBtnStyle, color: isAiLoading ? 'var(--textMuted)' : 'var(--accent)', opacity: (!hasAiKey || isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
+                    {isAiLoading ? <span style={{ fontSize: 10, opacity: 0.7 }}>···</span> : <IconSparkle />}
+                  </button>
+                  <button onClick={e => { e.stopPropagation(); !isAiLoading && !isAiCooldown && !bulkProgress && translateTask(task.id) }}
+                    disabled={isAiLoading || isAiCooldown || !!bulkProgress}
+                    title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env' : 'Prevedi na engleski'}
+                    style={{ ...iconBtnStyle, opacity: (!hasAiKey || isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
+                    <IconGlobe />
+                  </button>
+                  <button onClick={e => { e.stopPropagation(); removeFromSelection(task.id) }}
+                    title="Ukloni iz release notes"
+                    style={{ ...iconBtnStyle, color: 'var(--textMuted)' }}>
+                    ×
+                  </button>
+                  <span style={{ color: 'var(--textMuted)', fontSize: 13, flexShrink: 0, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
+                </div>
+
+                {/* Expanded body */}
+                {isExpanded && (
+                  <div style={{ padding: '14px 14px 14px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                    {/* Detail loading indicator */}
+                    {detail?.loading && (
+                      <div style={{ fontSize: 12, fontFamily: 'DM Mono', color: 'var(--textMuted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block', opacity: 0.5 }}>○</span> Učitavam Jira opis...
+                      </div>
+                    )}
+
+                    {/* A: Name */}
+                    <div>
+                      <label style={labelStyle}>Naziv</label>
+                      <input value={edit.name || ''} onChange={e => updateEdit(task.id, 'name', e.target.value)}
+                        style={inputStyle} />
+                    </div>
+
+                    {/* B: Description */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <label style={{ ...labelStyle, margin: 0 }}>Opis</label>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => !isAiLoading && !isAiCooldown && !bulkProgress && generateTaskDesc(task.id)}
+                            disabled={isAiLoading || isAiCooldown || !!bulkProgress}
+                            style={{ ...smallBtnStyle, opacity: (isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
+                            {isAiLoading ? 'Generišem...' : <><IconSparkle /> Generiši opis</>}
+                          </button>
+                          <button
+                            onClick={() => !isAiLoading && !isAiCooldown && !bulkProgress && translateTask(task.id)}
+                            disabled={isAiLoading || isAiCooldown || !!bulkProgress}
+                            style={{ ...smallBtnStyle, opacity: (isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
+                            <><IconGlobe /> Prevedi sve</>
+                          </button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={edit.description || ''}
+                        onChange={e => updateEdit(task.id, 'description', e.target.value)}
+                        placeholder={detail?.loading ? 'Učitavam Jira opis...' : 'Opis funkcionalnosti za klijenta...'}
+                        rows={5}
+                        style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }} />
+
+                      {/* AI preview */}
+                      {aiPreviews[task.id] && (
+                        <div style={{ marginTop: 10, background: 'rgba(79,142,247,0.06)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 8, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(79,142,247,0.15)' }}>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}><IconSparkle /> AI prijedlog</span>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                onClick={() => {
+                                  updateEdit(task.id, 'description', aiPreviews[task.id])
+                                  setAiPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n })
+                                }}
+                                style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                                Primeni
+                              </button>
+                              <button
+                                onClick={() => setAiPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n })}
+                                style={{ padding: '4px 10px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid rgba(79,142,247,0.3)', color: 'var(--textMuted)', cursor: 'pointer' }}>
+                                Odbaci
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ padding: '10px 12px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                            {aiPreviews[task.id]}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* C: Images */}
+                    <div>
+                      <label style={labelStyle}>Slike ({(edit.images || []).length}/5)</label>
+                      {(edit.images || []).length < 5 && (
+                        <div
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => { e.preventDefault(); handleImageUpload(task.id, e.dataTransfer.files) }}
+                          onClick={() => {
+                            const inp = document.createElement('input')
+                            inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true
+                            inp.onchange = ev => handleImageUpload(task.id, ev.target.files)
+                            inp.click()
+                          }}
+                          style={{ border: '2px dashed var(--border)', borderRadius: 8, padding: '16px', textAlign: 'center', cursor: 'pointer', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, marginBottom: (edit.images || []).length ? 10 : 0, transition: 'border-color 0.2s' }}>
+                          Prevuci slike ili klikni za dodavanje (max 5MB)
+                        </div>
+                      )}
+                      {(edit.images || []).length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {(edit.images || []).map((img, imgIdx) => (
+                            <div key={imgIdx} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+                              <div style={{ position: 'relative', flexShrink: 0 }}>
+                                <img src={img.base64} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                                <button onClick={() => removeImage(task.id, imgIdx)}
+                                  style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: '50%', background: 'var(--red)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, lineHeight: '20px', textAlign: 'center', padding: 0, fontWeight: 700 }}>×</button>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ ...labelStyle, marginBottom: 4 }}>Opis slike</label>
+                                <textarea
+                                  value={img.desc}
+                                  onChange={e => updateImageDesc(task.id, imgIdx, e.target.value)}
+                                  placeholder="Šta prikazuje ova slika? Koji je kontekst? (npr. 'Nova stranica za pregled porudžbina sa filterima po statusu')"
+                                  rows={3}
+                                  style={{ width: '100%', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 12, boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5 }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* HELP links — auto from Jira */}
+                    {helpLinks.length > 0 && (
+                      <div>
+                        <label style={labelStyle}>Help desk linkovi (automatski iz Jira)</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {helpLinks.map(link => (
+                            <div key={link.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6 }}>
+                              <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>{link.key}</span>
+                              {link.summary && <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', flex: 1 }}>{link.summary}</span>}
+                              {link.status && <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--textMuted)' }}>{link.status}</span>}
+                              {buildHelpUrl(link.key, user?.jiraUrl) && (
+                                <a href={buildHelpUrl(link.key, user?.jiraUrl)} target="_blank" rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  style={{ fontFamily: 'DM Sans', fontSize: 11, color: 'var(--accent)', textDecoration: 'none', flexShrink: 0 }}>↗</a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Fixed bottom bar */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '12px 28px' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => setWizardStep(1)} style={{ ...smallBtnStyle }}>← Nazad</button>
+          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+          <button
+            onClick={generateAllDescriptions}
+            disabled={!!bulkProgress}
+            title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env za AI funkcionalnosti' : ''}
+            style={{ ...smallBtnStyle, opacity: !hasAiKey ? 0.5 : bulkProgress ? 0.6 : 1 }}>
+            {bulkProgress?.action === 'Generišem' ? `Generišem ${bulkProgress.current}/${bulkProgress.total}...` : <><IconSparkle /> AI opis za sve</>}
+          </button>
+          <button
+            onClick={translateAll}
+            disabled={!!bulkProgress}
+            title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env za AI funkcionalnosti' : ''}
+            style={{ ...smallBtnStyle, opacity: !hasAiKey ? 0.5 : bulkProgress ? 0.6 : 1 }}>
+            {bulkProgress?.action === 'Prevodim' ? `Prevodim ${bulkProgress.current}/${bulkProgress.total}...` : <><IconGlobe /> Prevedi sve</>}
+          </button>
+          <button onClick={goToStep3} style={{ marginLeft: 'auto', padding: '9px 24px', borderRadius: 8, fontSize: 14, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', transition: 'all 0.2s ease' }}>
+            Pregledaj →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Step 3 ─────────────────────────────────────────────────────────────────
+
+  const renderStep3 = () => {
+    const selTasks = tasks.filter(t => selectedIds.has(t.id))
+    const groups = {}
+    for (const task of selTasks) {
+      const prefix = (task.key || '').split('-')[0].toUpperCase()
+      if (!groups[prefix]) groups[prefix] = []
+      groups[prefix].push(task)
+    }
+    const groupOrder = [
+      ...PREFIX_ORDER.filter(p => groups[p]?.length),
+      ...Object.keys(groups).filter(p => !PREFIX_ORDER.includes(p) && groups[p]?.length),
+    ]
+
+    return (
+      <div>
+        <style>{`@media print { [data-no-print] { display: none !important; } .preview-wrap { padding: 0 28px 40px !important; } }`}</style>
+
+        {/* Action bar */}
+        <div data-no-print="1" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <button onClick={() => setWizardStep(2)} style={{ ...smallBtnStyle }}>← Uredi</button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button onClick={() => window.print()} style={smallBtnStyle}>↓ Export PDF</button>
+            <button onClick={openPublishModal} disabled={publishState?.loading}
+              style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: publishState?.loading ? 'wait' : 'pointer' }}>
+              {publishState?.loading ? 'Objavljivanje...' : 'Publish'}
+            </button>
+          </div>
+        </div>
+
+        {publishState?.error && (
+          <div data-no-print="1" style={{ padding: '12px 16px', background: 'var(--redTint)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 13, color: 'var(--red)', fontFamily: 'DM Sans', marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+            <span>⚠️ {publishState.error}</span>
+            <button onClick={() => setPublishState(null)} style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer' }}>×</button>
+          </div>
+        )}
+
+        {/* Editable header fields */}
+        <div data-no-print="1" style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+          <input value={previewTitle} onChange={e => setPreviewTitle(e.target.value)}
+            placeholder="Naslov release notes..."
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box' }} />
+          <input value={previewDate} onChange={e => setPreviewDate(e.target.value)}
+            style={{ width: 220, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Mono', fontSize: 13, boxSizing: 'border-box' }} />
+        </div>
+
+        {/* Preview document */}
+        <div className="preview-wrap" style={{ maxWidth: 860, margin: '0 auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '40px 48px' }}>
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>INTELISALE</div>
+            <div style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 36, color: 'var(--text)', lineHeight: 1.1, marginBottom: 6 }}>Release Notes</div>
+            <div style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--textMuted)', marginBottom: 2 }}>{previewDate}</div>
+            {config.clientName && <div style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--textMuted)' }}>{config.clientName}{config.version ? ` · ${config.version}` : ''}</div>}
+            <div style={{ height: 2, marginTop: 20, background: 'linear-gradient(90deg, var(--accent) 0%, transparent 70%)', borderRadius: 2, opacity: 0.35 }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+            {groupOrder.map(prefix => {
+              const cfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+              const keyC = KEY_COLORS[prefix] || KEY_COLORS.OTHER
+              return (
+                <div key={prefix}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: `2px solid ${cfg.color}28` }}>
+                    <span style={{ fontSize: 20 }}>{cfg.icon}</span>
+                    <span style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: cfg.color }}>{cfg.label}</span>
+                    <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '2px 9px', borderRadius: 20, background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}33` }}>{groups[prefix].length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {groups[prefix].map(task => {
+                      const edit = taskEdits[task.id] || {}
+                      const helpLinks = getHelpLinks(task)
+                      return (
+                        <div key={task.id} style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: (edit.description || (edit.images || []).length || helpLinks.length) ? 10 : 0 }}>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: keyC.bg, color: keyC.color, border: `1px solid ${keyC.border}`, flexShrink: 0 }}>{task.key}</span>
+                            <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{edit.name}</span>
+                          </div>
+                          {edit.description && (
+                            <div style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.75, marginBottom: ((edit.images || []).length || helpLinks.length) ? 10 : 0, whiteSpace: 'pre-wrap' }}>
+                              {edit.description}
+                            </div>
+                          )}
+                          {(edit.images || []).map((img, i) => (
+                            <div key={i} style={{ marginBottom: 8 }}>
+                              <img src={img.base64} alt={img.desc || ''} style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, display: 'block' }} />
+                              {img.desc && <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', marginTop: 6, lineHeight: 1.5 }}>{img.desc}</div>}
+                            </div>
+                          ))}
+                          {helpLinks.map(link => (
+                            <div key={link.key} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                              <span style={{ color: 'var(--amber)', display: 'flex', alignItems: 'center' }}><IconLink /></span>
+                              <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>{link.key}</span>
+                              {link.summary && <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', flex: 1 }}>{link.summary}</span>}
+                              {buildHelpUrl(link.key, user?.jiraUrl) && (
+                                <a href={buildHelpUrl(link.key, user?.jiraUrl)} target="_blank" rel="noopener noreferrer"
+                                  style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', padding: '3px 8px', border: '1px solid rgba(79,142,247,0.3)', borderRadius: 6 }}>
+                                  ↗ Otvori
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ marginTop: 60, paddingTop: 20, borderTop: '1px solid var(--border)', textAlign: 'center', fontFamily: 'DM Mono', fontSize: 10, color: 'var(--textSubtle)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            INTELISALE · Empowering Sales Excellence · www.intelisale.com
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Return ──────────────────────────────────────────────────────────────────
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      <Topbar
+        user={user} theme={theme} currentPage="releaseNotesEditor"
+        onLogout={onLogout} onGoToDashboard={onGoToDashboard} onGoToReleaseNotes={onGoToReleaseNotes}
+        onOpenSettings={onOpenSettings} onOpenChat={onOpenChat}
+      />
+      <div style={{ padding: '20px 28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          <Stepper step={wizardStep} maxStep={maxStep} onStepClick={goToStep} />
+        </div>
+        {wizardStep === 1 && renderStep1()}
+        {wizardStep === 2 && renderStep2()}
+        {wizardStep === 3 && renderStep3()}
+      </div>
+      {toast && <Toast message={toast.message} onClose={() => setToast(null)} />}
       {publishModal && (
         <PublishModal
           clientUsers={publishModal.clientUsers}
-          onClose={() => setPublishModal(null)}
-          onPublish={async (selectedClientIds) => {
-            setPublishModal(null)
-            const data = await handlePublish()
-            if (!data?.token) return
-            if (data.id && selectedClientIds.length > 0) {
-              await api.setReleaseNoteClients(data.id, selectedClientIds).catch(() => {})
-            }
-            onGoToReleaseNotes()
-          }}
-        />
-      )}
-      {editModal && (
-        <EditModal
-          editModal={editModal}
-          setEditModal={setEditModal}
-          onSave={saveEditModal}
-          onGenerate={aiAvailable ? generateForModal : null}
+          publishState={publishState}
+          onClose={() => { setPublishModal(null); setPublishState(null) }}
+          onPublish={async clientIds => { setPublishModal(null); await handlePublish(clientIds) }}
         />
       )}
     </div>
   )
 }
 
-// ── PublishModal ──────────────────────────────────────────────────────────────
+// ── Shared style objects ───────────────────────────────────────────────────────
 
-function PublishModal({ clientUsers, onClose, onPublish }) {
+const inputStyle = {
+  width: '100%', background: 'var(--bg)', border: '1px solid var(--border)',
+  borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box',
+}
+
+const pillBtnStyle = {
+  background: 'transparent', border: '1px solid var(--border)', borderRadius: 6,
+  color: 'var(--textMuted)', fontSize: 11, fontFamily: 'DM Mono', cursor: 'pointer', padding: '4px 10px',
+  transition: 'all 0.2s ease', whiteSpace: 'nowrap',
+}
+
+const iconBtnStyle = {
+  background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14,
+  padding: '2px 4px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'opacity 0.2s',
+}
+
+const smallBtnStyle = {
+  background: 'transparent', border: '1px solid var(--border)', borderRadius: 8,
+  color: 'var(--text)', fontSize: 12, fontFamily: 'DM Sans', cursor: 'pointer', padding: '6px 14px',
+  transition: 'all 0.2s ease', whiteSpace: 'nowrap',
+}
+
+const labelStyle = {
+  fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase',
+  display: 'block', marginBottom: 6, letterSpacing: '0.05em',
+}
+
+// ── Step1Row ───────────────────────────────────────────────────────────────────
+
+function Step1Row({ task, selected, onToggle }) {
+  const [hovered, setHovered] = useState(false)
+  const cat = statusCat(task)
+  const badgeStyle = statusBadgeStyle(cat)
+
+  return (
+    <div
+      onClick={onToggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '9px 20px',
+        cursor: 'pointer', transition: 'background 0.15s',
+        background: selected ? 'rgba(79,142,247,0.06)' : hovered ? 'var(--surfaceAlt)' : 'transparent',
+        borderLeft: `3px solid ${selected ? 'var(--accent)' : 'transparent'}`,
+        borderBottom: '1px solid var(--border)',
+      }}
+    >
+      <div style={{
+        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+        border: selected ? 'none' : '2px solid var(--border)',
+        background: selected ? 'var(--accent)' : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease',
+      }}>
+        {selected && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
+      </div>
+      <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', flexShrink: 0, minWidth: 80 }}>{task.key}</span>
+      <span style={{ ...badgeStyle, fontSize: 10, fontFamily: 'DM Mono', padding: '2px 7px', borderRadius: 4, flexShrink: 0 }}>
+        {statusLabel(task)}
+      </span>
+      <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {task.fields?.summary || task.summary || ''}
+      </span>
+    </div>
+  )
+}
+
+// ── Stepper ────────────────────────────────────────────────────────────────────
+
+function Stepper({ step, maxStep, onStepClick }) {
+  const steps = [
+    { n: 1, label: 'Selekcija' },
+    { n: 2, label: 'Uređivanje' },
+    { n: 3, label: 'Preview' },
+  ]
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 20px' }}>
+      {steps.map((s, i) => {
+        const isActive = s.n === step
+        const isDone = s.n < step
+        const isClickable = s.n <= maxStep
+        return (
+          <div key={s.n} style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              onClick={() => isClickable && onStepClick(s.n)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: isClickable ? 'pointer' : 'default', padding: '4px 10px', borderRadius: 6, background: isActive ? 'rgba(79,142,247,0.1)' : 'transparent', transition: 'all 0.2s ease' }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontFamily: 'DM Mono', fontWeight: 500, flexShrink: 0,
+                background: isDone ? 'var(--green)' : isActive ? 'var(--accent)' : 'var(--surfaceAlt)',
+                color: isDone || isActive ? '#fff' : 'var(--textMuted)',
+                border: isDone || isActive ? 'none' : '1px solid var(--border)',
+              }}>
+                {isDone ? '✓' : s.n}
+              </div>
+              <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--accent)' : isDone ? 'var(--green)' : 'var(--textMuted)' }}>{s.label}</span>
+            </div>
+            {i < steps.length - 1 && <span style={{ color: 'var(--border)', margin: '0 4px', fontSize: 16, userSelect: 'none' }}>›</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+
+function Toast({ message, onClose }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--surface)', border: '1px solid var(--red)', borderRadius: 8, zIndex: 2000,
+      padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10,
+      fontFamily: 'DM Sans', fontSize: 13, color: 'var(--red)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      whiteSpace: 'nowrap', maxWidth: 'calc(100vw - 40px)',
+    }}>
+      ⚠️ {message}
+      <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, padding: 0, marginLeft: 4 }}>×</button>
+    </div>
+  )
+}
+
+// ── PublishModal ───────────────────────────────────────────────────────────────
+
+function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
   const [selected, setSelected] = useState(new Set())
   const [publishing, setPublishing] = useState(false)
 
@@ -602,10 +1233,10 @@ function PublishModal({ clientUsers, onClose, onPublish }) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 24px 80px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>📤 Objavi Release Notes</span>
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Objavi Release Notes</span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '16px 24px' }}>
@@ -613,19 +1244,12 @@ function PublishModal({ clientUsers, onClose, onPublish }) {
             Izaberi klijente koji će imati pristup ovim release notes-ima.
           </div>
           {clientUsers.length === 0 ? (
-            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-              Nema klijentskih korisnika. Možeš ih dodati u sekciji Korisnici.
-            </div>
+            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>Nema klijentskih korisnika.</div>
           ) : (
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               {clientUsers.map(u => (
                 <div key={u.id} onClick={() => toggle(u.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-                    border: selected.has(u.id) ? 'none' : '2px solid var(--border)',
-                    background: selected.has(u.id) ? 'var(--accent)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease',
-                  }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: selected.has(u.id) ? 'none' : '2px solid var(--border)', background: selected.has(u.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
                     {selected.has(u.id) && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}
                   </div>
                   <div>
@@ -636,207 +1260,18 @@ function PublishModal({ clientUsers, onClose, onPublish }) {
               ))}
             </div>
           )}
+          {publishState?.error && (
+            <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--redTint)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 13, color: 'var(--red)', fontFamily: 'DM Sans' }}>
+              ⚠️ {publishState.error}
+            </div>
+          )}
         </div>
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={onClose} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid var(--border)', color: 'var(--textMuted)', cursor: 'pointer' }}>
             Odustani
           </button>
-          <button onClick={handleConfirm} disabled={publishing} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}>
-            {publishing ? '⏳ Objavljivanje...' : '📤 Objavi'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── TaskRow ───────────────────────────────────────────────────────────────────
-
-function TaskRow({ task, onToggle, onExpand, isExpanded, detail, aiAvailable, onGenerate, onClearDesc, onEdit, getCategoryBadgeStyle }) {
-  const [hovered, setHovered] = useState(false)
-  const summary = task.fields?.summary || task.summary || ''
-  const generating = detail?.generating
-
-  return (
-    <div style={{ borderBottom: '1px solid var(--border)' }}>
-      <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px',
-          background: isExpanded ? 'var(--surfaceAlt)' : task.included && hovered ? 'var(--surfaceAlt)' : task.included ? 'rgba(79,142,247,0.04)' : hovered ? 'var(--surfaceAlt)' : 'transparent',
-          transition: 'background 0.15s',
-        }}
-      >
-        <div onClick={onToggle} style={{
-          width: 18, height: 18, borderRadius: 4, flexShrink: 0, cursor: 'pointer',
-          border: task.included ? 'none' : '2px solid var(--border)',
-          background: task.included ? 'var(--accent)' : 'transparent',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease',
-        }}>
-          {task.included && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
-        </div>
-
-        <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', flexShrink: 0 }}>{task.key}</span>
-        <span style={{ ...getCategoryBadgeStyle(task.category), fontSize: 10, fontFamily: 'DM Mono', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>
-          {task.category}
-        </span>
-
-        <div onClick={onToggle} style={{ flex: 1, minWidth: 0, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {summary}
-        </div>
-
-        {task.description && <span style={{ fontSize: 10, color: 'var(--green)', fontFamily: 'DM Mono', flexShrink: 0 }}>● opis</span>}
-
-        {aiAvailable && (
-          <button onClick={e => { e.stopPropagation(); onGenerate() }} disabled={generating} title={task.description ? 'Regeneriši AI opis' : 'Generiši AI opis'}
-            style={{
-              flexShrink: 0, padding: '3px 8px', borderRadius: 6,
-              border: task.description ? '1px solid var(--green)' : '1px solid var(--border)',
-              background: 'transparent',
-              color: generating ? 'var(--textMuted)' : task.description ? 'var(--green)' : 'var(--textMuted)',
-              cursor: generating ? 'not-allowed' : 'pointer', fontSize: 12, fontFamily: 'DM Mono', transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => { if (!generating) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' } }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = task.description ? 'var(--green)' : 'var(--border)'; e.currentTarget.style.color = generating ? 'var(--textMuted)' : task.description ? 'var(--green)' : 'var(--textMuted)' }}>
-            {generating ? '⏳' : '✨'}
-          </button>
-        )}
-
-        <button onClick={e => { e.stopPropagation(); onEdit() }} title="Uredi naziv i opis"
-          style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}>
-          ✏️
-        </button>
-
-        <button onClick={onExpand} title={isExpanded ? 'Zatvori' : 'Otvori detalje'}
-          style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border)', background: isExpanded ? 'var(--accent)' : 'transparent', color: isExpanded ? '#fff' : 'var(--textMuted)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
-          {isExpanded ? '▲' : '▼'}
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div style={{ padding: '12px 16px 16px 44px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
-          {detail?.loading ? (
-            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13 }}>Učitavam detalje...</div>
-          ) : detail?.error ? (
-            <div style={{ color: 'var(--red)', fontFamily: 'DM Sans', fontSize: 13 }}>Greška: {detail.error}</div>
-          ) : detail ? (
-            <>
-              {detail.description && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 4 }}>Jira opis</div>
-                  <div style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{detail.description}</div>
-                </div>
-              )}
-              {detail.comments?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', marginBottom: 6 }}>Komentari ({detail.comments.length})</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {detail.comments.map((c, i) => (
-                      <div key={i} style={{ padding: '8px 10px', background: 'var(--surface)', borderRadius: 6, border: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--accent)', marginBottom: 3 }}>{c.author}</div>
-                        <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{c.text}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!detail.description && !detail.comments?.length && (
-                <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, marginBottom: 12 }}>Nema opisa ni komentara.</div>
-              )}
-              {task.description && (
-                <div style={{ padding: '10px 12px', background: 'var(--greenTint)', border: '1px solid var(--green)', borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--green)', marginBottom: 4 }}>GENERISANI OPIS</div>
-                  <div style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{task.description}</div>
-                  <button onClick={onClearDesc} style={{ marginTop: 8, fontSize: 11, fontFamily: 'DM Mono', color: 'var(--red)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>✕ Ukloni opis</button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13 }}>Klikni ▼ da učitaš detalje.</div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── EditModal ─────────────────────────────────────────────────────────────────
-
-function EditModal({ editModal, setEditModal, onSave, onGenerate }) {
-  const [name, setName] = useState(editModal.name)
-  const [description, setDescription] = useState(editModal.description)
-  const [aiResult, setAiResult] = useState('')
-  const [generating, setGenerating] = useState(false)
-
-  return (
-    <div onClick={() => setEditModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, width: '100%', maxWidth: 860, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.4)' }}>
-
-        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', flex: 1 }}>✏️ Uredi task</span>
-          <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--accent)' }}>{editModal.taskKey}</span>
-          <button onClick={() => setEditModal(null)} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}>×</button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <div style={{ padding: 24, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
-            <div style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Podaci za Release Notes</div>
-            <div>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', display: 'block', marginBottom: 5 }}>NAZIV TASKA</label>
-              <input value={name} onChange={e => setName(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
-                onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }} />
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <label style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', display: 'block', marginBottom: 5 }}>OPIS</label>
-              <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Opis koji će se prikazati u release notes dokumentu..."
-                style={{ flex: 1, minHeight: 200, width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, lineHeight: 1.65, boxSizing: 'border-box', resize: 'none', outline: 'none' }}
-                onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }} />
-              {description && (
-                <button onClick={() => setDescription('')} style={{ alignSelf: 'flex-start', marginTop: 6, fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>✕ Obriši opis</button>
-              )}
-            </div>
-          </div>
-
-          <div style={{ padding: 24, background: 'var(--bg)', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI generisanje</span>
-              {onGenerate && (
-                <button onClick={() => onGenerate(setAiResult, setGenerating)} disabled={generating}
-                  style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontFamily: 'DM Sans', fontWeight: 600, background: generating ? 'var(--surfaceAlt)' : 'var(--accent)', color: generating ? 'var(--textMuted)' : '#fff', border: 'none', cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}>
-                  {generating ? '⏳ Generišem...' : aiResult ? '🔄 Regeneriši' : '✨ Generiši'}
-                </button>
-              )}
-            </div>
-            <div style={{ flex: 1, minHeight: 200, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', fontFamily: 'DM Sans', fontSize: 13, lineHeight: 1.65, whiteSpace: 'pre-wrap', color: generating ? 'var(--textMuted)' : aiResult ? 'var(--text)' : 'var(--textSubtle)', fontStyle: aiResult ? 'normal' : 'italic' }}>
-              {generating ? 'Generišem opis...' : aiResult || (onGenerate ? 'Klikni "✨ Generiši" da AI kreira opis na osnovu Jira detalja i komentara.' : 'AI nije dostupno — podesi Anthropic API ključ u podešavanjima.')}
-            </div>
-            {aiResult && !generating && (
-              <button onClick={() => setDescription(aiResult)}
-                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent)' }}>
-                ← Preuzmi u opis
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10, background: 'var(--surface)' }}>
-          <button onClick={() => setEditModal(null)}
-            style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid var(--border)', color: 'var(--textMuted)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}>
-            Odustani
-          </button>
-          <button onClick={() => onSave(name, description)}
-            style={{ padding: '8px 28px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-            Sačuvaj
+          <button onClick={handleConfirm} disabled={publishing || publishState?.loading} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}>
+            {publishing || publishState?.loading ? 'Objavljivanje...' : 'Objavi'}
           </button>
         </div>
       </div>
