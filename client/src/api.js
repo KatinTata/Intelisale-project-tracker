@@ -75,10 +75,12 @@ export const api = {
   markAllRead: () => request('PUT', '/messages/read-all'),
   getProjectClients: (projectId) => request('GET', `/messages/${projectId}/clients`),
   getTaskInfo: (key) => request('GET', `/jira/task-info/${key}`),
+  getChangelog: (key) => request('GET', `/jira/changelog/${key}`),
 
   // Users (admin only)
   getUsers: () => request('GET', '/users'),
   createUser: (body) => request('POST', '/users', body),
+  updateUser: (id, body) => request('PUT', `/users/${id}`, body),
   deleteUser: (id) => request('DELETE', `/users/${id}`),
   getUserProjects: (id) => request('GET', `/users/${id}/projects`),
   assignProject: (userId, projectId) => request('POST', `/users/${userId}/projects`, { projectId }),

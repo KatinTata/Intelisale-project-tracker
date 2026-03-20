@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { api } from '../api.js'
 import MetricCards from './MetricCards.jsx'
 import DonutChart from './DonutChart.jsx'
 import BarChart from './BarChart.jsx'
@@ -71,26 +72,56 @@ function computeChanges(data, previousData) {
   return changes
 }
 
+function findAuthor(changelog, reporter, changeType) {
+  const fieldMap = { status: 'status', est: 'timeoriginalestimate', spent: 'timespent' }
+  if (changeType === 'new') return reporter
+  const field = fieldMap[changeType]
+  if (!field) return null
+  const entry = changelog.find(h => h.items.some(i => i.field === field))
+  return entry?.author || null
+}
+
 function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
   const storageKey = `task_changes_${projectId}`
 
   const [stored, setStored] = useState(() => {
     try { return JSON.parse(localStorage.getItem(storageKey)) } catch { return null }
   })
+  const [authorMap, setAuthorMap] = useState({}) // key -> author string
+  const fetchedRef = useRef(null)
 
   // When a refresh happens (previousTime changes), compute new changes and persist them
   useEffect(() => {
     if (!previousData?.tasks) return
     const changes = computeChanges(data, previousData)
-    if (changes.length === 0) return
     const entry = { changes, time: previousTime || Date.now() }
     localStorage.setItem(storageKey, JSON.stringify(entry))
     setStored(entry)
+    setAuthorMap({})
+    fetchedRef.current = null
   }, [previousTime])
 
-  const changes = stored?.changes
-  const time = stored?.time
-  if (!changes?.length) return null
+  // Fetch authors for changed tasks (admin only, non-blocking)
+  useEffect(() => {
+    if (!stored?.changes?.length) return
+    const cacheKey = stored.time
+    if (fetchedRef.current === cacheKey) return
+    fetchedRef.current = cacheKey
+
+    stored.changes.forEach(async (c) => {
+      try {
+        const { changelog, reporter } = await api.getChangelog(c.key)
+        const author = findAuthor(changelog, reporter, c.type)
+        if (author) setAuthorMap(prev => ({ ...prev, [c.key + c.type]: author }))
+      } catch {}
+    })
+  }, [stored])
+
+  // Never refreshed yet — don't show anything
+  if (!stored) return null
+
+  const changes = stored.changes
+  const time = stored.time
 
   return (
     <div style={{
@@ -106,10 +137,10 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
         gap: 10,
         padding: '12px 16px',
         background: 'var(--surfaceAlt)',
-        borderBottom: '1px solid var(--border)',
+        borderBottom: changes.length > 0 ? '1px solid var(--border)' : 'none',
       }}>
         <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
-          📊 {changes.length} {changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja
+          {changes.length === 0 ? '✓ Nema novih promena' : `📊 ${changes.length} ${changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja`}
         </span>
         {time && (
           <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
@@ -123,6 +154,7 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
         {changes.map((c, i) => {
           const link = jiraLink(jiraUrl, c.key)
           const color = changeColor(c.type, c.to)
+          const author = authorMap[c.key + c.type]
           return (
             <div key={i} style={{
               display: 'flex',
@@ -147,7 +179,12 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
               <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                 {c.summary}
               </span>
-              <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 600, color, flexShrink: 0, marginLeft: 'auto' }}>
+              {author && (
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)', flexShrink: 0, background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px' }}>
+                  {author}
+                </span>
+              )}
+              <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 600, color, flexShrink: 0 }}>
                 {c.type === 'new'    && 'Novi task'}
                 {c.type === 'status' && <>{c.from} <span style={{ color: 'var(--textSubtle)' }}>→</span> {c.to}</>}
                 {c.type === 'est'    && <>{fmtHours(c.from)} <span style={{ color: 'var(--textSubtle)' }}>→</span> {fmtHours(c.to)}</>}
@@ -338,6 +375,17 @@ export default function ProjectCard({
       {/* Metric cards */}
       <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} isClient={isClient} />
 
+      {/* Changes feed — admin only, below metrics */}
+      {!isClient && (
+        <ChangesFeed
+          data={data}
+          previousData={previousData}
+          previousTime={previousTime}
+          jiraUrl={jiraUrl}
+          projectId={project.id}
+        />
+      )}
+
       {/* Charts row */}
       <div style={{
         display: 'grid',
@@ -375,17 +423,6 @@ export default function ProjectCard({
           </div>
         )}
       </div>
-
-      {/* Changes feed — admin only, below charts */}
-      {!isClient && (
-        <ChangesFeed
-          data={data}
-          previousData={previousData}
-          previousTime={previousTime}
-          jiraUrl={jiraUrl}
-          projectId={project.id}
-        />
-      )}
 
       {/* Overrun banner — admin only */}
       {!isClient && <OverrunBanner overTasks={overTasks} />}

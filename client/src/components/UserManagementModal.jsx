@@ -42,6 +42,11 @@ export default function UserManagementModal({ projects, onClose }) {
     }
   }
 
+  async function handleEditUser(userId, body) {
+    const { user } = await api.updateUser(userId, body)
+    setUsers(prev => prev.map(u => u.id === userId ? user : u))
+  }
+
   async function handleDeleteUser(userId) {
     if (!confirm('Obrisati ovog korisnika?')) return
     try {
@@ -295,6 +300,7 @@ export default function UserManagementModal({ projects, onClose }) {
                   user={u}
                   adminProjects={projects}
                   onDelete={() => handleDeleteUser(u.id)}
+                  onEdit={(body) => handleEditUser(u.id, body)}
                   onAssign={(projectId) => handleAssignProject(u.id, projectId)}
                   onUnassign={(projectId) => handleUnassignProject(u.id, projectId)}
                 />
@@ -307,12 +313,30 @@ export default function UserManagementModal({ projects, onClose }) {
   )
 }
 
-function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
+function UserRow({ user, adminProjects, onDelete, onEdit, onAssign, onUnassign }) {
   const [selectedProject, setSelectedProject] = useState('')
+  const [editMode, setEditMode] = useState(false)
+  const [editForm, setEditForm] = useState({ name: user.name, email: user.email, role: user.role, password: '' })
+  const [editError, setEditError] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
   const isAdmin = user.role === 'admin'
 
   const assignedIds = new Set(user.projects.map(p => p.id))
   const availableProjects = adminProjects.filter(p => !assignedIds.has(p.id))
+
+  async function handleSaveEdit(e) {
+    e.preventDefault()
+    setEditError('')
+    setEditLoading(true)
+    try {
+      await onEdit(editForm)
+      setEditMode(false)
+    } catch (err) {
+      setEditError(err.message)
+    } finally {
+      setEditLoading(false)
+    }
+  }
 
   return (
     <div style={{
@@ -322,7 +346,7 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
       borderRadius: 10,
     }}>
       {/* User info row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isAdmin ? 0 : 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: editMode ? 14 : (isAdmin ? 0 : 10) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
@@ -347,24 +371,78 @@ function UserRow({ user, adminProjects, onDelete, onAssign, onUnassign }) {
             <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>{user.email}</div>
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          style={{
-            background: 'transparent', color: 'var(--red)',
-            border: '1px solid #EF444430', borderRadius: 6,
-            padding: '4px 10px',
-            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--redTint)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-        >
-          Obriši
-        </button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => { setEditMode(m => !m); setEditError(''); setEditForm({ name: user.name, email: user.email, role: user.role, password: '' }) }}
+            style={{
+              background: editMode ? 'var(--surfaceAlt)' : 'transparent',
+              color: 'var(--textMuted)',
+              border: '1px solid var(--border)', borderRadius: 6,
+              padding: '4px 10px',
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
+          >
+            {editMode ? 'Otkaži' : 'Izmeni'}
+          </button>
+          <button
+            onClick={onDelete}
+            style={{
+              background: 'transparent', color: 'var(--red)',
+              border: '1px solid #EF444430', borderRadius: 6,
+              padding: '4px 10px',
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--redTint)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            Obriši
+          </button>
+        </div>
       </div>
 
+      {/* Edit form */}
+      {editMode && (
+        <form onSubmit={handleSaveEdit} style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginBottom: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 140px 1fr', gap: 10, marginBottom: 10 }}>
+            <div>
+              <label style={labelStyle}>IME</label>
+              <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} required style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+            </div>
+            <div>
+              <label style={labelStyle}>EMAIL</label>
+              <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} required style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+            </div>
+            <div>
+              <label style={labelStyle}>ULOGA</label>
+              <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, cursor: 'pointer' }}>
+                <option value="client">Klijent</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>NOVA LOZINKA</label>
+              <input type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} placeholder="(ne menjati)" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+            </div>
+          </div>
+          {editError && (
+            <div style={{ marginBottom: 10, padding: '7px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>{editError}</div>
+          )}
+          <button
+            type="submit"
+            disabled={editLoading}
+            style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 18px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 13, cursor: editLoading ? 'not-allowed' : 'pointer', opacity: editLoading ? 0.7 : 1 }}
+          >
+            {editLoading ? 'Čuvam...' : 'Sačuvaj izmene'}
+          </button>
+        </form>
+      )}
+
       {/* Admin note */}
-      {isAdmin && (
+      {isAdmin && !editMode && (
         <div style={{ marginTop: 10, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', fontStyle: 'italic' }}>
           Admin korisnik — konfiguriše sopstvene projekte i dodeljuje klijente.
         </div>

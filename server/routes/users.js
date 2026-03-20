@@ -73,9 +73,54 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 })
 
-// DELETE /api/users/:id — delete a client user
+// PUT /api/users/:id — edit user (name, email, role, optional password)
+router.put('/:id', requireAdmin, async (req, res) => {
+  const target = db.prepare('SELECT id, role FROM users WHERE id = ? AND id != ?').get(req.params.id, req.userId)
+  if (!target) return res.status(404).json({ error: 'Korisnik nije pronađen' })
+
+  const { name, email, role, password } = req.body
+  if (!name || !email) return res.status(400).json({ error: 'Ime i email su obavezni' })
+  if (role && !['admin', 'client'].includes(role)) return res.status(400).json({ error: 'Nevalidna uloga' })
+
+  try {
+    const fields = ['name = ?', 'email = ?']
+    const values = [name, email.toLowerCase()]
+
+    if (role && role !== target.role) {
+      fields.push('role = ?')
+      values.push(role)
+      // Copy Jira credentials when promoting to admin
+      if (role === 'admin') {
+        const creator = db.prepare('SELECT jira_url, jira_email, jira_token FROM users WHERE id = ?').get(req.userId)
+        fields.push('jira_url = ?', 'jira_email = ?', 'jira_token = ?')
+        values.push(creator?.jira_url || null, creator?.jira_email || null, creator?.jira_token || null)
+      }
+    }
+
+    if (password?.trim()) {
+      const hash = await bcrypt.hash(password.trim(), 12)
+      fields.push('password = ?')
+      values.push(hash)
+    }
+
+    values.push(req.params.id)
+    db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+
+    const updated = db.prepare('SELECT id, email, name, role, created_at as createdAt FROM users WHERE id = ?').get(req.params.id)
+    const projects = updated.role === 'client'
+      ? db.prepare(`SELECT p.id, p.epic_key as epicKey, p.display_name as displayName FROM project_clients pc JOIN projects p ON p.id = pc.project_id WHERE pc.client_user_id = ?`).all(updated.id)
+      : []
+    res.json({ user: { ...updated, projects } })
+  } catch (err) {
+    if (err.message?.includes('UNIQUE')) return res.status(409).json({ error: 'Email je već registrovan' })
+    console.error(err)
+    res.status(500).json({ error: 'Greška servera' })
+  }
+})
+
+// DELETE /api/users/:id
 router.delete('/:id', requireAdmin, (req, res) => {
-  const user = db.prepare("SELECT id FROM users WHERE id = ? AND role = 'client'").get(req.params.id)
+  const user = db.prepare('SELECT id FROM users WHERE id = ? AND id != ?').get(req.params.id, req.userId)
   if (!user) return res.status(404).json({ error: 'Korisnik nije pronađen' })
   db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id)
   res.json({ ok: true })
