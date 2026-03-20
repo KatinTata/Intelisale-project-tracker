@@ -67,10 +67,10 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {!isClient && !isMobile && hovered && (
+        {onOpenQuickMsg && !isMobile && hovered && (
           <button
             onClick={e => { e.stopPropagation(); onOpenQuickMsg(task) }}
-            title="Pošalji poruku vezan za ovaj task"
+            title="Pošalji poruku vezanu za ovaj task"
             style={{
               position: 'absolute',
               right: 8,
