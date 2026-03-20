@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fmtHours } from '../utils.js'
 
 const COMP_COLORS = {
@@ -7,13 +7,27 @@ const COMP_COLORS = {
   TESTING: 'var(--amber)',
   DB:      '#A78BFA',
 }
+const FALLBACK_COLORS = ['#60A5FA', '#34D399', '#F472B6', '#FB923C', '#A3E635']
 
-function getCompColor(name) {
-  return COMP_COLORS[(name || '').toUpperCase()] || 'var(--textMuted)'
+function getCompColor(name, index) {
+  return COMP_COLORS[(name || '').toUpperCase()] || FALLBACK_COLORS[index % FALLBACK_COLORS.length]
 }
 
+const SIZE = 160
+const CX = SIZE / 2
+const CY = SIZE / 2
+const R = 54
+const CIRCUMFERENCE = 2 * Math.PI * R
+const GAP = 3
+
 export default function ComponentBreakdown({ data = [] }) {
+  const [animated, setAnimated] = useState(false)
   const [tooltip, setTooltip] = useState(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 50)
+    return () => clearTimeout(t)
+  }, [])
 
   if (data.length === 0) {
     return (
@@ -25,89 +39,79 @@ export default function ComponentBreakdown({ data = [] }) {
 
   const totalSpentAll = data[0]?.totalSpentAll || 0
 
+  // Build donut arcs
+  let offset = 0
+  const arcs = data.map((d, i) => {
+    const color = getCompColor(d.name, i)
+    const length = CIRCUMFERENCE * d.pct - (d.pct > 0 ? GAP : 0)
+    const arc = { ...d, color, dashArray: `${Math.max(0, length)} ${CIRCUMFERENCE}`, dashOffset: -offset }
+    offset += CIRCUMFERENCE * d.pct
+    return arc
+  })
+
   return (
-    <div>
-      {/* Total */}
-      <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>
-        Ukupno logovano: <span style={{ fontFamily: "'DM Mono'", color: 'var(--accent)' }}>{fmtHours(totalSpentAll)}</span>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, position: 'relative' }}>
-        {data.map(d => {
-          const color = getCompColor(d.name)
-          const barPct = d.pct * 100
-
-          return (
-            <div
-              key={d.name}
-              style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+      {/* Donut */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--border)" strokeWidth={18} />
+          {arcs.map((arc, i) => (
+            <circle
+              key={i}
+              cx={CX} cy={CY} r={R}
+              fill="none"
+              stroke={arc.color}
+              strokeWidth={18}
+              strokeDasharray={animated ? arc.dashArray : `0 ${CIRCUMFERENCE}`}
+              strokeDashoffset={arc.dashOffset}
+              strokeLinecap="butt"
+              style={{ transition: 'stroke-dasharray 0.6s ease', transform: 'rotate(-90deg)', transformOrigin: `${CX}px ${CY}px`, cursor: 'pointer' }}
               onMouseEnter={e => {
-                const rect = e.currentTarget.getBoundingClientRect()
-                setTooltip({ d, top: rect.top })
+                const rect = e.currentTarget.closest('svg').getBoundingClientRect()
+                setTooltip({ arc })
               }}
               onMouseLeave={() => setTooltip(null)}
-            >
-              {/* Component badge */}
-              <div style={{ width: 72, flexShrink: 0 }}>
-                <span style={{
-                  fontFamily: "'DM Mono'",
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  background: `color-mix(in srgb, ${color} 15%, transparent)`,
-                  color,
-                  border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-                  display: 'inline-block',
-                }}>
-                  {d.name}
-                </span>
-              </div>
+            />
+          ))}
+          {/* Center */}
+          <text x={CX} y={CY - 7} textAnchor="middle" dominantBaseline="middle"
+            style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, fill: 'var(--text)' }}>
+            {fmtHours(totalSpentAll)}
+          </text>
+          <text x={CX} y={CY + 12} textAnchor="middle"
+            style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, fill: 'var(--textMuted)' }}>
+            ukupno
+          </text>
+        </svg>
 
-              {/* Bar */}
-              <div style={{ flex: 1, height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 4, transition: 'width 0.5s ease', opacity: 0.85 }} />
-              </div>
-
-              {/* Hours */}
-              <div style={{ width: 44, flexShrink: 0, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', textAlign: 'right' }}>
-                {fmtHours(d.totalSpent)}
-              </div>
-
-              {/* Percent */}
-              <div style={{ width: 36, flexShrink: 0, fontFamily: "'DM Mono'", fontSize: 11, color, textAlign: 'right' }}>
-                {Math.round(barPct)}%
-              </div>
-            </div>
-          )
-        })}
+        {/* Tooltip */}
+        {tooltip && (
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, calc(-50% - 90px))',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '6px 11px',
+            fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+            color: 'var(--text)', pointerEvents: 'none', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)', zIndex: 100,
+          }}>
+            <span style={{ color: tooltip.arc.color, fontWeight: 600 }}>{tooltip.arc.name}</span>
+            {'  '}{fmtHours(tooltip.arc.totalSpent)} · {Math.round(tooltip.arc.pct * 100)}%
+          </div>
+        )}
       </div>
 
-      {/* Tooltip */}
-      {tooltip && (
-        <div style={{
-          position: 'fixed',
-          top: tooltip.top - 8,
-          left: 0,
-          transform: 'translate(calc(50vw - 50%), -100%)',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 8,
-          padding: '7px 12px',
-          fontSize: 12,
-          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-          color: 'var(--text)',
-          pointerEvents: 'none',
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-          zIndex: 100,
-        }}>
-          {fmtHours(tooltip.d.totalSpent)} od ukupno {fmtHours(totalSpentAll)}
-          <span style={{ color: 'var(--textSubtle)', margin: '0 6px' }}>·</span>
-          {Math.round(tooltip.d.pct * 100)}%
-          <span style={{ color: 'var(--textSubtle)', margin: '0 6px' }}>·</span>
-          {tooltip.d.taskCount} {tooltip.d.taskCount === 1 ? 'task' : 'taska'}
-        </div>
-      )}
+      {/* Legend */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 100 }}>
+        {arcs.map((arc, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: arc.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flex: 1 }}>{arc.name}</span>
+            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: arc.color }}>{Math.round(arc.pct * 100)}%</span>
+            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)', width: 36, textAlign: 'right' }}>{fmtHours(arc.totalSpent)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { fmtHours } from '../utils.js'
+
+const COLLAPSED_COUNT = 6
 
 function cardStyle(overPct) {
   if (overPct > 50)  return { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)' }
@@ -13,6 +16,8 @@ function pctLabel(overPct) {
 }
 
 export default function OverrunHeatmap({ tasks = [] }) {
+  const [expanded, setExpanded] = useState(false)
+
   const withEst = tasks
     .filter(t => t.est > 0)
     .slice()
@@ -26,52 +31,60 @@ export default function OverrunHeatmap({ tasks = [] }) {
     )
   }
 
+  const visible = expanded ? withEst : withEst.slice(0, COLLAPSED_COUNT)
+  const hiddenCount = withEst.length - COLLAPSED_COUNT
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
-      {withEst.map(t => {
-        const cs = cardStyle(t.overPct)
-        const lbl = pctLabel(t.overPct)
-        const spentPct = Math.min(t.spent / t.est, 1)
-        const barColor = t.overPct > 15 ? 'var(--red)' : 'var(--green)'
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
+        {visible.map(t => {
+          const cs = cardStyle(t.overPct)
+          const lbl = pctLabel(t.overPct)
+          const spentPct = Math.min(t.spent / t.est, 1)
+          const barColor = t.overPct > 15 ? 'var(--red)' : 'var(--green)'
 
-        return (
-          <div key={t.key} style={{ ...cs, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {/* Key */}
-            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: t.overPct > 15 ? 'var(--red)' : 'var(--accent)', fontWeight: 600 }}>
-              {t.key}
-            </span>
-
-            {/* Summary */}
-            <div style={{
-              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-              fontSize: 12,
-              color: 'var(--textMuted)',
-              lineHeight: 1.4,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}>
-              {t.summary}
+          return (
+            <div key={t.key} style={{ ...cs, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: t.overPct > 15 ? 'var(--red)' : 'var(--accent)', fontWeight: 600 }}>
+                {t.key}
+              </span>
+              <div style={{
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontSize: 12, color: 'var(--textMuted)', lineHeight: 1.4,
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>
+                {t.summary}
+              </div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>
+                {fmtHours(t.spent)} / {fmtHours(t.est)}
+              </div>
+              <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${spentPct * 100}%`, background: barColor, borderRadius: 2, transition: 'width 0.4s ease' }} />
+              </div>
+              <div style={{ fontFamily: "'DM Mono'", fontSize: 11, fontWeight: 600, color: lbl.color }}>
+                {lbl.text}
+              </div>
             </div>
+          )
+        })}
+      </div>
 
-            {/* Spent / Est label */}
-            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>
-              {fmtHours(t.spent)} / {fmtHours(t.est)}
-            </div>
-
-            {/* Bar */}
-            <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${spentPct * 100}%`, background: barColor, borderRadius: 2, transition: 'width 0.4s ease' }} />
-            </div>
-
-            {/* Percent */}
-            <div style={{ fontFamily: "'DM Mono'", fontSize: 11, fontWeight: 600, color: lbl.color }}>
-              {lbl.text}
-            </div>
-          </div>
-        )
-      })}
+      {/* Toggle */}
+      {withEst.length > COLLAPSED_COUNT && (
+        <button
+          onClick={() => setExpanded(e => !e)}
+          style={{
+            marginTop: 10, width: '100%', padding: '7px 0',
+            background: 'transparent', border: '1px solid var(--border)',
+            borderRadius: 7, cursor: 'pointer', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontSize: 12, color: 'var(--textMuted)', transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
+        >
+          {expanded ? 'Prikaži manje' : `Vidi još ${hiddenCount}`}
+        </button>
+      )}
     </div>
   )
 }
