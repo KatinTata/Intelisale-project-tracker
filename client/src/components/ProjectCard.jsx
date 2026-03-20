@@ -372,10 +372,7 @@ export default function ProjectCard({
         )}
       </div>
 
-      {/* Metric cards */}
-      <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} isClient={isClient} />
-
-      {/* Changes feed — admin only, below metrics */}
+      {/* Changes feed — admin only, above metrics */}
       {!isClient && (
         <ChangesFeed
           data={data}
@@ -385,6 +382,9 @@ export default function ProjectCard({
           projectId={project.id}
         />
       )}
+
+      {/* Metric cards */}
+      <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} isClient={isClient} />
 
       {/* Charts row */}
       <div style={{
