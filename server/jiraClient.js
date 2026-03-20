@@ -59,7 +59,7 @@ export async function jiraGet(jiraUrl, path, auth) {
 
 const TASK_FIELDS = [
   'summary', 'status', 'timespent', 'timeoriginalestimate',
-  'subtasks', 'components', 'issuetype', 'parent',
+  'subtasks', 'components', 'issuetype', 'parent', 'issuelinks',
 ]
 
 export async function fetchEpicTasks(jiraUrl, epicKey, auth) {

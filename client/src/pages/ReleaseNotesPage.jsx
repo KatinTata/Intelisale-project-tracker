@@ -77,6 +77,7 @@ export default function ReleaseNotesPage({ user, onBack }) {
     version: config.version,
     productName: selectedProject?.displayName || selectedProject?.epicKey || '',
     origin: window.location.origin,
+    jiraUrl: user?.jiraUrl || '',
   }) : ''
 
   async function loadNotesList() {

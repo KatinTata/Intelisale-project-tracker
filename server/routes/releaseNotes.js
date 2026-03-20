@@ -47,7 +47,7 @@ function getProject(userId, projectId) {
 }
 
 async function fetchTasksForProject(jira, project, customJql) {
-  const fields = ['summary', 'status', 'issuetype', 'description', 'assignee', 'components']
+  const fields = ['summary', 'status', 'issuetype', 'description', 'assignee', 'components', 'issuelinks']
   let jql
   if (customJql?.trim()) {
     jql = customJql.trim()
@@ -77,6 +77,16 @@ async function fetchTasksForProject(jira, project, customJql) {
       issuetype: { name: issue.fields.issuetype?.name || '' },
       assignee: issue.fields.assignee || null,
       components: issue.fields.components || [],
+      issuelinks: (issue.fields.issuelinks || []).map(l => {
+        const linked = l.inwardIssue || l.outwardIssue
+        if (!linked) return null
+        return {
+          key: linked.key,
+          summary: linked.fields?.summary || '',
+          status: linked.fields?.status?.name || '',
+          type: l.type?.name || '',
+        }
+      }).filter(Boolean),
     },
     description: extractDescriptionText(issue.fields.description),
   }))
