@@ -4,10 +4,15 @@ import { api } from './api.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
+import EpicViewerPage from './pages/EpicViewerPage.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'epicViewer'
   const [user, setUser] = useState(null)
+  const [epicViewerKey, setEpicViewerKey] = useState(() => {
+    const m = window.location.pathname.match(/^\/release-notes\/(.+)$/)
+    return m ? decodeURIComponent(m[1]) : null
+  })
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
 
@@ -33,7 +38,11 @@ export default function App() {
     const token = localStorage.getItem('jt_token')
     if (!token) { setChecking(false); return }
     api.me()
-      .then(res => { setUser(res.user); setPage('dashboard') })
+      .then(res => {
+        setUser(res.user)
+        const m = window.location.pathname.match(/^\/release-notes\/(.+)$/)
+        setPage(m ? 'epicViewer' : 'dashboard')
+      })
       .catch(() => localStorage.removeItem('jt_token'))
       .finally(() => setChecking(false))
   }, [])
@@ -63,6 +72,15 @@ export default function App() {
     )
   }
 
+  if (page === 'epicViewer' && user) {
+    return (
+      <EpicViewerPage
+        initialEpicKey={epicViewerKey}
+        onBack={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+      />
+    )
+  }
+
   if (page === 'releaseNotes' && user) {
     return (
       <ReleaseNotesPage
@@ -80,6 +98,7 @@ export default function App() {
         onSetTheme={handleSetTheme}
         onLogout={handleLogout}
         onGoToReleaseNotes={() => setPage('releaseNotes')}
+        onGoToEpicViewer={() => { setEpicViewerKey(null); setPage('epicViewer') }}
       />
     )
   }

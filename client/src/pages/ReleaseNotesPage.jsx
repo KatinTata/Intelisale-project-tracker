@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
-import { categorizeIssue, generateMarkdown, markdownToHtml } from '../utils/releaseNotesGenerator.js'
+import { categorizeIssue, generateMarkdown, generateStyledHtml } from '../utils/releaseNotesGenerator.js'
 
 export default function ReleaseNotesPage({ user, onBack }) {
   const isClient = user?.role === 'client'
@@ -71,11 +71,11 @@ export default function ReleaseNotesPage({ user, onBack }) {
     if (activeTab === 'list') loadNotesList()
   }, [activeTab])
 
-  const html = markdown ? markdownToHtml(markdown, {
+  const includedTasks = tasks.filter(t => t.included)
+  const html = includedTasks.length ? generateStyledHtml(includedTasks, config, {
     clientName: config.clientName,
     version: config.version,
     productName: selectedProject?.displayName || selectedProject?.epicKey || '',
-    language: config.language,
     origin: window.location.origin,
   }) : ''
 
