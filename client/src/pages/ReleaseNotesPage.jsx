@@ -256,11 +256,35 @@ export default function ReleaseNotesPage({ user, onBack }) {
   }
 
   async function handleTranslate() {
-    if (!markdown || aiLoading) return
+    const included = tasks.filter(t => t.included)
+    if (!included.length || aiLoading) return
     setAiLoading(true)
     try {
-      const data = await aiCall('translate_en', markdown)
-      if (data.result) setMarkdown(data.result)
+      const updated = [...tasks]
+      for (const task of included) {
+        const content = [
+          `Summary: ${task.fields?.summary || task.summary || ''}`,
+          task.description ? `Description: ${task.description}` : '',
+        ].filter(Boolean).join('\n')
+        const data = await aiCall('translate_en', content)
+        if (data.result) {
+          const lines = data.result.split('\n')
+          const summaryLine = lines.find(l => l.startsWith('Summary:'))
+          const descLine = lines.findIndex(l => l.startsWith('Description:'))
+          const translatedSummary = summaryLine ? summaryLine.replace(/^Summary:\s*/, '') : null
+          const translatedDesc = descLine >= 0 ? lines.slice(descLine).join('\n').replace(/^Description:\s*/, '') : null
+          const idx = updated.findIndex(t => t.id === task.id)
+          if (idx >= 0) {
+            updated[idx] = {
+              ...updated[idx],
+              ...(translatedSummary ? { fields: { ...updated[idx].fields, summary: translatedSummary } } : {}),
+              ...(translatedDesc ? { description: translatedDesc } : {}),
+            }
+          }
+        }
+      }
+      setTasks(updated)
+      setConfigField('language', 'en')
     } finally { setAiLoading(false) }
   }
 
@@ -596,13 +620,13 @@ export default function ReleaseNotesPage({ user, onBack }) {
                       }}>
                       {generatingAll ? '⏳ Generišem opise...' : '✨ Generiši opise'}
                     </button>
-                    <button onClick={handleTranslate} disabled={aiLoading || !markdown}
+                    <button onClick={handleTranslate} disabled={aiLoading || !tasks.filter(t => t.included).length}
                       style={{
                         padding: '8px 14px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans',
                         background: 'var(--surface)', border: '1px solid var(--border)',
-                        color: !markdown || aiLoading ? 'var(--textMuted)' : 'var(--text)',
-                        cursor: !markdown || aiLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
-                        opacity: !markdown || aiLoading ? 0.4 : 1,
+                        color: aiLoading || !tasks.filter(t => t.included).length ? 'var(--textMuted)' : 'var(--text)',
+                        cursor: aiLoading || !tasks.filter(t => t.included).length ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
+                        opacity: aiLoading || !tasks.filter(t => t.included).length ? 0.4 : 1,
                       }}>
                       {aiLoading ? '⏳ Prevodim...' : '🌐 Prevedi na engleski'}
                     </button>
