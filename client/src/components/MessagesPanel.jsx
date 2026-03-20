@@ -119,7 +119,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
           <button
             onClick={handleExport}
             title="Eksportuj u CSV"
-            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 10px', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: 'var(--textMuted)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 10px', fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: 'var(--textMuted)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
@@ -158,10 +158,10 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
       {/* Message list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {loading && (
-          <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13, padding: 32 }}>Učitavam...</div>
+          <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: 32 }}>Učitavam...</div>
         )}
         {!loading && filtered.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13, padding: 40 }}>
+          <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: 40 }}>
             {taskFilter === 'all' ? 'Nema poruka za ovaj projekat.' : `Nema poruka vezanih za ${taskFilter}.`}
           </div>
         )}
@@ -201,7 +201,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                   borderRadius: isMe ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
                   background: isMe ? 'var(--accent)' : 'var(--surfaceAlt)',
                   border: isMe ? 'none' : '1px solid var(--border)',
-                  fontFamily: "'TW Cen MT', 'Century Gothic'",
+                  fontFamily: "'DM Sans', sans-serif",
                   fontSize: 13,
                   color: isMe ? '#fff' : 'var(--text)',
                   lineHeight: 1.5,
@@ -231,7 +231,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
         {/* Recipient selector (admin only, only if clients exist) */}
         {!isClient && clients.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>Prima:</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>Prima:</span>
             {[{ id: 'all', name: 'Svi klijenti' }, ...clients].map(c => (
               <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                 <input
@@ -242,7 +242,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                   onChange={() => setRecipientId(String(c.id))}
                   style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
                 />
-                <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, color: String(recipientId) === String(c.id) ? 'var(--text)' : 'var(--textMuted)' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: String(recipientId) === String(c.id) ? 'var(--text)' : 'var(--textMuted)' }}>
                   {c.name}
                 </span>
               </label>
@@ -258,7 +258,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
             placeholder="Napišite poruku... (Enter za slanje, Shift+Enter novi red)"
             rows={2}
-            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: "'TW Cen MT', 'Century Gothic'", resize: 'none', lineHeight: 1.4, outline: 'none' }}
+            style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.4, outline: 'none' }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />

@@ -43,7 +43,7 @@ function MetricCard({ label, value, subtitle, icon, valueColor, isMobile }) {
             marginBottom: 4,
           }}>{value}</div>
           {!isMobile && (
-            <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>{subtitle}</div>
+            <div style={{ fontSize: 12, color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>{subtitle}</div>
           )}
         </div>
         <span style={{ fontSize: isMobile ? 16 : 20, opacity: 0.7, flexShrink: 0, marginLeft: 4 }}>{icon}</span>

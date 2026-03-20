@@ -186,7 +186,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   if (!initialized) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 16 }}>Učitavam...</div>
+        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 16 }}>Učitavam...</div>
       </div>
     )
   }
@@ -241,7 +241,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               border: '1px solid var(--amber)',
               borderRadius: 10,
               fontSize: 14,
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
               color: 'var(--amber)',
               display: 'flex',
               alignItems: 'center',
@@ -286,7 +286,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
           <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 12 }}>
             Nema dodeljenih projekata
           </h2>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 15, lineHeight: 1.6 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 15, lineHeight: 1.6 }}>
             Administrator još nije dodelio projekte vašem nalogu. Kontaktirajte administratora.
           </p>
         </div>
@@ -302,7 +302,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
             <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 26, color: 'var(--text)', marginBottom: 10 }}>
               Dobrodošli u Project Hub
             </h2>
-            <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 15, lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 15, lineHeight: 1.6 }}>
               Pratite napredak vaših Jira projekata na jednom mestu.
             </p>
           </div>
@@ -355,7 +355,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
                   <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 3 }}>
                     {s.title}
                   </div>
-                  <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.5 }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.5 }}>
                     {s.desc}
                   </div>
                   {s.action && (
@@ -365,7 +365,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
                         marginTop: 10,
                         background: 'var(--accent)', color: '#fff', border: 'none',
                         borderRadius: 7, padding: '7px 16px',
-                        fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 600, fontSize: 13,
+                        fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13,
                         cursor: 'pointer',
                       }}
                     >
@@ -385,7 +385,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               color: '#fff',
               borderRadius: 8,
               padding: '11px 24px',
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
               fontWeight: 600,
               fontSize: 15,
               cursor: 'pointer',

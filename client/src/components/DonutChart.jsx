@@ -62,7 +62,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
           {donePct}%
         </text>
         <text x={cx} y={cy + 18} textAnchor="middle"
-          style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 12, fill: 'var(--textMuted)' }}>
+          style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fill: 'var(--textMuted)' }}>
           završeno
         </text>
       </svg>
@@ -82,7 +82,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
           return (
             <div key={i}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: horizontal ? 11 : 12 }}>
-                <span style={{ color: seg.color, fontFamily: "'TW Cen MT', 'Century Gothic'", fontWeight: 500, fontSize: horizontal ? 11 : 12 }}>
+                <span style={{ color: seg.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: horizontal ? 11 : 12 }}>
                   ● {seg.label}
                 </span>
                 <span style={{ fontFamily: "'DM Mono'", color: 'var(--textMuted)', fontSize: 11 }}>

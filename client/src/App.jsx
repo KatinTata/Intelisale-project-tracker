@@ -57,7 +57,7 @@ export default function App() {
   if (checking) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>Učitavam...</div>
+        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>Učitavam...</div>
       </div>
     )
   }

@@ -13,7 +13,7 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
   // Top 12 tasks with estimate
   const filtered = data.filter(d => d.est > 0).slice(0, 12)
   if (filtered.length === 0) return (
-    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
       Nema taskova sa estimacijom
     </div>
   )
@@ -40,7 +40,7 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>
         <span><span style={{ color: 'var(--accent)' }}>●</span> Estimacija</span>
         <span><span style={{ color: 'var(--green)' }}>●</span> Utrošeno</span>
         <span><span style={{ color: 'var(--red)' }}>●</span> Prekoračenje</span>
@@ -124,7 +124,7 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
           borderRadius: 8,
           padding: '8px 12px',
           fontSize: 12,
-          fontFamily: "'TW Cen MT', 'Century Gothic'",
+          fontFamily: "'DM Sans', sans-serif",
           pointerEvents: 'none',
           whiteSpace: 'nowrap',
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)',

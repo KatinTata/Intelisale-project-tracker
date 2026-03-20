@@ -64,7 +64,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
               fontSize: 13,
               cursor: 'pointer',
               color: 'var(--textMuted)',
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
               transition: 'all 0.15s',
               display: 'flex',
               alignItems: 'center',
@@ -93,7 +93,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
 
         {/* Summary */}
         <div style={{
-          fontFamily: "'TW Cen MT', 'Century Gothic'",
+          fontFamily: "'DM Sans', sans-serif",
           fontSize: isMobile ? 12 : 13,
           color: 'var(--text)',
           overflow: 'hidden',
@@ -303,7 +303,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
               padding: '6px 12px',
               color: 'var(--text)',
               fontSize: 13,
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
               width: isMobile ? '140px' : '200px',
               minHeight: 36,
             }}
@@ -323,7 +323,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
               key={p.key}
               onClick={() => setFilter(p.key)}
               style={{
-                fontFamily: "'TW Cen MT', 'Century Gothic'",
+                fontFamily: "'DM Sans', sans-serif",
                 fontSize: 12,
                 padding: '6px 12px',
                 borderRadius: 20,
@@ -364,7 +364,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
 
       {/* Rows */}
       {filtered.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'" }}>
+        <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif" }}>
           Nema taskova
         </div>
       ) : (

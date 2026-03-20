@@ -58,7 +58,7 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
           <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--text)', marginBottom: 4 }}>
             Project Hub
           </h1>
-          <p style={{ color: 'var(--textMuted)', fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14 }}>
+          <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
             Kreirajte novi nalog
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
               borderRadius: 8,
               color: 'var(--red)',
               fontSize: 13,
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
             }}>{error}</div>
           )}
 
@@ -127,7 +127,7 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
               color: '#fff',
               borderRadius: 8,
               padding: '11px',
-              fontFamily: "'TW Cen MT', 'Century Gothic'",
+              fontFamily: "'DM Sans', sans-serif",
               fontWeight: 600,
               fontSize: 15,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -140,7 +140,7 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 14, color: 'var(--textMuted)' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: 'var(--textMuted)' }}>
           Već imate nalog?{' '}
           <button onClick={onGoLogin} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
             Prijavite se
@@ -169,6 +169,6 @@ const inputStyle = {
   padding: '10px 14px',
   color: 'var(--text)',
   fontSize: 14,
-  fontFamily: "'TW Cen MT', 'Century Gothic'",
+  fontFamily: "'DM Sans', sans-serif",
   transition: 'border-color 0.2s',
 }
