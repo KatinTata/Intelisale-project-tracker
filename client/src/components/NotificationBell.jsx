@@ -27,40 +27,28 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
         title="Notifikacije"
         style={{
           position: 'relative',
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
+          width: 34, height: 34, borderRadius: 8,
           background: open ? 'var(--surfaceAlt)' : 'transparent',
-          border: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: 16,
-          transition: 'all 0.2s ease',
+          border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s',
+          color: open ? 'var(--text)' : 'var(--textMuted)',
+          flexShrink: 0,
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = open ? 'var(--surfaceAlt)' : 'transparent' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surfaceAlt)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? 'var(--surfaceAlt)' : 'transparent'; e.currentTarget.style.color = open ? 'var(--text)' : 'var(--textMuted)' }}
       >
-        🔔
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+        </svg>
         {unreadCount > 0 && (
           <span style={{
-            position: 'absolute',
-            top: -4,
-            right: -4,
-            background: 'var(--red)',
-            color: '#fff',
-            borderRadius: 10,
-            fontSize: 10,
-            fontFamily: "'DM Mono'",
-            fontWeight: 700,
-            minWidth: 18,
-            height: 18,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 4px',
-            animation: 'notif-pulse 2s ease infinite',
+            position: 'absolute', top: 4, right: 4,
+            minWidth: 15, height: 15, borderRadius: 8,
+            background: 'var(--red)', color: '#fff',
+            fontSize: 9, fontFamily: "'DM Mono'", fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0 3px', lineHeight: 1, pointerEvents: 'none',
           }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>

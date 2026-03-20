@@ -37,6 +37,14 @@ function IconCog() {
   )
 }
 
+function IconGrid() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+    </svg>
+  )
+}
+
 function ChevronDown({ open }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
@@ -79,6 +87,80 @@ function IconBtn({ onClick, title, children, badge }) {
         }}>{badge > 99 ? '99+' : badge}</span>
       )}
     </button>
+  )
+}
+
+// ── Navigation Menu ───────────────────────────────────────────────────────────
+
+function NavMenu({ items }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const visible = items.filter(i => i.action)
+  if (!visible.length) return null
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Navigacija"
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surfaceAlt)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? 'var(--surfaceAlt)' : 'transparent'; e.currentTarget.style.color = open ? 'var(--text)' : 'var(--textMuted)' }}
+        style={{
+          width: 34, height: 34, borderRadius: 8,
+          background: open ? 'var(--surfaceAlt)' : 'transparent',
+          border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s',
+          color: open ? 'var(--text)' : 'var(--textMuted)',
+          flexShrink: 0,
+        }}
+      >
+        <IconGrid />
+      </button>
+
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 149 }} onClick={() => setOpen(false)} />
+          <div style={{
+            position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+            minWidth: 200,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            zIndex: 150, padding: 6, display: 'flex', flexDirection: 'column', gap: 1,
+          }}>
+            {visible.map(item => (
+              <button
+                key={item.label}
+                onClick={() => { setOpen(false); item.action() }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'transparent', border: 'none',
+                  color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
+                  transition: 'background 0.15s', width: '100%',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span style={{ color: 'var(--textMuted)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, fontWeight: 500 }}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -357,23 +439,14 @@ export default function Topbar({
         )}
       </div>
 
-      {/* Right: Action icons + Avatar */}
+      {/* Right: Nav menu + Notification + Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-        {onGoToEpicViewer && (
-          <IconBtn onClick={onGoToEpicViewer} title="Release Notes pregled">
-            <IconDoc />
-          </IconBtn>
-        )}
-        {onGoToReleaseNotes && (
-          <IconBtn onClick={onGoToReleaseNotes} title="Release Notes editor">
-            <IconClipboard />
-          </IconBtn>
-        )}
-        {onOpenChat && (
-          <IconBtn onClick={onOpenChat} title="Poruke">
-            <IconChat />
-          </IconBtn>
-        )}
+        <NavMenu items={[
+          { label: 'Release Notes', icon: <IconDoc />, action: onGoToEpicViewer },
+          { label: 'Release Notes Editor', icon: <IconClipboard />, action: onGoToReleaseNotes },
+          { label: 'Poruke', icon: <IconChat />, action: onOpenChat },
+          { label: 'Podešavanja', icon: <IconCog />, action: onOpenSettings },
+        ]} />
 
         <NotificationBell
           unreadCount={unreadCount || 0}
@@ -381,12 +454,6 @@ export default function Topbar({
           onMarkAllRead={onMarkAllRead}
           onNotificationClick={onNotificationClick}
         />
-
-        {onOpenSettings && (
-          <IconBtn onClick={onOpenSettings} title="Podešavanja">
-            <IconCog />
-          </IconBtn>
-        )}
 
         <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
 
