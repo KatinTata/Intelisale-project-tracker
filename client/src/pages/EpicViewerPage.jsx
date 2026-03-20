@@ -123,15 +123,6 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
   }
 
   const groups = groupTasks(tasks)
-
-  // Collect unique HELP-linked issues
-  const helpMap = new Map()
-  for (const task of tasks) {
-    for (const link of (task.fields?.issuelinks || [])) {
-      if (link.key?.startsWith('HELP') && !helpMap.has(link.key)) helpMap.set(link.key, link)
-    }
-  }
-  const helpIssues = [...helpMap.values()]
   const jiraBase = jiraUrl ? 'https://' + jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') : null
 
   return (
@@ -406,6 +397,50 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
                               }}>{desc}</div>
                             )}
                           </div>
+
+                          {/* Inline HELP links */}
+                          {(task.fields?.issuelinks || []).filter(l => l.key?.startsWith('HELP')).map(link => {
+                            const url = jiraBase ? `${jiraBase}/browse/${link.key}` : null
+                            const isDone = ['Done', 'Closed', 'Resolved'].includes(link.status)
+                            return (
+                              <div key={link.key} style={{
+                                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                                marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)',
+                              }}>
+                                <span style={{ fontSize: 13 }}>🔗</span>
+                                <span style={{
+                                  fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500,
+                                  padding: '3px 9px', borderRadius: 6, flexShrink: 0,
+                                  background: 'rgba(245,158,11,0.15)', color: '#F59E0B',
+                                  border: '1px solid rgba(245,158,11,0.3)',
+                                }}>{link.key}</span>
+                                <span style={{
+                                  fontFamily: "'DM Sans', sans-serif", fontSize: 13,
+                                  color: 'var(--textMuted)', flex: 1, minWidth: 0,
+                                }}>{link.summary}</span>
+                                {link.status && (
+                                  <span style={{
+                                    fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500,
+                                    padding: '3px 9px', borderRadius: 6, flexShrink: 0,
+                                    background: isDone ? 'rgba(34,197,94,0.12)' : 'rgba(79,142,247,0.12)',
+                                    color: isDone ? 'var(--green)' : 'var(--accent)',
+                                    border: `1px solid ${isDone ? 'rgba(34,197,94,0.3)' : 'rgba(79,142,247,0.3)'}`,
+                                  }}>{link.status}</span>
+                                )}
+                                {url && (
+                                  <a href={url} target="_blank" rel="noopener noreferrer" style={{
+                                    fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+                                    color: 'var(--accent)', textDecoration: 'none', flexShrink: 0,
+                                    padding: '3px 8px', border: '1px solid rgba(79,142,247,0.3)',
+                                    borderRadius: 6, transition: 'background 0.2s',
+                                  }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,247,0.1)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  >↗ Otvori</a>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       )
                     })}
@@ -413,77 +448,6 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
                 </section>
               )
             })}
-          </div>
-        )}
-
-        {/* ── HELP section ── */}
-        {!loading && !error && helpIssues.length > 0 && (
-          <div style={{
-            marginTop: 52, padding: 24,
-            background: 'rgba(245,158,11,0.04)',
-            border: '1px solid rgba(245,158,11,0.15)',
-            borderRadius: 14,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span style={{ fontSize: 20 }}>🎫</span>
-              <span style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: '#F59E0B' }}>Povezane HELP kartice</span>
-              <span style={{
-                fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500,
-                padding: '2px 9px', borderRadius: 20, marginLeft: 2,
-                background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)',
-              }}>{helpIssues.length}</span>
-            </div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'var(--textMuted)', marginBottom: 16, lineHeight: 1.5 }}>
-              Ove kartice su vezane za promene navedene iznad i mogu sadržati dodatne informacije.
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {helpIssues.map(issue => {
-                const url = jiraBase ? `${jiraBase}/browse/${issue.key}` : null
-                const isDone = ['Done', 'Closed', 'Resolved'].includes(issue.status)
-                return (
-                  <div key={issue.key} style={{
-                    background: 'var(--surface)', border: '1px solid var(--border)',
-                    borderRadius: 10, padding: '12px 16px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                      <span style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500,
-                        padding: '3px 9px', borderRadius: 6, flexShrink: 0,
-                        background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)',
-                      }}>{issue.key}</span>
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
-                        {issue.summary}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      {issue.status && (
-                        <span style={{
-                          fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500,
-                          padding: '3px 9px', borderRadius: 6,
-                          background: isDone ? 'rgba(34,197,94,0.12)' : 'rgba(79,142,247,0.12)',
-                          color: isDone ? 'var(--green)' : 'var(--accent)',
-                          border: `1px solid ${isDone ? 'rgba(34,197,94,0.3)' : 'rgba(79,142,247,0.3)'}`,
-                        }}>{issue.status}</span>
-                      )}
-                      {url && (
-                        <a
-                          href={url} target="_blank" rel="noopener noreferrer"
-                          style={{
-                            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-                            color: 'var(--accent)', textDecoration: 'none',
-                            padding: '4px 10px', border: '1px solid rgba(79,142,247,0.3)',
-                            borderRadius: 6, transition: 'background 0.2s', whiteSpace: 'nowrap',
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,247,0.1)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >↗ Otvori</a>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
           </div>
         )}
 

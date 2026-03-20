@@ -79,17 +79,6 @@ export function generateStyledHtml(tasks, config, meta) {
     ? 'https://' + meta.jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
     : null
 
-  // Collect unique HELP-linked issues across all tasks
-  const helpMap = new Map()
-  for (const task of (tasks || [])) {
-    for (const link of (task.fields?.issuelinks || [])) {
-      if (link.key?.startsWith('HELP') && !helpMap.has(link.key)) {
-        helpMap.set(link.key, link)
-      }
-    }
-  }
-  const helpIssues = [...helpMap.values()]
-
   // Group by key prefix
   const groups = {}
   for (const task of (tasks || [])) {
@@ -114,6 +103,23 @@ export function generateStyledHtml(tasks, config, meta) {
       const hasDesc = desc.length > 0
       const cardId  = `c-${prefix}-${idx}`
 
+      const helpLinks = (task.fields?.issuelinks || []).filter(l => l.key?.startsWith('HELP'))
+      const helpHtml = helpLinks.map(link => {
+        const url = jiraBase ? `${jiraBase}/browse/${escapeHtml(link.key)}` : null
+        const isDone = ['Done', 'Closed', 'Resolved'].includes(link.status)
+        const stBg  = isDone ? 'rgba(34,197,94,0.12)'  : 'rgba(79,142,247,0.12)'
+        const stCol = isDone ? '#22C55E' : '#4F8EF7'
+        const stBor = isDone ? 'rgba(34,197,94,0.3)'   : 'rgba(79,142,247,0.3)'
+        return `
+          <div class="help-link-row">
+            <span class="help-rel">🔗</span>
+            <span class="key-badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)">${escapeHtml(link.key)}</span>
+            <span class="help-summary">${escapeHtml(link.summary)}</span>
+            ${link.status ? `<span class="status-badge" style="background:${stBg};color:${stCol};border:1px solid ${stBor}">${escapeHtml(link.status)}</span>` : ''}
+            ${url ? `<a class="help-open" href="${url}" target="_blank" rel="noopener noreferrer">↗ Otvori</a>` : ''}
+          </div>`
+      }).join('')
+
       return `
         <div class="task-card" id="${cardId}">
           <div class="task-row">
@@ -122,6 +128,7 @@ export function generateStyledHtml(tasks, config, meta) {
             ${hasDesc ? `<button class="expand-btn" onclick="toggle('${cardId}')" title="Prikaži/sakrij opis">▾</button>` : ''}
           </div>
           ${hasDesc ? `<div class="task-desc" id="${cardId}-d"><div class="task-desc-inner">${escapeHtml(desc).replace(/\n/g, '<br>')}</div></div>` : ''}
+          ${helpHtml}
         </div>`
     }).join('')
 
@@ -204,18 +211,13 @@ export function generateStyledHtml(tasks, config, meta) {
     .task-desc { max-height: 0; overflow: hidden; transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1); }
     .task-desc.open { max-height: 1000px; }
     .task-desc-inner { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); line-height: 1.75; }
-    /* HELP section */
-    .help-section { margin-top: 52px; padding: 24px; background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.15); border-radius: 14px; }
-    .help-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .help-label { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: #F59E0B; }
-    .help-desc { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
-    .help-list { display: flex; flex-direction: column; gap: 8px; }
-    .help-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .help-card-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-    .help-card-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .status-badge { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
-    .help-link { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 4px 10px; border: 1px solid rgba(79,142,247,0.3); border-radius: 6px; transition: background 0.2s; white-space: nowrap; }
-    .help-link:hover { background: rgba(79,142,247,0.1); }
+    /* Inline HELP links */
+    .help-link-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .help-rel { font-size: 13px; flex-shrink: 0; }
+    .help-summary { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); flex: 1; min-width: 0; }
+    .status-badge { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+    .help-open { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 3px 8px; border: 1px solid rgba(79,142,247,0.3); border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+    .help-open:hover { background: rgba(79,142,247,0.1); }
     /* Footer */
     .footer { margin-top: 72px; padding-top: 22px; border-top: 1px solid var(--border); text-align: center; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--subtle); letter-spacing: 0.1em; text-transform: uppercase; }
     /* Responsive */
@@ -262,34 +264,6 @@ export function generateStyledHtml(tasks, config, meta) {
       ${sectionsHtml || '<p style="color:var(--muted);font-family:DM Sans,sans-serif;text-align:center;padding:40px 0">Nema taskova.</p>'}
     </div>
 
-    ${helpIssues.length > 0 ? `
-    <div class="help-section">
-      <div class="help-hdr">
-        <span class="sec-icon">🎫</span>
-        <span class="help-label">Povezane HELP kartice</span>
-        <span class="sec-count" style="background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)">${helpIssues.length}</span>
-      </div>
-      <div class="help-desc">Ove kartice su vezane za promene navedene iznad i mogu sadržati dodatne informacije ili dokumentaciju.</div>
-      <div class="help-list">
-        ${helpIssues.map(issue => {
-          const url = jiraBase ? `${jiraBase}/browse/${escapeHtml(issue.key)}` : null
-          const statusColor = ['Done', 'Closed', 'Resolved'].includes(issue.status)
-            ? { bg: 'rgba(34,197,94,0.12)', color: '#22C55E', border: 'rgba(34,197,94,0.3)' }
-            : { bg: 'rgba(79,142,247,0.12)', color: '#4F8EF7', border: 'rgba(79,142,247,0.3)' }
-          return `
-          <div class="help-card">
-            <div class="help-card-left">
-              <span class="key-badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)">${escapeHtml(issue.key)}</span>
-              <span class="task-summary">${escapeHtml(issue.summary)}</span>
-            </div>
-            <div class="help-card-right">
-              ${issue.status ? `<span class="status-badge" style="background:${statusColor.bg};color:${statusColor.color};border:1px solid ${statusColor.border}">${escapeHtml(issue.status)}</span>` : ''}
-              ${url ? `<a class="help-link" href="${url}" target="_blank" rel="noopener noreferrer">↗ Otvori</a>` : ''}
-            </div>
-          </div>`
-        }).join('')}
-      </div>
-    </div>` : ''}
 
     <div class="footer">INTELISALE · Empowering Sales Excellence · www.intelisale.com</div>
   </div>
