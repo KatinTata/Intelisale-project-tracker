@@ -4,6 +4,8 @@ function getToken() {
   return localStorage.getItem('jt_token')
 }
 
+let redirectingToLogin = false
+
 async function request(method, path, body) {
   const token = getToken()
   const headers = { 'Content-Type': 'application/json' }
@@ -15,15 +17,25 @@ async function request(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   })
 
-  const data = await res.json()
-
+  // Handle expired/missing token before touching the body
   if (res.status === 401 && !path.startsWith('/auth/')) {
-    localStorage.removeItem('jt_token')
-    window.location.href = '/login'
+    if (!redirectingToLogin) {
+      redirectingToLogin = true
+      localStorage.removeItem('jt_token')
+      window.location.href = '/login'
+    }
     return
   }
 
-  if (!res.ok) throw new Error(data.error || 'Greška servera')
+  // Only parse JSON if the response actually is JSON
+  const ct = res.headers.get('content-type') || ''
+  if (!ct.includes('application/json')) {
+    if (!res.ok) throw new Error(`Server error ${res.status}`)
+    return
+  }
+
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.error || 'Greška servera')
   return data
 }
 
