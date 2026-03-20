@@ -81,6 +81,7 @@ export const api = {
   // Release Notes
   getReleaseNotesList: () => request('GET', '/release-notes/list'),
   getClientReleaseNotes: () => request('GET', '/release-notes/client-list'),
+  getReleaseNoteDetail: (id) => request('GET', `/release-notes/${id}/detail`),
   getReleaseNoteClients: (id) => request('GET', `/release-notes/${id}/clients`),
   setReleaseNoteClients: (id, clientIds) => request('PUT', `/release-notes/${id}/clients`, { clientIds }),
   markReleaseNoteReleased: (id) => request('PUT', `/release-notes/${id}/release`),

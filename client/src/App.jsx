@@ -4,16 +4,16 @@ import { api } from './api.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
+import ReleaseNotesEditorPage from './pages/ReleaseNotesEditorPage.jsx'
 import EpicViewerPage from './pages/EpicViewerPage.jsx'
 import BrainAnimation from './components/BrainAnimation.jsx'
+import SettingsModal from './components/SettingsModal.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'epicViewer'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer'
   const [user, setUser] = useState(null)
-  const [epicViewerKey, setEpicViewerKey] = useState(() => {
-    const m = window.location.pathname.match(/^\/release-notes\/(.+)$/)
-    return m ? decodeURIComponent(m[1]) : null
-  })
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [epicViewerKey, setEpicViewerKey] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
 
@@ -41,8 +41,10 @@ export default function App() {
     api.me()
       .then(res => {
         setUser(res.user)
-        const m = window.location.pathname.match(/^\/release-notes\/(.+)$/)
-        setPage(m ? 'epicViewer' : 'dashboard')
+        const path = window.location.pathname
+        if (path === '/release-notes/editor') setPage('releaseNotesEditor')
+        else if (path.startsWith('/release-notes')) setPage('releaseNotes')
+        else setPage('dashboard')
       })
       .catch(() => localStorage.removeItem('jt_token'))
       .finally(() => setChecking(false))
@@ -50,12 +52,24 @@ export default function App() {
 
   function handleLogin(userData) {
     setUser(userData)
-    setPage('dashboard')
+    const path = window.location.pathname
+    if (path === '/release-notes/editor') setPage('releaseNotesEditor')
+    else if (path.startsWith('/release-notes')) setPage('releaseNotes')
+    else setPage('dashboard')
   }
 
   function handleLogout() {
     setUser(null)
     setPage('login')
+  }
+
+  function handleUserUpdate(updated) {
+    const prevHasJira = !!(user?.jiraUrl && user?.jiraEmail)
+    setUser(updated)
+    setSettingsOpen(false)
+    if (!prevHasJira && updated.jiraUrl) {
+      window.location.reload()
+    }
   }
 
   function handleSetTheme(mode) {
@@ -74,34 +88,74 @@ export default function App() {
     )
   }
 
+  const openSettings = () => setSettingsOpen(true)
+
   if (page === 'epicViewer' && user) {
     return (
-      <EpicViewerPage
-        initialEpicKey={epicViewerKey}
-        onBack={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-      />
+      <>
+        <EpicViewerPage
+          initialEpicKey={epicViewerKey}
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onOpenSettings={openSettings}
+          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
     )
   }
 
   if (page === 'releaseNotes' && user) {
     return (
-      <ReleaseNotesPage
-        user={user}
-        onBack={() => setPage('dashboard')}
-      />
+      <>
+        <ReleaseNotesPage
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onGoToEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onOpenSettings={openSettings}
+          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
+    )
+  }
+
+  if (page === 'releaseNotesEditor' && user) {
+    return (
+      <>
+        <ReleaseNotesEditorPage
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onOpenSettings={openSettings}
+          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
     )
   }
 
   if (page === 'dashboard' && user) {
     return (
-      <DashboardPage
-        user={user}
-        theme={theme}
-        onSetTheme={handleSetTheme}
-        onLogout={handleLogout}
-        onGoToReleaseNotes={() => setPage('releaseNotes')}
-        onGoToEpicViewer={() => { setEpicViewerKey(null); setPage('epicViewer') }}
-      />
+      <>
+        <DashboardPage
+          user={user}
+          theme={theme}
+          onSetTheme={handleSetTheme}
+          onLogout={handleLogout}
+          onOpenSettings={openSettings}
+          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
     )
   }
 

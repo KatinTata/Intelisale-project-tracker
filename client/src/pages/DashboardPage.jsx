@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Topbar from '../components/Topbar.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
-import SettingsModal from '../components/SettingsModal.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
 import UserManagementModal from '../components/UserManagementModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
@@ -12,14 +11,13 @@ import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onGoToReleaseNotes, onGoToEpicViewer }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [projectData, setProjectData] = useState({})
   const [loadingProjects, setLoadingProjects] = useState({})
   const [errorProjects, setErrorProjects] = useState({})
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [usersOpen, setUsersOpen] = useState(false)
   const [addingProject, setAddingProject] = useState(false)
@@ -37,6 +35,8 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const hasJira = !!(user.jiraUrl && user.jiraEmail)
   const isClient = user.role === 'client'
   const { isMobile } = useWindowSize()
+
+  useEffect(() => { setUser(initialUser) }, [initialUser])
 
   useEffect(() => {
     loadProjects()
@@ -200,7 +200,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+    <div className="page-in" style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Global background animation */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <BrainAnimation opacity={0.45} fullscreen />
@@ -209,7 +209,8 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       <Topbar
         user={user}
         theme={theme}
-        onOpenSettings={isClient ? undefined : () => setSettingsOpen(true)}
+        currentPage="dashboard"
+        onOpenSettings={isClient ? undefined : onOpenSettings}
         onLogout={handleLogout}
         onOpenUsers={isClient ? undefined : () => setUsersOpen(true)}
         unreadCount={unreadCount}
@@ -218,7 +219,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onNotificationClick={handleNotificationClick}
         onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
-        onGoToEpicViewer={isClient ? undefined : onGoToEpicViewer}
+        onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
         projects={projects}
         activeId={activeId}
         onSelectProject={setActiveId}
@@ -409,20 +410,6 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         />
       )}
 
-      {settingsOpen && (
-        <SettingsModal
-          user={user}
-          theme={theme}
-          onSetTheme={onSetTheme}
-          onClose={() => setSettingsOpen(false)}
-          onUserUpdate={(updated) => {
-            setUser(updated)
-            if (!hasJira && updated.jiraUrl) {
-              window.location.reload()
-            }
-          }}
-        />
-      )}
 
       {chatOpen && activeProject && (
         <MessagesPage

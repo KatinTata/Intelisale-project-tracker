@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import BrainAnimation from '../components/BrainAnimation.jsx'
+import Topbar from '../components/Topbar.jsx'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ function formatDate(date) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function EpicViewerPage({ initialEpicKey, onBack }) {
+export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
   const [epicKey, setEpicKey]       = useState(initialEpicKey || '')
   const [inputKey, setInputKey]     = useState(initialEpicKey || '')
   const [tasks, setTasks]           = useState([])
@@ -126,7 +127,7 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
   const jiraBase = jiraUrl ? 'https://' + jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') : null
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+    <div className="page-in" style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
 
       {/* Background */}
       <div className="brain-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
@@ -137,7 +138,8 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
       <style>{`
         @media print {
           .brain-bg { opacity: 0.03 !important; }
-          .back-btn, .export-btn, .expand-btn, .picker-bar { display: none !important; }
+          .export-btn, .expand-btn, .picker-bar { display: none !important; }
+          .topbar-root { display: none !important; }
           .task-desc { max-height: none !important; overflow: visible !important; }
           .task-card { break-inside: avoid; }
           body, .page-wrapper { background: #fff !important; color: #111 !important; }
@@ -148,24 +150,24 @@ export default function EpicViewerPage({ initialEpicKey, onBack }) {
         }
       `}</style>
 
+      {/* Topbar */}
+      <div className="topbar-root" style={{ position: 'relative', zIndex: 10 }}>
+        <Topbar
+          user={user}
+          theme={theme}
+          currentPage="epicViewer"
+          onLogout={onLogout}
+          onGoToDashboard={onGoToDashboard}
+          onGoToReleaseNotes={onGoToReleaseNotes}
+          onOpenSettings={onOpenSettings}
+          onOpenChat={onOpenChat}
+        />
+      </div>
+
       <div className="page-wrapper" style={{ position: 'relative', zIndex: 1, maxWidth: 860, margin: '0 auto', padding: '32px 28px 80px' }}>
 
         {/* ── Top bar ── */}
         <div className="picker-bar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40, flexWrap: 'wrap' }}>
-          {onBack && (
-            <button
-              className="back-btn"
-              onClick={() => { window.history.replaceState({}, '', '/'); onBack() }}
-              style={{
-                background: 'transparent', border: '1px solid var(--border)', borderRadius: 8,
-                padding: '7px 14px', color: 'var(--textMuted)',
-                fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
-            >← Nazad</button>
-          )}
-
           {/* Project picker */}
           {projects.length > 0 && (
             <select

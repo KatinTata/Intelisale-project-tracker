@@ -100,6 +100,7 @@ db.exec(`
 
 try { db.exec(`ALTER TABLE published_notes ADD COLUMN status TEXT DEFAULT 'published'`) } catch {}
 try { db.exec(`ALTER TABLE published_notes ADD COLUMN released_at DATETIME`) } catch {}
+try { db.exec(`ALTER TABLE published_notes ADD COLUMN version TEXT`) } catch {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS release_note_clients (

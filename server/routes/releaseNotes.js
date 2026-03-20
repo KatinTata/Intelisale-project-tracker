@@ -383,7 +383,7 @@ router.post('/ai-enhance', async (req, res) => {
 
 router.post('/publish', (req, res) => {
   try {
-    const { html, title, projectId } = req.body
+    const { html, title, projectId, version } = req.body
     if (!html?.trim()) return res.status(400).json({ error: 'html je obavezan' })
 
     // Reuse existing token for same user+project, otherwise create new
@@ -394,11 +394,11 @@ router.post('/publish', (req, res) => {
     const token = existing?.token || randomBytes(16).toString('hex')
 
     if (existing) {
-      db.prepare('UPDATE published_notes SET html = ?, title = ?, updated_at = CURRENT_TIMESTAMP WHERE token = ?')
-        .run(html, title || null, token)
+      db.prepare('UPDATE published_notes SET html = ?, title = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE token = ?')
+        .run(html, title || null, version || null, token)
     } else {
-      db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, html) VALUES (?, ?, ?, ?, ?)')
-        .run(token, projectId || null, req.userId, title || null, html)
+      db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, version, html) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(token, projectId || null, req.userId, title || null, version || null, html)
     }
 
     // Auto-populate clients from project when first publishing
@@ -439,7 +439,7 @@ router.get('/public/:token', (req, res) => {
 router.get('/list', (req, res) => {
   try {
     const notes = db.prepare(`
-      SELECT pn.id, pn.token, pn.title, pn.status, pn.created_at, pn.updated_at, pn.released_at, pn.project_id,
+      SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.updated_at, pn.released_at, pn.project_id,
              p.display_name as project_name, p.epic_key,
              (SELECT COUNT(*) FROM release_note_clients WHERE note_id = pn.id) as client_count
       FROM published_notes pn
@@ -458,7 +458,7 @@ router.get('/list', (req, res) => {
 router.get('/client-list', (req, res) => {
   try {
     const notes = db.prepare(`
-      SELECT pn.id, pn.token, pn.title, pn.status, pn.created_at, pn.released_at, pn.project_id,
+      SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.released_at, pn.project_id,
              p.display_name as project_name, p.epic_key
       FROM release_note_clients rnc
       JOIN published_notes pn ON pn.id = rnc.note_id
@@ -467,6 +467,38 @@ router.get('/client-list', (req, res) => {
       ORDER BY pn.created_at DESC
     `).all(req.userId)
     res.json({ notes })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Route: Get single note detail (admin + client) ───────────────────────────
+
+router.get('/:id/detail', (req, res) => {
+  try {
+    const role = db.prepare('SELECT role FROM users WHERE id = ?').get(req.userId)?.role || 'admin'
+    let note
+    if (role === 'client') {
+      note = db.prepare(`
+        SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.released_at, pn.html,
+               p.display_name as project_name, p.epic_key
+        FROM release_note_clients rnc
+        JOIN published_notes pn ON pn.id = rnc.note_id
+        LEFT JOIN projects p ON p.id = pn.project_id
+        WHERE rnc.client_user_id = ? AND pn.id = ?
+      `).get(req.userId, req.params.id)
+    } else {
+      note = db.prepare(`
+        SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.released_at, pn.html,
+               p.display_name as project_name, p.epic_key,
+               (SELECT COUNT(*) FROM release_note_clients WHERE note_id = pn.id) as client_count
+        FROM published_notes pn
+        LEFT JOIN projects p ON p.id = pn.project_id
+        WHERE pn.id = ? AND pn.user_id = ?
+      `).get(req.params.id, req.userId)
+    }
+    if (!note) return res.status(404).json({ error: 'Nije pronađeno' })
+    res.json({ note })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

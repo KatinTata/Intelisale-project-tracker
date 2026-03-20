@@ -23,7 +23,15 @@ function IconClipboard() {
 function IconChat() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
+    </svg>
+  )
+}
+
+function IconHome() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
     </svg>
   )
 }
@@ -92,7 +100,7 @@ function IconBtn({ onClick, title, children, badge }) {
 
 // ── Navigation Menu ───────────────────────────────────────────────────────────
 
-function NavMenu({ items }) {
+function NavMenu({ items, currentPage }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -102,65 +110,91 @@ function NavMenu({ items }) {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const visible = items.filter(i => i.action)
+  const visible = items.filter(i => i.action || (i.page && i.page === currentPage))
   if (!visible.length) return null
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        title="Navigacija"
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surfaceAlt)'; e.currentTarget.style.color = 'var(--text)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = open ? 'var(--surfaceAlt)' : 'transparent'; e.currentTarget.style.color = open ? 'var(--text)' : 'var(--textMuted)' }}
+        title="Moduli"
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79,142,247,0.12)'; e.currentTarget.style.borderColor = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? 'rgba(79,142,247,0.1)' : 'transparent'; e.currentTarget.style.borderColor = open ? 'var(--accent)' : 'rgba(79,142,247,0.4)' }}
         style={{
-          width: 34, height: 34, borderRadius: 8,
-          background: open ? 'var(--surfaceAlt)' : 'transparent',
-          border: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '0 10px', height: 30, borderRadius: 8,
+          background: open ? 'rgba(79,142,247,0.1)' : 'transparent',
+          border: `1px solid ${open ? 'var(--accent)' : 'rgba(79,142,247,0.4)'}`,
           cursor: 'pointer', transition: 'all 0.15s',
-          color: open ? 'var(--text)' : 'var(--textMuted)',
+          color: 'var(--accent)',
           flexShrink: 0,
+          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+          fontWeight: 600, fontSize: 13,
         }}
       >
         <IconGrid />
+        Moduli
+        <ChevronDown open={open} />
       </button>
 
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 149 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute', right: 0, top: 'calc(100% + 8px)',
-            minWidth: 200,
+            position: 'absolute', left: 0, top: 'calc(100% + 8px)',
+            minWidth: 210,
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             zIndex: 150, padding: 6, display: 'flex', flexDirection: 'column', gap: 1,
           }}>
-            {visible.map(item => (
-              <button
-                key={item.label}
-                onClick={() => { setOpen(false); item.action() }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 14px', borderRadius: 8,
-                  background: 'transparent', border: 'none',
-                  color: 'var(--text)', cursor: 'pointer', textAlign: 'left',
-                  transition: 'background 0.15s', width: '100%',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <span style={{ color: 'var(--textMuted)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  {item.icon}
-                </span>
-                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, fontWeight: 500 }}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
+            {visible.map(item => {
+              const isActive = item.page && item.page === currentPage
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => { if (!isActive && item.action) { setOpen(false); item.action() } }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '10px 11px 10px 14px', borderRadius: 8,
+                    background: isActive ? 'rgba(79,142,247,0.08)' : 'transparent',
+                    border: 'none',
+                    borderLeft: `3px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+                    color: isActive ? 'var(--accent)' : 'var(--text)',
+                    cursor: isActive ? 'default' : 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s', width: '100%',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ color: isActive ? 'var(--accent)' : 'var(--textMuted)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    {item.icon}
+                  </span>
+                  <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, fontWeight: isActive ? 600 : 500, flex: 1 }}>
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: 'var(--accent)', background: 'rgba(79,142,247,0.12)', borderRadius: 8, padding: '2px 7px', flexShrink: 0 }}>
+                      ovde
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </>
       )}
     </div>
+  )
+}
+
+// ── Archive Icon ──────────────────────────────────────────────────────────────
+
+function IconArchive() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
   )
 }
 
@@ -202,17 +236,17 @@ function ProjectDropdown({ projects, activeId, onSelect, onArchive, onOpenArchiv
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '0 10px 0 12px', height: 34, borderRadius: 8,
-          border: `1px solid ${open ? 'var(--borderHover)' : 'var(--border)'}`,
-          background: open ? 'var(--surfaceAlt)' : 'transparent',
-          color: 'var(--text)',
+          padding: '0 10px 0 12px', height: 30, borderRadius: 8,
+          border: `1px solid ${open ? 'var(--accent)' : 'rgba(79,142,247,0.4)'}`,
+          background: open ? 'rgba(79,142,247,0.1)' : 'transparent',
+          color: 'var(--accent)',
           fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-          fontWeight: 500, fontSize: 14,
+          fontWeight: 600, fontSize: 13,
           cursor: 'pointer', transition: 'all 0.15s',
           maxWidth: 260, minWidth: 140,
         }}
-        onMouseEnter={e => { if (!open) { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.background = 'var(--surfaceAlt)' } }}
-        onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' } }}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'rgba(79,142,247,0.12)' } }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = 'rgba(79,142,247,0.4)'; e.currentTarget.style.background = 'transparent' } }}
       >
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textAlign: 'left' }}>
@@ -221,8 +255,8 @@ function ProjectDropdown({ projects, activeId, onSelect, onArchive, onOpenArchiv
         {active && (
           <span style={{
             fontFamily: "'DM Mono'", fontSize: 10, fontWeight: 500,
-            color: 'var(--textSubtle)', background: 'var(--surfaceAlt)',
-            border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+            color: 'var(--accent)', background: 'rgba(79,142,247,0.12)',
+            border: '1px solid rgba(79,142,247,0.3)', borderRadius: 4, padding: '1px 5px', flexShrink: 0,
           }}>
             {active.epicKey}
           </span>
@@ -346,7 +380,7 @@ function ProjectDropdown({ projects, activeId, onSelect, onArchive, onOpenArchiv
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <span style={{ fontSize: 15 }}>＋</span> Dodaj projekat
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span> Dodaj projekat
                   </button>
                 )}
                 {onOpenArchive && (
@@ -362,7 +396,7 @@ function ProjectDropdown({ projects, activeId, onSelect, onArchive, onOpenArchiv
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--surfaceAlt)'; e.currentTarget.style.color = 'var(--text)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--textMuted)' }}
                   >
-                    📦 Arhiva projekata
+                    <IconArchive /> Arhiva projekata
                   </button>
                 )}
               </div>
@@ -380,7 +414,8 @@ export default function Topbar({
   user, theme, onLogout,
   onOpenSettings, onOpenUsers,
   unreadCount, recentUnread, onMarkAllRead, onNotificationClick,
-  onOpenChat, onGoToReleaseNotes, onGoToEpicViewer,
+  onOpenChat, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDashboard,
+  currentPage,
   // Project props (moved from ProjectTabs)
   projects = [], activeId, onSelectProject, onArchiveProject, onOpenArchive, projectData, onAddProject,
 }) {
@@ -403,114 +438,127 @@ export default function Topbar({
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 100,
-      height: 56,
       background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: isMobile ? '0 12px' : '0 20px',
-      gap: 12,
     }}>
 
-      {/* Left: Logo + Project Dropdown */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-        <img
-          src={theme === 'dark' ? '/logo-white.png' : '/logo-dark.png'}
-          alt="Intelisale"
-          style={{ height: 28, flexShrink: 0 }}
-        />
-        {!isMobile && (
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>
-            Project Hub
-          </span>
-        )}
-        {projects.length > 0 && (
-          <>
-            <div style={{ width: 1, height: 20, background: 'var(--border)', flexShrink: 0, marginLeft: isMobile ? 0 : 2 }} />
-            <ProjectDropdown
-              projects={projects}
-              activeId={activeId}
-              onSelect={onSelectProject}
-              onArchive={onArchiveProject}
-              onOpenArchive={onOpenArchive}
-              projectData={projectData}
-              onAdd={onAddProject}
-            />
-          </>
-        )}
-      </div>
+      {/* ── Row 1: Logo + Bell + Avatar ── */}
+      <div style={{
+        height: 56,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: isMobile ? '0 12px' : '0 20px',
+        gap: 12,
+      }}>
+        {/* Left: Logo + name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img
+            src={theme === 'dark' ? '/logo-white.png' : '/logo-dark.png'}
+            alt="Intelisale"
+            style={{ height: 28, flexShrink: 0 }}
+          />
+          {!isMobile && (
+            <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>
+              Project Hub
+            </span>
+          )}
+        </div>
 
-      {/* Right: Nav menu + Notification + Avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-        <NavMenu items={[
-          { label: 'Release Notes', icon: <IconDoc />, action: onGoToEpicViewer },
-          { label: 'Release Notes Editor', icon: <IconClipboard />, action: onGoToReleaseNotes },
+        {/* Right: Notification + Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+
+          <NotificationBell
+            unreadCount={unreadCount || 0}
+            notifications={recentUnread || []}
+            onMarkAllRead={onMarkAllRead}
+            onNotificationClick={onNotificationClick}
+          />
+
+          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
+
+          {/* Avatar — logout + users */}
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              title={user?.name}
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'var(--accent)', color: '#fff',
+                fontFamily: 'Syne', fontWeight: 700, fontSize: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: 'none', cursor: 'pointer', transition: 'background 0.15s', flexShrink: 0,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--accentHover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
+            >
+              {initials}
+            </button>
+
+            {menuOpen && (
+              <div style={{
+                position: 'absolute', right: 0, top: 42,
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 10, minWidth: 180,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden', zIndex: 200,
+              }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{user?.name}</div>
+                  <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>{user?.email}</div>
+                </div>
+                {[
+                  ...(onOpenUsers ? [{ label: '👥  Korisnici', action: () => { onOpenUsers(); setMenuOpen(false) } }] : []),
+                  { label: '🚪  Odjava', action: () => { onLogout(); setMenuOpen(false) }, red: true },
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    onClick={item.action}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '12px 16px',
+                      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                      fontSize: 14, color: item.red ? 'var(--red)' : 'var(--text)',
+                      border: 'none', background: 'transparent',
+                      cursor: 'pointer', minHeight: 44, transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>{/* end row 1 right */}
+      </div>{/* end row 1 */}
+
+      {/* ── Row 2: NavMenu + Project Dropdown ── */}
+      <div style={{
+        height: 40,
+        borderTop: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: isMobile ? '0 12px' : '0 20px',
+      }}>
+        <NavMenu currentPage={currentPage} items={[
+          { label: 'Dashboard', icon: <IconHome />, action: onGoToDashboard, page: 'dashboard' },
+          { label: 'Release Notes', icon: <IconDoc />, action: onGoToReleaseNotes, page: 'releaseNotes' },
+          ...(onGoToReleaseNotesEditor ? [{ label: 'Release Notes Editor', icon: <IconClipboard />, action: onGoToReleaseNotesEditor, page: 'releaseNotesEditor' }] : []),
           { label: 'Poruke', icon: <IconChat />, action: onOpenChat },
           { label: 'Podešavanja', icon: <IconCog />, action: onOpenSettings },
         ]} />
 
-        <NotificationBell
-          unreadCount={unreadCount || 0}
-          notifications={recentUnread || []}
-          onMarkAllRead={onMarkAllRead}
-          onNotificationClick={onNotificationClick}
-        />
+        {projects.length > 0 && (
+          <ProjectDropdown
+            projects={projects}
+            activeId={activeId}
+            onSelect={onSelectProject}
+            onArchive={onArchiveProject}
+            onOpenArchive={onOpenArchive}
+            projectData={projectData}
+            onAdd={onAddProject}
+          />
+        )}
+      </div>{/* end row 2 */}
 
-        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
-
-        {/* Avatar — logout + users */}
-        <div ref={menuRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            title={user?.name}
-            style={{
-              width: 34, height: 34, borderRadius: '50%',
-              background: 'var(--accent)', color: '#fff',
-              fontFamily: 'Syne', fontWeight: 700, fontSize: 13,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer', transition: 'background 0.15s', flexShrink: 0,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--accentHover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
-          >
-            {initials}
-          </button>
-
-          {menuOpen && (
-            <div style={{
-              position: 'absolute', right: 0, top: 42,
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 10, minWidth: 180,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden', zIndex: 200,
-            }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{user?.name}</div>
-                <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>{user?.email}</div>
-              </div>
-              {[
-                ...(onOpenUsers ? [{ label: '👥  Korisnici', action: () => { onOpenUsers(); setMenuOpen(false) } }] : []),
-                { label: '🚪  Odjava', action: () => { onLogout(); setMenuOpen(false) }, red: true },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={item.action}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '12px 16px',
-                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                    fontSize: 14, color: item.red ? 'var(--red)' : 'var(--text)',
-                    border: 'none', background: 'transparent',
-                    cursor: 'pointer', minHeight: 44, transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
