@@ -120,30 +120,37 @@ router.get('/:projectId/export', (req, res) => {
   if (role !== 'admin') return res.status(403).json({ error: 'Forbidden' })
   if (!checkProjectAccess(req.userId, projectId, role)) return res.status(403).json({ error: 'Forbidden' })
 
+  const { taskKey } = req.query
   const project = db.prepare('SELECT display_name, epic_key FROM projects WHERE id = ?').get(projectId)
+
+  const taskFilter = taskKey ? 'AND m.task_key = ?' : ''
+  const params = taskKey ? [projectId, taskKey] : [projectId]
+
   const messages = db.prepare(`
-    SELECT m.text, m.task_key, m.created_at,
+    SELECT m.text, m.task_key, m.task_summary, m.created_at,
            sender.name as sender_name,
            recip.name as recipient_name
     FROM messages m
     JOIN users sender ON sender.id = m.sender_id
     LEFT JOIN users recip ON recip.id = m.recipient_user_id
-    WHERE m.project_id = ?
-    ORDER BY m.created_at ASC
-  `).all(projectId)
+    WHERE m.project_id = ? ${taskFilter}
+    ORDER BY m.task_key ASC, m.created_at ASC
+  `).all(...params)
 
-  // Build CSV with BOM for Excel
-  const header = 'Datum;Pošiljalac;Primalac;Task;Poruka'
+  // Proper columns: Tema | Naziv taska | Datum i vreme | Pošiljalac | Primalac | Poruka
+  const header = 'Tema;Naziv taska;Datum i vreme;Pošiljalac;Primalac;Poruka'
   const rows = messages.map(m => {
-    const date = new Date(m.created_at).toLocaleString('sr-RS')
+    const tema = m.task_key || '(bez teme)'
+    const naziv = m.task_summary || ''
+    const date = new Date(m.created_at).toLocaleString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     const recipient = m.recipient_name || 'Svi klijenti'
-    const task = m.task_key || ''
     const text = `"${(m.text || '').replace(/"/g, '""')}"`
-    return [date, m.sender_name, recipient, task, text].join(';')
+    return [tema, naziv, date, m.sender_name, recipient, text].join(';')
   })
 
+  const suffix = taskKey ? `-${taskKey}` : ''
   const csv = '\uFEFF' + [header, ...rows].join('\r\n')
-  const filename = `poruke-${project?.epic_key || projectId}-${new Date().toISOString().slice(0, 10)}.csv`
+  const filename = `poruke-${project?.epic_key || projectId}${suffix}-${new Date().toISOString().slice(0, 10)}.csv`
 
   res.setHeader('Content-Type', 'text/csv; charset=utf-8')
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
@@ -161,7 +168,7 @@ router.get('/:projectId', (req, res) => {
     : ''
 
   const messages = db.prepare(`
-    SELECT m.id, m.text, m.task_key, m.created_at, m.sender_id, m.recipient_user_id,
+    SELECT m.id, m.text, m.task_key, m.task_summary, m.created_at, m.sender_id, m.recipient_user_id,
            sender.name as sender_name, sender.role as sender_role,
            recip.name as recipient_name,
            CASE WHEN mr.message_id IS NOT NULL OR m.sender_id = ? THEN 1 ELSE 0 END as is_read
@@ -189,7 +196,7 @@ router.post('/:projectId', (req, res) => {
   const role = getUserRole(req.userId)
   if (!checkProjectAccess(req.userId, projectId, role)) return res.status(403).json({ error: 'Forbidden' })
 
-  const { text, task_key, recipient_user_id } = req.body
+  const { text, task_key, task_summary, recipient_user_id } = req.body
   if (!text?.trim()) return res.status(400).json({ error: 'Tekst je obavezan' })
 
   // Validate recipient belongs to this project (admin only)
@@ -200,8 +207,8 @@ router.post('/:projectId', (req, res) => {
   }
 
   const result = db.prepare(
-    'INSERT INTO messages (project_id, sender_id, text, task_key, recipient_user_id) VALUES (?, ?, ?, ?, ?)'
-  ).run(projectId, req.userId, text.trim(), task_key || null, resolvedRecipient)
+    'INSERT INTO messages (project_id, sender_id, text, task_key, task_summary, recipient_user_id) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(projectId, req.userId, text.trim(), task_key || null, task_summary || null, resolvedRecipient)
 
   const user = db.prepare('SELECT name, role FROM users WHERE id = ?').get(req.userId)
   const recipUser = resolvedRecipient ? db.prepare('SELECT name FROM users WHERE id = ?').get(resolvedRecipient) : null
@@ -211,6 +218,7 @@ router.post('/:projectId', (req, res) => {
       id: result.lastInsertRowid,
       text: text.trim(),
       task_key: task_key || null,
+      task_summary: task_summary || null,
       recipient_user_id: resolvedRecipient,
       recipient_name: recipUser?.name || null,
       created_at: new Date().toISOString(),

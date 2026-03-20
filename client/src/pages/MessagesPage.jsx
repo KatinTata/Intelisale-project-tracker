@@ -14,13 +14,17 @@ function fmtTime(dateStr) {
 export default function MessagesPage({ project, currentUser, isClient, initialTaskKey, onClose, onMessagesRead }) {
   const [messages, setMessages] = useState([])
   const [clients, setClients] = useState([])
+  const [taskInfoMap, setTaskInfoMap] = useState({}) // key -> { key, summary }
   const [loading, setLoading] = useState(true)
   const [taskFilter, setTaskFilter] = useState(initialTaskKey || 'all')
   const [text, setText] = useState('')
   const [taskKey, setTaskKey] = useState(initialTaskKey || '')
+  const [taskKeyInfo, setTaskKeyInfo] = useState(null) // info for compose input
+  const [taskKeyLoading, setTaskKeyLoading] = useState(false)
   const [recipientId, setRecipientId] = useState('all')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef(null)
+  const debounceRef = useRef(null)
   const { isMobile } = useWindowSize()
 
   useEffect(() => {
@@ -32,12 +36,43 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
     if (!loading) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, taskFilter, loading])
 
+  // Debounced task key lookup for compose input
+  useEffect(() => {
+    setTaskKeyInfo(null)
+    const key = taskKey.trim().toUpperCase()
+    if (!key || !/^[A-Z]+-\d+$/.test(key)) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setTaskKeyLoading(true)
+      try {
+        const info = await api.getTaskInfo(key)
+        setTaskKeyInfo(info)
+        setTaskInfoMap(prev => ({ ...prev, [key]: info.summary }))
+      } catch {}
+      setTaskKeyLoading(false)
+    }, 500)
+    return () => clearTimeout(debounceRef.current)
+  }, [taskKey])
+
   async function loadMessages() {
     setLoading(true)
     try {
       const msgs = await api.getMessages(project.id)
       setMessages(msgs)
       onMessagesRead?.()
+      // Build taskInfoMap from stored task_summary in messages
+      const fromDb = {}
+      msgs.forEach(m => { if (m.task_key && m.task_summary) fromDb[m.task_key] = m.task_summary })
+      setTaskInfoMap(fromDb)
+      // Fetch summaries for keys that are missing (best-effort, don't block)
+      const missing = [...new Set(msgs.filter(m => m.task_key && !m.task_summary).map(m => m.task_key))]
+      if (missing.length) {
+        Promise.all(missing.map(k => api.getTaskInfo(k).catch(() => null))).then(results => {
+          const extra = {}
+          results.forEach(r => { if (r) extra[r.key] = r.summary })
+          setTaskInfoMap(prev => ({ ...prev, ...extra }))
+        })
+      }
     } catch {}
     setLoading(false)
   }
@@ -54,16 +89,17 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
     if (!text.trim() || sending) return
     setSending(true)
     try {
+      const resolvedKey = taskKey.trim().toUpperCase() || undefined
       const body = {
         text: text.trim(),
-        task_key: taskKey.trim().toUpperCase() || undefined,
+        task_key: resolvedKey,
+        task_summary: resolvedKey ? (taskKeyInfo?.summary || taskInfoMap[resolvedKey] || undefined) : undefined,
         recipient_user_id: (!isClient && recipientId !== 'all') ? parseInt(recipientId) : undefined,
       }
       const { message } = await api.sendMessage(project.id, body)
       setMessages(prev => [...prev, message])
       setText('')
-      // Auto-set filter to task key if provided
-      if (body.task_key) setTaskFilter(body.task_key)
+      if (resolvedKey) setTaskFilter(resolvedKey)
     } catch (err) {
       alert(err.message)
     } finally {
@@ -73,7 +109,8 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
 
   function handleExport() {
     const token = localStorage.getItem('jt_token')
-    fetch(`/api/messages/${project.id}/export`, {
+    const qs = taskFilter !== 'all' ? `?taskKey=${encodeURIComponent(taskFilter)}` : ''
+    fetch(`/api/messages/${project.id}/export${qs}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.blob())
@@ -81,7 +118,8 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `poruke-${project.epicKey}-${new Date().toISOString().slice(0, 10)}.csv`
+        const suffix = taskFilter !== 'all' ? `-${taskFilter}` : ''
+        a.download = `poruke-${project.epicKey}${suffix}-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
       })
@@ -126,7 +164,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
-            ⬇ Eksportuj CSV
+            ⬇ {taskFilter !== 'all' ? `Export: ${taskFilter}` : 'Eksportuj CSV'}
           </button>
         )}
       </div>
@@ -140,34 +178,39 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
             <div style={{ padding: '0 16px 10px', fontFamily: "'DM Mono'", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--textSubtle)' }}>
               Filteri po tasku
             </div>
-            {[{ key: 'all', label: 'Sve poruke', count: messages.length }, ...taskKeys.map(k => ({ key: k, label: k, count: messages.filter(m => m.task_key === k).length }))].map(p => (
+            {[{ key: 'all', label: 'Sve poruke', summary: null, count: messages.length }, ...taskKeys.map(k => ({ key: k, label: k, summary: taskInfoMap[k] || null, count: messages.filter(m => m.task_key === k).length }))].map(p => (
               <button
                 key={p.key}
                 onClick={() => setTaskFilter(p.key)}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   justifyContent: 'space-between',
                   padding: '8px 16px',
-                  fontFamily: p.key === 'all' ? "'TW Cen MT', 'Century Gothic'" : "'DM Mono'",
-                  fontSize: p.key === 'all' ? 13 : 12,
-                  color: taskFilter === p.key ? 'var(--accent)' : 'var(--textMuted)',
-                  background: taskFilter === p.key ? 'rgba(79,142,247,0.08)' : 'transparent',
                   borderLeft: taskFilter === p.key ? '2px solid var(--accent)' : '2px solid transparent',
                   border: 'none',
                   textAlign: 'left',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
                   width: '100%',
+                  background: taskFilter === p.key ? 'rgba(79,142,247,0.08)' : 'transparent',
+                  gap: 6,
                 }}
                 onMouseEnter={e => { if (taskFilter !== p.key) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-                onMouseLeave={e => { if (taskFilter !== p.key) e.currentTarget.style.background = 'transparent' }}
+                onMouseLeave={e => { if (taskFilter !== p.key) e.currentTarget.style.background = taskFilter === p.key ? 'rgba(79,142,247,0.08)' : 'transparent' }}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {p.key !== 'all' && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
-                  {p.label}
-                </span>
-                <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', flexShrink: 0, marginLeft: 6 }}>{p.count}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: p.key === 'all' ? "'TW Cen MT', 'Century Gothic'" : "'DM Mono'", fontSize: p.key === 'all' ? 13 : 12, color: taskFilter === p.key ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.key !== 'all' && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
+                    {p.label}
+                  </div>
+                  {p.summary && (
+                    <div style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 11, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                      {p.summary}
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', flexShrink: 0, marginTop: 2 }}>{p.count}</span>
               </button>
             ))}
           </div>
@@ -227,9 +270,16 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                       </div>
                     )}
                     {m.task_key && (showHeader || filtered[i - 1]?.task_key !== m.task_key) && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 4, padding: '2px 8px', marginBottom: 4 }}>
-                        🔗 {m.task_key}
-                      </span>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 6, padding: '3px 10px', marginBottom: 4 }}>
+                        <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>🔗 {m.task_key}</span>
+                        {(m.task_summary || taskInfoMap[m.task_key]) && (
+                          <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
+                            {(m.task_summary || taskInfoMap[m.task_key]).length > 50
+                              ? (m.task_summary || taskInfoMap[m.task_key]).slice(0, 50) + '...'
+                              : (m.task_summary || taskInfoMap[m.task_key])}
+                          </span>
+                        )}
+                      </div>
                     )}
                     <div style={{
                       padding: '9px 14px',
@@ -258,16 +308,31 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
             <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {/* Task key + recipient row */}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
-                  <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>Task:</span>
-                  <input
-                    value={taskKey}
-                    onChange={e => setTaskKey(e.target.value.toUpperCase())}
-                    placeholder="ECOM-1774"
-                    style={{ width: 120, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text)', fontSize: 12, fontFamily: "'DM Mono'", outline: 'none' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 auto' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>Task:</span>
+                    <input
+                      value={taskKey}
+                      onChange={e => setTaskKey(e.target.value.toUpperCase())}
+                      placeholder="ECOM-1774"
+                      style={{ width: 120, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text)', fontSize: 12, fontFamily: "'DM Mono'", outline: 'none' }}
+                      onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                      onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                    />
+                  </div>
+                  {taskKeyLoading && (
+                    <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', paddingLeft: 44 }}>tražim...</div>
+                  )}
+                  {!taskKeyLoading && taskKeyInfo && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 6, padding: '2px 8px', marginLeft: 44 }}>
+                      <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>🔗 {taskKeyInfo.key}</span>
+                      {taskKeyInfo.summary && (
+                        <span style={{ fontFamily: "'TW Cen MT', 'Century Gothic'", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
+                          {taskKeyInfo.summary.length > 60 ? taskKeyInfo.summary.slice(0, 60) + '...' : taskKeyInfo.summary}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {!isClient && clients.length > 0 && (
