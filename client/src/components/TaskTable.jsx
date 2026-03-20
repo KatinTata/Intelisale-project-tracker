@@ -267,6 +267,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
     if (filter === 'inprog') return t.statusCategory === 'inprog'
     if (filter === 'todo') return t.statusCategory === 'todo'
     if (filter === 'over') return overKeys.has(t.key)
+    if (filter === 'noest') return !t.est || t.est === 0
     return true
   })
 
@@ -277,6 +278,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
     inprog:  tasks.filter(t => t.statusCategory === 'inprog').length,
     todo:    tasks.filter(t => t.statusCategory === 'todo').length,
     over:    overTasks.length,
+    noest:   tasks.filter(t => !t.est || t.est === 0).length,
   }
 
   const filterPills = [
@@ -285,7 +287,8 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
     { key: 'testing', label: `🧪 ${counts.testing}` },
     { key: 'inprog',  label: `🔄 ${counts.inprog}` },
     { key: 'todo',    label: `📋 ${counts.todo}` },
-    ...(!isClient ? [{ key: 'over', label: `⚠️ ${counts.over}` }] : []),
+    ...(!isClient ? [{ key: 'over',  label: `⚠️ ${counts.over}` }] : []),
+    ...(!isClient ? [{ key: 'noest', label: `📐 Bez procene ${counts.noest}` }] : []),
   ]
 
   function toggleExpand(key) {
