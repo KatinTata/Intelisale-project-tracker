@@ -20,7 +20,7 @@ const COL_MOBILE         = '100px 1fr 100px'
 
 function TaskKey({ taskKey, jiraUrl, over, isClient }) {
   const color = (!isClient && over) ? 'var(--red)' : 'var(--accent)'
-  if (jiraUrl) {
+  if (jiraUrl && !isClient) {
     const base = jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
     const href = `https://${base}/browse/${taskKey}`
     return (
