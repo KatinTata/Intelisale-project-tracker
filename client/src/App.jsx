@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
 import EpicViewerPage from './pages/EpicViewerPage.jsx'
+import BrainAnimation from './components/BrainAnimation.jsx'
 
 export default function App() {
   const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'epicViewer'
@@ -66,8 +67,9 @@ export default function App() {
 
   if (checking) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>Učitavam...</div>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        <BrainAnimation opacity={0.35} fullscreen />
+        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", position: 'relative', zIndex: 1 }}>Učitavam...</div>
       </div>
     )
   }

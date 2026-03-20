@@ -72,13 +72,17 @@ function computeChanges(data, previousData) {
   return changes
 }
 
-function findAuthor(changelog, reporter, changeType) {
+function findAuthor(changelog, reporter, assignee, changeType) {
   const fieldMap = { status: 'status', est: 'timeoriginalestimate', spent: 'timespent' }
-  if (changeType === 'new') return reporter
+  if (changeType === 'new') {
+    // Most recent changelog entry author; fallback to reporter (creator)
+    return changelog[0]?.author || reporter || null
+  }
   const field = fieldMap[changeType]
   if (!field) return null
-  const entry = changelog.find(h => h.items.some(i => i.field === field))
-  return entry?.author || null
+  // Case-insensitive field match, newest-first (changelog is already reversed)
+  const entry = changelog.find(h => h.items.some(i => i.field.toLowerCase() === field))
+  return entry?.author || assignee || reporter || null
 }
 
 function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
@@ -110,8 +114,8 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
 
     stored.changes.forEach(async (c) => {
       try {
-        const { changelog, reporter } = await api.getChangelog(c.key)
-        const author = findAuthor(changelog, reporter, c.type)
+        const { changelog, reporter, assignee } = await api.getChangelog(c.key)
+        const author = findAuthor(changelog, reporter, assignee, c.type)
         if (author) setAuthorMap(prev => ({ ...prev, [c.key + c.type]: author }))
       } catch {}
     })

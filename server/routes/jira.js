@@ -150,17 +150,19 @@ router.get('/changelog/:key', async (req, res) => {
     const jira = getUserJira(req.userId)
     if (!jira) return res.status(400).json({ error: 'Jira nije konfigurisan' })
 
-    const data = await jiraGet(jira.jiraUrl, `/issue/${req.params.key}?fields=reporter&expand=changelog`, jira.auth)
+    const data = await jiraGet(jira.jiraUrl, `/issue/${req.params.key}?fields=reporter,assignee&expand=changelog`, jira.auth)
 
-    const histories = (data.changelog?.histories || []).reverse() // newest first
+    // Jira returns histories oldest-first; reverse to get newest first
+    const histories = [...(data.changelog?.histories || [])].reverse()
     const result = histories.map(h => ({
-      author: h.author?.displayName || h.author?.emailAddress || 'Nepoznat',
+      author: h.author?.displayName || h.author?.emailAddress || null,
       created: h.created,
       items: h.items.map(i => ({ field: i.field, from: i.fromString, to: i.toString })),
     }))
 
     res.json({
       reporter: data.fields?.reporter?.displayName || null,
+      assignee: data.fields?.assignee?.displayName || null,
       changelog: result,
     })
   } catch (err) {
