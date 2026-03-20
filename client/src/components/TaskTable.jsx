@@ -18,7 +18,27 @@ const COL_TABLET         = '120px 1fr 120px 140px 90px'
 const COL_TABLET_CLIENT  = '120px 1fr 120px 140px'
 const COL_MOBILE         = '100px 1fr 100px'
 
-function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpenQuickMsg }) {
+function TaskKey({ taskKey, jiraUrl, over, isClient }) {
+  const color = (!isClient && over) ? 'var(--red)' : 'var(--accent)'
+  if (jiraUrl) {
+    const base = jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+    const href = `https://${base}/browse/${taskKey}`
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        style={{ fontFamily: "'DM Mono'", fontSize: 12, color, fontWeight: 500, textDecoration: 'none' }}
+        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+      >{taskKey}</a>
+    )
+  }
+  return <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color, fontWeight: 500 }}>{taskKey}</span>
+}
+
+function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpenQuickMsg, jiraUrl }) {
   const [hovered, setHovered] = useState(false)
   const pct = task.est > 0 ? Math.min(task.spent / task.est, 2) : 0
   const barColor = (!isClient && task.over) ? 'var(--red)' : 'var(--accent)'
@@ -78,12 +98,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
         )}
         {/* ID */}
         <div>
-          <div style={{
-            fontFamily: "'DM Mono'",
-            fontSize: 12,
-            color: (!isClient && task.over) ? 'var(--red)' : 'var(--accent)',
-            fontWeight: 500,
-          }}>{task.key}</div>
+          <TaskKey taskKey={task.key} jiraUrl={jiraUrl} over={task.over} isClient={isClient} />
           {!isClient && task.over && !isMobile && (
             <div style={{ fontSize: 10, color: 'var(--red)', fontFamily: "'DM Mono'", marginTop: 2 }}>
               +{task.overPct}%
@@ -193,7 +208,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
               borderTop: '1px solid var(--border)',
               flexWrap: 'wrap',
             }}>
-              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>{sub.key}</span>
+              <span style={{ flexShrink: 0 }}><TaskKey taskKey={sub.key} jiraUrl={jiraUrl} over={false} isClient={isClient} /></span>
               <span style={{ fontSize: 12, color: 'var(--textMuted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.summary}</span>
               <Badge color={statusColor(sub.status)}>{sub.status}</Badge>
             </div>
@@ -213,7 +228,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
           borderBottom: '1px solid var(--border)',
           background: 'var(--surfaceAlt)',
         }}>
-          <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>{sub.key}</div>
+          <div><TaskKey taskKey={sub.key} jiraUrl={jiraUrl} over={false} isClient={isClient} /></div>
           <div style={{ fontSize: 12, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'center' }}>
             {sub.components?.length > 0 && <Badge color="gray">{sub.components[0]}</Badge>}
             <span>{sub.summary}</span>
@@ -236,7 +251,7 @@ function TaskRow({ task, expanded, onToggle, isMobile, isTablet, isClient, onOpe
   )
 }
 
-export default function TaskTable({ tasks = [], overTasks = [], isClient, projectId, onOpenMessages }) {
+export default function TaskTable({ tasks = [], overTasks = [], isClient, projectId, onOpenMessages, jiraUrl }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState({})
@@ -378,6 +393,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
             isTablet={isTablet}
             isClient={isClient}
             onOpenQuickMsg={onOpenMessages ? (task) => onOpenMessages(task.key) : undefined}
+            jiraUrl={jiraUrl}
           />
         ))
       )}

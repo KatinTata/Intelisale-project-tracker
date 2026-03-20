@@ -16,95 +16,136 @@ function fmtLastRefresh(date) {
   return `pre ${Math.floor(diff / 3600)}h`
 }
 
-function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
-  if (!previousData) return null
+function jiraLink(jiraUrl, key) {
+  if (!jiraUrl) return null
+  const base = jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+  return `https://${base}/browse/${key}`
+}
 
+function changeIcon(type, toStatus) {
+  if (type === 'new') return '🆕'
+  if (type === 'spent') return '⏱️'
+  if (type === 'est') return '📐'
+  if (type === 'status') {
+    if (['Resolved', 'Closed', 'Done'].includes(toStatus)) return '✅'
+    if (['For Testing', 'TESTING STARTED'].includes(toStatus)) return '🧪'
+    if (['For Grooming', 'To Do', 'Estimated'].includes(toStatus)) return '📋'
+    return '🔄'
+  }
+  return '•'
+}
+
+function changeColor(type, toStatus) {
+  if (type === 'new') return 'var(--accent)'
+  if (type === 'spent') return 'var(--textMuted)'
+  if (type === 'est') return 'var(--textMuted)'
+  if (type === 'status') {
+    if (['Resolved', 'Closed', 'Done'].includes(toStatus)) return 'var(--green)'
+    if (['For Testing', 'TESTING STARTED'].includes(toStatus)) return 'var(--amber)'
+    return 'var(--accent)'
+  }
+  return 'var(--textMuted)'
+}
+
+function computeChanges(data, previousData) {
+  if (!previousData?.tasks) return []
+  const prevMap = {}
+  previousData.tasks.forEach(t => { prevMap[t.key] = t })
   const changes = []
+  for (const task of data.tasks) {
+    const prev = prevMap[task.key]
+    if (!prev) {
+      changes.push({ type: 'new', key: task.key, summary: task.summary })
+    } else {
+      if (prev.status !== task.status) {
+        changes.push({ type: 'status', key: task.key, summary: task.summary, from: prev.status, to: task.status })
+      }
+      if (Math.abs(task.est - prev.est) > 300) {
+        changes.push({ type: 'est', key: task.key, summary: task.summary, from: prev.est, to: task.est })
+      }
+      if (task.spent - prev.spent > 300) {
+        changes.push({ type: 'spent', key: task.key, summary: task.summary, diff: task.spent - prev.spent })
+      }
+    }
+  }
+  return changes
+}
 
-  const doneDiff = data.done - previousData.done
-  const testingDiff = data.testing - previousData.testing
-  const inprogDiff = data.inprog - previousData.inprog
-  const spentDiff = data.totalSpent - previousData.totalSpent
-  const overDiff = data.overTasks.length - previousData.overTasks.length
-
-  if (doneDiff !== 0) changes.push({
-    icon: '✅',
-    text: `${doneDiff > 0 ? '+' : ''}${doneDiff} završen${Math.abs(doneDiff) === 1 ? 'o' : 'ih'}`,
-    color: doneDiff > 0 ? 'var(--green)' : 'var(--textMuted)',
-  })
-  if (testingDiff !== 0) changes.push({
-    icon: '🧪',
-    text: `${testingDiff > 0 ? '+' : ''}${testingDiff} testing`,
-    color: testingDiff > 0 ? 'var(--amber)' : 'var(--textMuted)',
-  })
-  if (inprogDiff !== 0) changes.push({
-    icon: '🔄',
-    text: `${inprogDiff > 0 ? '+' : ''}${inprogDiff} in progress`,
-    color: 'var(--accent)',
-  })
-  if (Math.abs(spentDiff) > 60) changes.push({
-    icon: '⏱️',
-    text: `${spentDiff > 0 ? '+' : ''}${fmtHours(Math.abs(spentDiff))} utrošeno`,
-    color: 'var(--textMuted)',
-  })
-  if (overDiff !== 0) changes.push({
-    icon: '⚠️',
-    text: `${overDiff > 0 ? '+' : ''}${overDiff} prekoračenje`,
-    color: overDiff > 0 ? 'var(--red)' : 'var(--green)',
-  })
-
+function ChangesFeed({ data, previousData, previousTime, jiraUrl, onClose }) {
+  const [dismissed, setDismissed] = useState(false)
+  if (dismissed) return null
+  const changes = computeChanges(data, previousData)
   if (changes.length === 0) return null
 
   return (
     <div style={{
-      background: 'var(--surfaceAlt)',
+      background: 'var(--surface)',
       border: '1px solid var(--border)',
-      borderRadius: 10,
-      padding: '12px 16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      flexWrap: 'wrap',
+      borderRadius: 12,
+      overflow: 'hidden',
     }}>
-      <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', flexShrink: 0 }}>
-        Promene od poslednjeg osvežavanja{previousTime ? ` (pre ${fmtLastRefresh(previousTime)})` : ''}:
-      </span>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
-        {changes.map((c, i) => (
-          <span key={i} style={{
-            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-            fontSize: 13,
-            fontWeight: 600,
-            color: c.color,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}>
-            {c.icon} {c.text}
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '12px 16px',
+        background: 'var(--surfaceAlt)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+          📊 {changes.length} {changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja
+        </span>
+        {previousTime && (
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
+            pre {fmtLastRefresh(previousTime)}
           </span>
-        ))}
+        )}
+        <button
+          onClick={() => { setDismissed(true); onClose?.() }}
+          style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: '50%', border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+        >×</button>
       </div>
-      <button
-        onClick={onClose}
-        style={{
-          marginLeft: 'auto',
-          flexShrink: 0,
-          width: 24,
-          height: 24,
-          borderRadius: '50%',
-          border: '1px solid var(--border)',
-          background: 'transparent',
-          color: 'var(--textMuted)',
-          fontSize: 14,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          lineHeight: 1,
-        }}
-      >
-        ×
-      </button>
+
+      {/* Change rows */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {changes.map((c, i) => {
+          const link = jiraLink(jiraUrl, c.key)
+          const color = changeColor(c.type, c.to)
+          return (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 16px',
+              borderBottom: i < changes.length - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{changeIcon(c.type, c.to)}</span>
+              {link ? (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--accent)', fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                >{c.key}</a>
+              ) : (
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>{c.key}</span>
+              )}
+              <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                {c.summary}
+              </span>
+              <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 600, color, flexShrink: 0, marginLeft: 'auto' }}>
+                {c.type === 'new'    && 'Novi task'}
+                {c.type === 'status' && <>{c.from} <span style={{ color: 'var(--textSubtle)' }}>→</span> {c.to}</>}
+                {c.type === 'est'    && <>{fmtHours(c.from)} <span style={{ color: 'var(--textSubtle)' }}>→</span> {fmtHours(c.to)}</>}
+                {c.type === 'spent'  && `+${fmtHours(c.diff)} utrošeno`}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -112,14 +153,9 @@ function ChangeSummaryBanner({ data, previousData, previousTime, onClose }) {
 export default function ProjectCard({
   project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
-  previousData, previousTime, isClient, onOpenMessages,
+  previousData, previousTime, isClient, onOpenMessages, jiraUrl,
 }) {
-  const [changeBannerDismissed, setChangeBannerDismissed] = useState(false)
   const { isMobile, isTablet } = useWindowSize()
-
-  useEffect(() => {
-    setChangeBannerDismissed(false)
-  }, [previousTime])
 
   if (loading) {
     return (
@@ -288,16 +324,6 @@ export default function ProjectCard({
         )}
       </div>
 
-      {/* Change summary banner */}
-      {!changeBannerDismissed && (
-        <ChangeSummaryBanner
-          data={data}
-          previousData={previousData}
-          previousTime={previousTime}
-          onClose={() => setChangeBannerDismissed(true)}
-        />
-      )}
-
       {/* Metric cards */}
       <MetricCards data={{ total, done, inprog, testing, todo, totalEst, totalSpent, overTasks }} isClient={isClient} />
 
@@ -339,11 +365,21 @@ export default function ProjectCard({
         )}
       </div>
 
+      {/* Changes feed — admin only, below charts */}
+      {!isClient && (
+        <ChangesFeed
+          data={data}
+          previousData={previousData}
+          previousTime={previousTime}
+          jiraUrl={jiraUrl}
+        />
+      )}
+
       {/* Overrun banner — admin only */}
       {!isClient && <OverrunBanner overTasks={overTasks} />}
 
       {/* Task table */}
-      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} />
+      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} jiraUrl={jiraUrl} />
     </div>
   )
 }

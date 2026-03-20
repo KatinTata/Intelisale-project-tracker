@@ -273,6 +273,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               previousData={prevProjectData[activeProject.id]?.data}
               previousTime={prevProjectData[activeProject.id]?.time}
               isClient={isClient}
+              jiraUrl={user.jiraUrl}
               onOpenMessages={(taskKey) => {
                 setChatTaskKey(taskKey || null)
                 setChatOpen(true)
