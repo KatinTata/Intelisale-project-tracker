@@ -179,15 +179,16 @@ function fmtDate(str) {
 
 function NotesByProject({ notesList, isClient, onOpen, onRelease, onDelete }) {
   // Group by section_name; notes without a section go under null key
+  const NONE = '__none__'
   const groups = {}
   for (const note of notesList) {
-    const key = note.section_name || null
+    const key = note.section_name || NONE
     if (!groups[key]) groups[key] = []
     groups[key].push(note)
   }
 
-  const namedSections = Object.keys(groups).filter(k => k !== null).sort((a, b) => a.localeCompare(b))
-  const hasUnsectioned = !!groups[null]
+  const namedSections = Object.keys(groups).filter(k => k !== NONE).sort((a, b) => a.localeCompare(b))
+  const hasUnsectioned = !!groups[NONE]
 
   // Flat list — no grouping if everything is unsectioned
   if (namedSections.length === 0) {
@@ -201,21 +202,21 @@ function NotesByProject({ notesList, isClient, onOpen, onRelease, onDelete }) {
     )
   }
 
-  const orderedKeys = [...namedSections, ...(hasUnsectioned ? [null] : [])]
+  const orderedKeys = [...namedSections, ...(hasUnsectioned ? [NONE] : [])]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       {orderedKeys.map(sectionName => {
         const notes = groups[sectionName]
         return (
-          <div key={sectionName ?? '__unsectioned__'}>
+          <div key={sectionName}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               marginBottom: 16, paddingBottom: 10,
               borderBottom: '1px solid var(--border)',
             }}>
               <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', flex: 1 }}>
-                {sectionName ?? 'Ostalo'}
+                {sectionName === NONE ? 'Ostalo' : sectionName}
               </span>
               <span style={{
                 fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)',
