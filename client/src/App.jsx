@@ -15,6 +15,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [epicViewerKey, setEpicViewerKey] = useState(null)
+  const [openChatOnDashboard, setOpenChatOnDashboard] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
 
@@ -93,6 +94,12 @@ export default function App() {
 
   const openSettings = () => setSettingsOpen(true)
 
+  function goToMessages() {
+    setOpenChatOnDashboard(true)
+    window.history.replaceState({}, '', '/')
+    setPage('dashboard')
+  }
+
   if (page === 'epicViewer' && user) {
     return (
       <>
@@ -104,7 +111,7 @@ export default function App() {
           onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onOpenSettings={openSettings}
-          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onOpenChat={goToMessages}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>
@@ -121,7 +128,7 @@ export default function App() {
           onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
           onGoToEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
           onOpenSettings={openSettings}
-          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onOpenChat={goToMessages}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>
@@ -139,7 +146,7 @@ export default function App() {
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
           onOpenSettings={openSettings}
-          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onOpenChat={goToMessages}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>
@@ -157,7 +164,7 @@ export default function App() {
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
           onOpenSettings={openSettings}
-          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onOpenChat={goToMessages}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>
@@ -176,6 +183,8 @@ export default function App() {
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
           onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          openChatOnMount={openChatOnDashboard}
+          onChatMountConsumed={() => setOpenChatOnDashboard(false)}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>

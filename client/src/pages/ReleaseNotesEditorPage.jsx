@@ -111,12 +111,32 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       const helpLinks = getHelpLinks(task)
       const hasExpand = hasDesc || images.length > 0
 
-      const imagesHtml = images.map((img, imgIdx) => `
-        <div class="img-wrap">
-          <div class="img-print-label">Slika ${imgIdx + 1}${img.desc ? ` &mdash; <em class="img-desc-em">${esc(img.desc)}</em>` : ''}</div>
-          <img src="${img.base64}" alt="${esc(img.desc || '')}" style="max-width:100%;max-height:400px;border-radius:8px;display:block;margin-top:4px">
-          ${img.desc ? `<div class="img-screen-desc" style="font-size:12px;color:#6B7A99;margin-top:6px;font-family:'DM Sans',sans-serif;line-height:1.5">${esc(img.desc)}</div>` : ''}
-        </div>`).join('')
+      const imageLayout = edit.imageLayout || 'grid'
+      let imagesHtml = ''
+      if (images.length > 0) {
+        if (imageLayout === 'grid') {
+          const pairs = images.map((img, imgIdx) => {
+            const isLast = imgIdx === images.length - 1
+            const isOdd = images.length % 2 !== 0
+            const spanFull = isOdd && isLast
+            return `<div class="img-pair${spanFull ? ' img-pair--full' : ''}">
+              <div class="img-print-label">Slika ${imgIdx + 1}${img.desc ? ` &mdash; <em class="img-desc-em">${esc(img.desc)}</em>` : ''}</div>
+              <img src="${img.base64}" alt="${esc(img.desc || '')}" style="width:100%;${spanFull ? 'max-height:140px' : 'max-height:160px'};object-fit:contain;border-radius:4px;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+              ${img.desc ? `<div class="img-screen-desc">${esc(img.desc)}</div>` : ''}
+            </div>`
+          })
+          imagesHtml = `<div class="images-block images-grid">${pairs.join('')}</div>`
+        } else {
+          const rows = images.map((img, imgIdx) => `
+            <div class="img-side-row">
+              <img src="${img.base64}" alt="${esc(img.desc || '')}" style="width:130px;height:100px;object-fit:contain;flex-shrink:0;border-radius:4px;background:#F3F4F6;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+              <div class="img-side-text">
+                <span class="img-num">Slika ${imgIdx + 1}</span>${img.desc ? `<span class="img-side-desc"> &mdash; ${esc(img.desc)}</span>` : ''}
+              </div>
+            </div>`)
+          imagesHtml = `<div class="images-block images-side">${rows.join('')}</div>`
+        }
+      }
 
       const helpHtml = helpLinks.map(link => {
         const url = jiraBase ? `${jiraBase}/browse/${esc(link.key)}` : null
@@ -205,6 +225,16 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .task-desc-inner{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);line-height:1.75}
     .img-wrap{margin-top:12px}
     .img-print-label{display:none}
+    .images-block{margin-top:12px}
+    .images-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .img-pair{break-inside:avoid-page;page-break-inside:avoid}
+    .img-pair--full{grid-column:span 2}
+    .img-screen-desc{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+    .images-side{display:flex;flex-direction:column;gap:8px}
+    .img-side-row{display:flex;align-items:flex-start;gap:12px;break-inside:avoid-page;page-break-inside:avoid}
+    .img-side-text{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);line-height:1.55;padding-top:2px}
+    .img-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--muted)}
+    .img-side-desc{color:var(--muted);font-style:italic}
     .help-link-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
     .help-open{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid rgba(79,142,247,0.3);border-radius:6px;white-space:nowrap;flex-shrink:0}
     .help-open:hover{background:rgba(79,142,247,0.1)}
@@ -213,11 +243,11 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .print-header{display:none}
     .print-footer{display:none}
     .print-footer-override{display:none}
-    @page{margin:16mm 18mm 20mm 18mm}
+    @page{margin:12mm 16mm 16mm 16mm}
     @media print{
       html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       *{font-family:'Trebuchet MS','Century Gothic',Arial,sans-serif !important}
-      body{background:#fff !important;color:#0F1523 !important}
+      body{background:#fff !important;color:#0F1523 !important;orphans:2;widows:2}
       /* ── Hide screen-only elements ── */
       .cover-page{display:none !important}
       .pbar{display:none !important}
@@ -240,8 +270,11 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       .sec-icon{display:none !important}
       .sec-count{display:none !important}
       .sec-label{font-size:16px !important;font-weight:700 !important;color:#2563EB !important;display:block !important}
+      /* ── Task rows and section headers: don't orphan ── */
+      .task-row{break-after:avoid;page-break-after:avoid}
+      .section-hdr{break-after:avoid;page-break-after:avoid}
       /* ── Task cards: never split across pages ── */
-      .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:14px 18px !important;margin-bottom:12px !important;break-inside:avoid !important;page-break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
+      .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:10px 14px !important;margin-bottom:10px !important;break-inside:avoid !important;page-break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
       /* ── Simple task cards (no desc/images) ── */
       .task-card--simple{border-left:3px solid #BFDBFE !important;padding:9px 18px !important}
       /* ── Key badge ── */
@@ -258,6 +291,16 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       .img-screen-desc{display:none !important}
       .img-wrap{margin-bottom:14px !important;margin-top:0 !important}
       .img-wrap img{max-width:100% !important;border-radius:5px !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      /* Grid layout */
+      .images-grid{display:grid !important;grid-template-columns:1fr 1fr !important;gap:6px !important;margin-top:8px !important}
+      .img-pair{break-inside:avoid-page !important;page-break-inside:avoid !important}
+      .img-pair--full{grid-column:span 2 !important}
+      /* Side layout */
+      .images-side{display:flex !important;flex-direction:column !important;gap:8px !important;margin-top:8px !important}
+      .img-side-row{display:flex !important;align-items:flex-start !important;gap:10px !important;break-inside:avoid-page !important;page-break-inside:avoid !important}
+      .img-side-text{font-size:11px !important;color:#374151 !important;line-height:1.5 !important;padding-top:2px !important}
+      .img-num{font-weight:600 !important;color:#374151 !important}
+      .img-side-desc{color:#5A6480 !important;font-style:italic !important}
       /* ── Help links ── */
       .help-link-row{border-top:0.5px solid #F3F4F6 !important;margin-top:10px !important;padding-top:10px !important}
       .help-open{color:#2563EB !important;font-size:11px !important;font-weight:600 !important;border-color:#93C5FD !important}
@@ -598,6 +641,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
           ),
         },
       }))
+      showToast(t('rne.translateDone'))
     } catch {
       showToast(t('rne.aiTranslateFailed'))
     } finally {
@@ -656,6 +700,10 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     }))
   }
 
+  function setImageLayout(taskId, layout) {
+    setTaskEdits(prev => ({ ...prev, [taskId]: { ...prev[taskId], imageLayout: layout } }))
+  }
+
   async function openPublishModal() {
     try {
       const [usersData, sectionsData] = await Promise.all([
@@ -710,7 +758,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     }
   }
 
-  const hasAiKey = true // key stored server-side per user
+  const hasAiKey = true // server either uses user's key or ANTHROPIC_API_KEY env var
 
   // ── Step 1 ─────────────────────────────────────────────────────────────────
 
@@ -1171,6 +1219,19 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                       )}
                       {(edit.images || []).length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {/* Layout toggle */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', flexShrink: 0 }}>Prikaz slika:</span>
+                            {[{ value: 'grid', label: 'A — Grid' }, { value: 'side', label: 'B — Pored teksta' }].map(opt => {
+                              const active = (edit.imageLayout || 'grid') === opt.value
+                              return (
+                                <button key={opt.value} onClick={() => setImageLayout(task.id, opt.value)}
+                                  style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: active ? 600 : 400, padding: '4px 10px', borderRadius: 6, border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`, background: active ? 'rgba(79,142,247,0.12)' : 'transparent', color: active ? 'var(--accent)' : 'var(--textMuted)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                  {opt.label}
+                                </button>
+                              )
+                            })}
+                          </div>
                           {(edit.images || []).map((img, imgIdx) => (
                             <div key={imgIdx} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
                               <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1676,8 +1737,8 @@ function PublishModal({ clientUsers, sections = [], onClose, onPublish, publishS
   const t = useT()
   const [selected, setSelected] = useState(new Set())
   const [publishing, setPublishing] = useState(false)
-  const [sectionMode, setSectionMode] = useState('none') // 'none' | 'existing' | 'new'
-  const [selectedSectionId, setSelectedSectionId] = useState('')
+  const [sectionDropOpen, setSectionDropOpen] = useState(false)
+  const [selectedSection, setSelectedSection] = useState(null) // null | { id, name } | { id: 'new', name: '' }
   const [newSectionName, setNewSectionName] = useState('')
 
   function toggle(id) {
@@ -1685,9 +1746,9 @@ function PublishModal({ clientUsers, sections = [], onClose, onPublish, publishS
   }
 
   function getSectionName() {
-    if (sectionMode === 'existing') return sections.find(s => s.id === Number(selectedSectionId))?.name || null
-    if (sectionMode === 'new') return newSectionName.trim() || null
-    return null
+    if (!selectedSection) return null
+    if (selectedSection.id === 'new') return newSectionName.trim() || null
+    return selectedSection.name
   }
 
   async function handleConfirm() {
@@ -1695,6 +1756,9 @@ function PublishModal({ clientUsers, sections = [], onClose, onPublish, publishS
     await onPublish([...selected], getSectionName())
     setPublishing(false)
   }
+
+  const isNew = selectedSection?.id === 'new'
+  const sectionLabel = !selectedSection ? 'Bez sekcije' : isNew ? (newSectionName || 'Nova sekcija...') : selectedSection.name
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -1705,48 +1769,61 @@ function PublishModal({ clientUsers, sections = [], onClose, onPublish, publishS
         </div>
         <div style={{ padding: '16px 24px' }}>
 
-          {/* Section picker */}
+          {/* Section picker — dropdown */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Sekcija</div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: sectionMode !== 'none' ? 10 : 0 }}>
-              {[
-                { value: 'none', label: 'Bez sekcije' },
-                { value: 'existing', label: 'Postojeća', disabled: sections.length === 0 },
-                { value: 'new', label: 'Nova sekcija' },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  disabled={opt.disabled}
-                  onClick={() => setSectionMode(opt.value)}
-                  style={{
-                    padding: '5px 12px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans',
-                    border: sectionMode === opt.value ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    background: sectionMode === opt.value ? 'rgba(79,142,247,0.1)' : 'transparent',
-                    color: sectionMode === opt.value ? 'var(--accent)' : opt.disabled ? 'var(--textSubtle)' : 'var(--textMuted)',
-                    cursor: opt.disabled ? 'default' : 'pointer', transition: 'all 0.15s',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {sectionMode === 'existing' && (
-              <select
-                value={selectedSectionId}
-                onChange={e => setSelectedSectionId(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none' }}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setSectionDropOpen(o => !o)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 13, fontWeight: selectedSection ? 500 : 400, transition: 'all 0.15s',
+                  background: selectedSection ? 'rgba(79,142,247,0.08)' : 'var(--bg)',
+                  border: `1px solid ${selectedSection ? 'rgba(79,142,247,0.35)' : 'var(--border)'}`,
+                  color: selectedSection ? 'var(--accent)' : 'var(--textMuted)',
+                }}
               >
-                <option value="">— izaberi sekciju —</option>
-                {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            )}
-            {sectionMode === 'new' && (
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel}</span>
+                <span style={{ fontSize: 10, flexShrink: 0, transform: sectionDropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block', color: 'var(--textMuted)' }}>▾</span>
+              </button>
+              {sectionDropOpen && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: 200, overflow: 'hidden' }}>
+                  <div style={{ maxHeight: 220, overflowY: 'auto', padding: 6 }}>
+                    {/* No section option */}
+                    <button
+                      onClick={() => { setSelectedSection(null); setSectionDropOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '8px 10px', background: !selectedSection ? 'rgba(79,142,247,0.08)' : 'transparent', border: 'none', borderRadius: 7, cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s', color: !selectedSection ? 'var(--accent)' : 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13 }}
+                      onMouseEnter={e => { if (selectedSection) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                      onMouseLeave={e => { if (selectedSection) e.currentTarget.style.background = 'transparent' }}
+                    >Bez sekcije</button>
+                    {/* Existing sections */}
+                    {sections.map(s => (
+                      <button key={s.id}
+                        onClick={() => { setSelectedSection(s); setSectionDropOpen(false) }}
+                        style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '8px 10px', background: selectedSection?.id === s.id ? 'rgba(79,142,247,0.08)' : 'transparent', border: 'none', borderRadius: 7, cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s', color: selectedSection?.id === s.id ? 'var(--accent)' : 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500 }}
+                        onMouseEnter={e => { if (selectedSection?.id !== s.id) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                        onMouseLeave={e => { if (selectedSection?.id !== s.id) e.currentTarget.style.background = 'transparent' }}
+                      >{s.name}</button>
+                    ))}
+                    {/* Divider + new section */}
+                    <div style={{ height: 1, background: 'var(--border)', margin: '4px 6px' }} />
+                    <button
+                      onClick={() => { setSelectedSection({ id: 'new', name: '' }); setSectionDropOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 10px', background: isNew ? 'rgba(79,142,247,0.08)' : 'transparent', border: 'none', borderRadius: 7, cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s', color: isNew ? 'var(--accent)' : 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13 }}
+                      onMouseEnter={e => { if (!isNew) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                      onMouseLeave={e => { if (!isNew) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <span style={{ fontWeight: 700, fontSize: 15, lineHeight: 1 }}>+</span> Nova sekcija
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {isNew && (
               <input
                 autoFocus
                 value={newSectionName}
                 onChange={e => setNewSectionName(e.target.value)}
                 placeholder="Naziv sekcije..."
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none', boxSizing: 'border-box' }}
+                style={{ marginTop: 8, width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none', boxSizing: 'border-box' }}
               />
             )}
           </div>

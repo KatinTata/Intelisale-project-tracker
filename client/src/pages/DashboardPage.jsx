@@ -13,7 +13,7 @@ import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, openChatOnMount, onChatMountConsumed }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -75,6 +75,13 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }, [autoRefreshTime])
 
   useEffect(() => { setUser(initialUser) }, [initialUser])
+
+  useEffect(() => {
+    if (openChatOnMount) {
+      setChatOpen(true)
+      onChatMountConsumed?.()
+    }
+  }, [openChatOnMount])
 
   useEffect(() => {
     loadProjects()
