@@ -151,7 +151,6 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
 
     return `<section class="group">
       <div class="section-hdr" style="border-bottom-color:${cfg.color}28">
-        <span class="sec-icon">${cfg.icon}</span>
         <span class="sec-label" style="color:${cfg.color}">${cfg.label}</span>
         <span class="sec-count" style="background:${cfg.color}18;color:${cfg.color};border:1px solid ${cfg.color}33">${groups[prefix].length}</span>
       </div>

@@ -121,26 +121,21 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
                 {isClient ? t('rn.emptyClient') : t('rn.emptyAdmin')}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
-                {notesList.map(note => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    isClient={isClient}
-                    onOpen={() => openNote(note)}
-                    onRelease={async () => {
-                      if (!window.confirm(t('rn.markReleasedConfirm'))) return
-                      await api.markReleaseNoteReleased(note.id)
-                      loadNotesList()
-                    }}
-                    onDelete={async () => {
-                      if (!window.confirm(t('rn.deleteConfirm'))) return
-                      await api.deleteReleaseNote(note.id)
-                      loadNotesList()
-                    }}
-                  />
-                ))}
-              </div>
+              <NotesByProject
+                notesList={notesList}
+                isClient={isClient}
+                onOpen={openNote}
+                onRelease={async (note) => {
+                  if (!window.confirm(t('rn.markReleasedConfirm'))) return
+                  await api.markReleaseNoteReleased(note.id)
+                  loadNotesList()
+                }}
+                onDelete={async (note) => {
+                  if (!window.confirm(t('rn.deleteConfirm'))) return
+                  await api.deleteReleaseNote(note.id)
+                  loadNotesList()
+                }}
+              />
             )}
           </>
         )}
@@ -178,6 +173,67 @@ function extractName(title, version) {
 function fmtDate(str) {
   if (!str) return null
   return new Date(str).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// ── NotesByProject ────────────────────────────────────────────────────────────
+
+function NotesByProject({ notesList, isClient, onOpen, onRelease, onDelete }) {
+  // Group by project_name; notes without a project go under '—'
+  const groups = {}
+  for (const note of notesList) {
+    const key = note.project_name || '—'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(note)
+  }
+  // Sort: named projects alphabetically, unnamed last
+  const entries = Object.entries(groups).sort(([a], [b]) => {
+    if (a === '—') return 1
+    if (b === '—') return -1
+    return a.localeCompare(b)
+  })
+
+  // Flat list — no grouping needed if all notes are under a single unnamed bucket
+  if (entries.length === 1 && entries[0][0] === '—') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
+        {notesList.map(note => (
+          <NoteCard key={note.id} note={note} isClient={isClient} onOpen={() => onOpen(note)}
+            onRelease={() => onRelease(note)} onDelete={() => onDelete(note)} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      {entries.map(([projectName, notes]) => (
+        <div key={projectName}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            marginBottom: 16, paddingBottom: 10,
+            borderBottom: '1px solid var(--border)',
+          }}>
+            <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', flex: 1 }}>
+              {projectName === '—' ? 'Ostalo' : projectName}
+            </span>
+            <span style={{
+              fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)',
+              background: 'var(--surfaceAlt)', border: '1px solid var(--border)',
+              borderRadius: 20, padding: '2px 9px',
+            }}>
+              {notes.length}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
+            {notes.map(note => (
+              <NoteCard key={note.id} note={note} isClient={isClient} onOpen={() => onOpen(note)}
+                onRelease={() => onRelease(note)} onDelete={() => onDelete(note)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // ── NoteCard ──────────────────────────────────────────────────────────────────
