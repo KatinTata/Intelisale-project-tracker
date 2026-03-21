@@ -386,10 +386,11 @@ router.post('/publish', (req, res) => {
     const { html, title, projectId, version } = req.body
     if (!html?.trim()) return res.status(400).json({ error: 'html je obavezan' })
 
-    // Reuse existing token for same user+project, otherwise create new
-    const existing = db.prepare(
-      'SELECT token FROM published_notes WHERE user_id = ? AND project_id IS ?'
-    ).get(req.userId, projectId || null)
+    // Reuse existing token only when same user + project + version, otherwise create new
+    const existing = version?.trim()
+      ? db.prepare('SELECT token FROM published_notes WHERE user_id = ? AND project_id IS ? AND version = ?')
+          .get(req.userId, projectId || null, version.trim())
+      : null
 
     const token = existing?.token || randomBytes(16).toString('hex')
 
