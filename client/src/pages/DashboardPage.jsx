@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Topbar from '../components/Topbar.jsx'
+import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
 import UserManagementModal from '../components/UserManagementModal.jsx'
@@ -268,6 +269,18 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         projectData={projectData}
         onAddProject={hasJira && !isClient ? () => setAddingProject(true) : undefined}
       />
+
+      {projects.length > 0 && (
+        <ProjectTabs
+          projects={projects}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onAdd={hasJira && !isClient ? () => setAddingProject(true) : undefined}
+          onArchive={isClient ? undefined : handleArchiveProject}
+          onOpenArchive={isClient ? undefined : () => setArchiveOpen(true)}
+          projectData={projectData}
+        />
+      )}
 
       {projects.length > 0 ? (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? '16px' : '28px' }}>
