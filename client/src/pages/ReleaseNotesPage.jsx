@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
+import BrainAnimation from '../components/BrainAnimation.jsx'
 import { useT } from '../lang.jsx'
 
 export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboard, onGoToEditor, onOpenSettings, onOpenChat }) {
@@ -48,7 +49,11 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
   }
 
   return (
-    <div className="page-in" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="page-in" style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <BrainAnimation opacity={0.45} fullscreen />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
 
       <Topbar
         user={user}
@@ -153,6 +158,7 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
           }}
         />
       )}
+      </div>
     </div>
   )
 }

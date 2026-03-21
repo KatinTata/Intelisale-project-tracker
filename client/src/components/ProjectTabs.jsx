@@ -114,15 +114,6 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                   {activeProject ? (activeProject.displayName || activeProject.epicKey) : t('tabs.selectProject')}
                 </span>
-                {activeProject && (
-                  <span style={{
-                    fontFamily: "'DM Mono'", fontSize: 11, color: 'rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                  }}>
-                    {activeProject.epicKey}
-                  </span>
-                )}
                 <span style={{ fontSize: 10, opacity: 0.8, flexShrink: 0, transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
               </button>
 
@@ -159,15 +150,6 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                             >
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: active ? 'rgba(255,255,255,0.85)' : dot, flexShrink: 0 }} />
                               <span style={{ flex: 1 }}>{p.displayName || p.epicKey}</span>
-                              <span style={{
-                                fontFamily: "'DM Mono'", fontSize: 11,
-                                color: active ? 'rgba(255,255,255,0.7)' : 'var(--textSubtle)',
-                                background: active ? 'rgba(255,255,255,0.15)' : 'var(--surfaceAlt)',
-                                border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
-                                borderRadius: 4, padding: '1px 5px',
-                              }}>
-                                {p.epicKey}
-                              </span>
                             </button>
                             {onArchive && (
                               <button
@@ -310,15 +292,6 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                               >
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: active ? 'rgba(255,255,255,0.85)' : dot, flexShrink: 0 }} />
                                 <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.displayName || p.epicKey}</span>
-                                <span style={{
-                                  fontFamily: "'DM Mono'", fontSize: 10,
-                                  color: active ? 'rgba(255,255,255,0.7)' : 'var(--textSubtle)',
-                                  background: active ? 'rgba(255,255,255,0.15)' : 'var(--surfaceAlt)',
-                                  border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
-                                  borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                                }}>
-                                  {p.epicKey}
-                                </span>
                               </button>
                               {onArchive && (
                                 <button
@@ -466,15 +439,6 @@ function ProjectPill({ project, active, dot, onSelect, onArchive, confirmId, set
       >
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: active ? 'rgba(255,255,255,0.85)' : dot, flexShrink: 0 }} />
         <span>{project.displayName || project.epicKey}</span>
-        <span style={{
-          fontFamily: "'DM Mono'", fontSize: 11,
-          color: active ? 'rgba(255,255,255,0.7)' : 'var(--textSubtle)',
-          background: active ? 'rgba(255,255,255,0.15)' : 'var(--surfaceAlt)',
-          border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
-          borderRadius: 4, padding: '1px 5px',
-        }}>
-          {project.epicKey}
-        </span>
         {onArchive && (hover || active) && (
           <span
             onClick={e => { e.stopPropagation(); setConfirmId(confirmId === project.id ? null : project.id) }}

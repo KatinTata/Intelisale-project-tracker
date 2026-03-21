@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import BrainAnimation from '../components/BrainAnimation.jsx'
 import { useT } from '../lang.jsx'
 
 function fmtTime(dateStr, t) {
@@ -154,6 +155,9 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <BrainAnimation opacity={0.45} fullscreen />
+      </div>
       {/* Top bar */}
       <div style={{ height: 56, background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, flexShrink: 0 }}>
         <button

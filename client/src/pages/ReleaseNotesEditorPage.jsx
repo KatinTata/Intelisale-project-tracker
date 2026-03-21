@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
 import JqlEditor from '../components/JqlEditor.jsx'
+import BrainAnimation from '../components/BrainAnimation.jsx'
 import { useT } from '../lang.jsx'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
@@ -1512,7 +1513,11 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
   // ── Return ──────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <BrainAnimation opacity={0.45} fullscreen />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <Topbar
         user={user} theme={theme} currentPage="releaseNotesEditor"
         onLogout={onLogout} onGoToDashboard={onGoToDashboard} onGoToReleaseNotes={onGoToReleaseNotes}
@@ -1536,6 +1541,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
           onPublish={async (clientIds, sectionName) => { setPublishModal(null); await handlePublish(clientIds, sectionName) }}
         />
       )}
+      </div>
     </div>
   )
 }

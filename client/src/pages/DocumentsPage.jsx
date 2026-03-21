@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
+import BrainAnimation from '../components/BrainAnimation.jsx'
 import * as pdfjsLib from 'pdfjs-dist'
 import { useT } from '../lang.jsx'
 
@@ -567,7 +568,11 @@ export default function DocumentsPage({
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <BrainAnimation opacity={0.45} fullscreen />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <Topbar
         user={user}
         theme={theme}
@@ -713,6 +718,7 @@ export default function DocumentsPage({
       {uploadOpen && (
         <UploadModal sections={sections} onClose={() => setUploadOpen(false)} onUploaded={handleUploaded} />
       )}
+      </div>
     </div>
   )
 }
