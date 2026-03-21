@@ -211,7 +211,8 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .cover-page{display:none}
     .print-header{display:none}
     .print-footer{display:none}
-    @page{margin:14mm 18mm 14mm 18mm}
+    @page{margin:24mm 18mm 20mm 18mm}
+    @page :first{margin-top:8mm}
     @media print{
       *{font-family:'Trebuchet MS','Century Gothic',Arial,sans-serif !important}
       body{background:#fff !important;color:#0F1523 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -221,20 +222,20 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       .expand-btn{display:none !important}
       .doc-hdr{display:none !important}
       .footer{display:none !important}
-      /* ── Header: fixed, repeats on every page, no border ── */
+      /* ── Header: fixed, repeats on every page ── */
       .print-header{display:flex !important;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;height:64px;padding:0;background:#fff;z-index:10}
-      /* ── Footer: fixed, repeats on every page, no border ── */
+      /* ── Footer: fixed, repeats on every page ── */
       .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;height:48px;padding:0;background:#fff;z-index:10}
-      /* ── Layout: offset content so header/footer never overlap ── */
-      .wrap{padding:80px 0 64px !important}
+      /* ── Layout: page 1 uses wrap padding to clear header; pages 2+ use @page margin ── */
+      .wrap{padding:80px 0 20px !important}
       .groups{gap:24px !important}
       /* ── Sections: allow natural page breaks between them ── */
       section{break-before:auto;page-break-before:auto;break-inside:auto;page-break-inside:auto}
       /* ── Section headers ── */
-      .section-hdr{border-bottom:1.5px solid #BFDBFE !important;background:none !important;padding-bottom:8px !important;margin-bottom:10px !important;gap:0 !important}
+      .section-hdr{display:block !important;border-bottom:2px solid #BFDBFE !important;background:none !important;padding-bottom:8px !important;margin-top:24px !important;margin-bottom:12px !important;gap:0 !important}
       .sec-icon{display:none !important}
       .sec-count{display:none !important}
-      .sec-label{font-size:17px !important;font-weight:700 !important;color:#2563EB !important}
+      .sec-label{font-size:16px !important;font-weight:700 !important;color:#2563EB !important;display:block !important}
       /* ── Task cards: never split across pages ── */
       .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:14px 18px !important;margin-bottom:12px !important;break-inside:avoid !important;page-break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
       /* ── Simple task cards (no desc/images) ── */
@@ -1330,7 +1331,8 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     return (
       <div>
         <style>{`
-          @page { margin: 16mm 18mm 20mm 18mm; }
+          @page { margin: 24mm 18mm 20mm 18mm; }
+          @page :first { margin-top: 8mm; }
           @media print {
             * { font-family: 'Trebuchet MS', 'Century Gothic', Arial, sans-serif !important; }
             body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

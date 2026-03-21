@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import NotificationBell from './NotificationBell.jsx'
 import { useT } from '../lang.jsx'
+import { api } from '../api.js'
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 
@@ -177,6 +178,14 @@ export default function Topbar({
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
+  const [fetchedProjectCount, setFetchedProjectCount] = useState(null)
+  useEffect(() => {
+    if (projects.length === 0) {
+      api.getProjects().then(list => setFetchedProjectCount(list?.length ?? 0)).catch(() => {})
+    }
+  }, [])
+  const projectCount = projects.length > 0 ? projects.length : (fetchedProjectCount ?? 0)
+
   const initials = user?.name
     ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : '??'
@@ -299,7 +308,7 @@ export default function Topbar({
             icon={<IconGrid />}
             iconBg="rgba(79,142,247,0.12)" iconColor="var(--accent)"
             label={t('topbar.nav.dashboard')}
-            subtitle={`${projects.length} ${t('topbar.nav.dashboardSub')}`}
+            subtitle={`${projectCount} ${t('topbar.nav.dashboardSub')}`}
             active={currentPage === 'dashboard'}
             onClick={onGoToDashboard}
             hideSubtitle={isMobile}
