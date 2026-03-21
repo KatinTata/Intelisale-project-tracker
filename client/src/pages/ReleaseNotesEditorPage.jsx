@@ -212,33 +212,33 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .cover-page{display:none}
     .print-header{display:none}
     .print-footer{display:none}
-    @page{margin:16mm 18mm 20mm 18mm}
+    @page{margin:14mm 18mm 14mm 18mm}
     @media print{
       *{font-family:'Trebuchet MS','Century Gothic',Arial,sans-serif !important}
       body{background:#fff !important;color:#0F1523 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       /* ── Hide screen-only elements ── */
+      .cover-page{display:none !important}
       .pbar{display:none !important}
       .expand-btn{display:none !important}
       .doc-hdr{display:none !important}
       .footer{display:none !important}
-      /* ── Show print-only elements ── */
-      .cover-page{display:flex !important;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;page-break-after:always;text-align:center;gap:14px;padding:40px}
-      .print-header{display:flex !important;align-items:flex-start;justify-content:space-between;position:fixed;top:0;left:0;right:0;border-bottom:1.5px solid #0F1523;padding-bottom:10px;margin-bottom:28px;background:#fff;z-index:10}
-      .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;border-top:0.5px solid #E2E6F0;padding-top:8px;background:#fff;z-index:10}
-      .img-print-label{display:block !important;font-size:11px !important;font-weight:600 !important;color:#374151 !important;margin-bottom:4px}
-      .img-desc-em{font-style:italic;color:#5A6480;font-weight:400}
-      .img-screen-desc{display:none !important}
-      /* ── Layout ── */
-      .wrap{padding:0 !important}
+      /* ── Header: fixed, repeats on every page, no border ── */
+      .print-header{display:flex !important;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;height:64px;padding:0;background:#fff;z-index:10}
+      /* ── Footer: fixed, repeats on every page, no border ── */
+      .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;height:48px;padding:0;background:#fff;z-index:10}
+      /* ── Layout: offset content so header/footer never overlap ── */
+      .wrap{padding:80px 0 64px !important}
       .groups{gap:24px !important}
+      /* ── Sections: allow natural page breaks between them ── */
+      section{break-before:auto;page-break-before:auto;break-inside:auto;page-break-inside:auto}
       /* ── Section headers ── */
       .section-hdr{border-bottom:1.5px solid #BFDBFE !important;background:none !important;padding-bottom:8px !important;margin-bottom:10px !important;gap:0 !important}
       .sec-icon{display:none !important}
       .sec-count{display:none !important}
       .sec-label{font-size:17px !important;font-weight:700 !important;color:#2563EB !important}
-      /* ── Task cards (rich: has desc/images) ── */
-      .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:14px 18px !important;margin-bottom:12px !important;break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
-      /* ── Task cards (simple: no desc/images) ── */
+      /* ── Task cards: never split across pages ── */
+      .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:14px 18px !important;margin-bottom:12px !important;break-inside:avoid !important;page-break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
+      /* ── Simple task cards (no desc/images) ── */
       .task-card--simple{border-left:3px solid #BFDBFE !important;padding:9px 18px !important}
       /* ── Key badge ── */
       .key-badge{font-size:10px !important;font-weight:700 !important;border:1px solid #93C5FD !important;color:#2563EB !important;background:#EFF6FF !important;padding:2px 8px !important;border-radius:3px !important;letter-spacing:0 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -249,23 +249,20 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       .task-desc,.task-desc.open{max-height:none !important;overflow:visible !important;display:block !important}
       .task-desc-inner{font-size:12px !important;color:#374151 !important;line-height:1.65 !important;border-top:none !important;padding-top:8px !important;margin-top:8px !important}
       /* ── Images ── */
+      .img-print-label{display:block !important;font-size:11px !important;font-weight:600 !important;color:#374151 !important;margin-bottom:4px}
+      .img-desc-em{font-style:italic;color:#5A6480;font-weight:400}
+      .img-screen-desc{display:none !important}
       .img-wrap{margin-bottom:14px !important;margin-top:0 !important}
       .img-wrap img{max-width:100% !important;border-radius:5px !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       /* ── Help links ── */
       .help-link-row{border-top:0.5px solid #F3F4F6 !important;margin-top:10px !important;padding-top:10px !important}
       .help-open{color:#2563EB !important;font-size:11px !important;font-weight:600 !important;border-color:#93C5FD !important}
-      /* ── Cover page elements ── */
-      .cover-brand{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#9CA3AF}
-      .cover-title{font-size:48px;font-weight:700;color:#0F1523;margin-top:12px}
-      .cover-client{font-size:22px;font-weight:700;color:#2563EB}
-      .cover-version{font-size:14px;font-weight:500;color:#2563EB;border:1px solid #2563EB;padding:3px 14px;border-radius:20px}
-      .cover-date{font-size:13px;color:#5A6480}
       /* ── Print header elements ── */
-      .print-header-left{display:flex;flex-direction:column;gap:2px}
-      .print-header-title{font-size:36px;font-weight:700;color:#0F1523;line-height:1.05}
-      .print-header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px}
-      .print-header-client{font-size:14px;font-weight:700;color:#0F1523}
-      .print-version-badge{font-size:11px;color:#2563EB;border:1px solid #2563EB;padding:2px 10px;border-radius:4px;display:inline-block}
+      .print-header-left{display:flex;align-items:center;gap:10px}
+      .print-header-title{font-size:16px;font-weight:700;color:#0F1523}
+      .print-header-right{display:flex;align-items:center;gap:10px}
+      .print-header-client{font-size:12px;font-weight:700;color:#0F1523}
+      .print-version-badge{font-size:10px;color:#2563EB;border:1px solid #2563EB;padding:2px 8px;border-radius:4px;display:inline-block;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .print-header-date{font-size:11px;color:#5A6480}
       /* ── Print footer elements ── */
       .print-footer-text{font-size:10px;color:#9CA3AF}
@@ -274,20 +271,10 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
   </style>
 </head>
 <body>
-  <!-- Print-only: cover page (hidden on screen) -->
-  <div class="cover-page">
-    <img src="/logo-dark.png" alt="Intelisale" style="height:50px">
-    <div class="cover-brand">INTELISALE</div>
-    <div class="cover-title">Release Notes</div>
-    ${meta.clientName ? `<div class="cover-client">${esc(meta.clientName)}</div>` : ''}
-    ${config.version ? `<div class="cover-version">${esc(config.version)}</div>` : ''}
-    <div class="cover-date">${dateStr}</div>
-  </div>
-
   <!-- Print-only: fixed header (hidden on screen) -->
   <div class="print-header">
     <div class="print-header-left">
-      <img src="/logo-dark.png" alt="Intelisale" style="height:24px">
+      <img src="/logo-dark.png" alt="Intelisale" style="height:20px">
       <div class="print-header-title">Release Notes</div>
     </div>
     <div class="print-header-right">
