@@ -103,6 +103,19 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     return () => clearInterval(interval)
   }, [hasJira, isClient])
 
+  function saveProjectCache(projectId, data) {
+    try {
+      localStorage.setItem(`jt_cache_${projectId}`, JSON.stringify({ data, ts: Date.now() }))
+    } catch {}
+  }
+
+  function loadProjectCache(projectId) {
+    try {
+      const raw = localStorage.getItem(`jt_cache_${projectId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  }
+
   async function loadProjects() {
     if (!hasJira && !isClient) {
       setProjects(DEMO_PROJECTS)
@@ -123,7 +136,27 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       localStorage.setItem('jt_project_count', list.length)
       if (list.length > 0) {
         setActiveId(list[0].id)
-        await refreshAll(list)
+
+        // Load cached data — no Jira API call on every page visit
+        const cachedData = {}
+        let latestTs = null
+        for (const p of list) {
+          const cached = loadProjectCache(p.id)
+          if (cached) {
+            cachedData[p.id] = cached.data
+            if (!latestTs || cached.ts > latestTs) latestTs = cached.ts
+          }
+        }
+        if (Object.keys(cachedData).length > 0) {
+          setProjectData(cachedData)
+          if (latestTs) setLastRefresh(latestTs)
+        }
+
+        // Only fetch from Jira for projects with no cache yet (first use)
+        const uncached = list.filter(p => !cachedData[p.id])
+        if (uncached.length > 0) {
+          await refreshAll(uncached)
+        }
       }
     } catch (err) {
       console.error('Failed to load projects', err)
@@ -138,6 +171,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
     try {
       const { parents, subtasks } = await api.getTasks(project)
       const data = processEpicData(parents, subtasks)
+      saveProjectCache(project.id, data)
       setProjectData(prev => {
         const current = prev[project.id]
         if (current) {
@@ -182,6 +216,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       projectsRef.current = next
       if (activeId === id) setActiveId(next[0]?.id || null)
       setProjectData(prev => { const n = { ...prev }; delete n[id]; return n })
+      localStorage.removeItem(`jt_cache_${id}`)
     } catch (err) {
       alert(err.message)
     }
