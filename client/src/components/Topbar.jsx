@@ -62,6 +62,14 @@ function IconUsers() {
   )
 }
 
+function IconQA() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 16, height: 16 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+    </svg>
+  )
+}
+
 function IconLogout() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}>
@@ -159,7 +167,7 @@ export default function Topbar({
   user, theme, onLogout,
   onOpenSettings, onOpenUsers,
   unreadCount = 0, recentUnread = [], onMarkAllRead, onNotificationClick,
-  onOpenChat, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDashboard, onGoToDocuments, onGoToMessages,
+  onOpenChat, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDashboard, onGoToDocuments, onGoToMessages, onGoToQA,
   currentPage,
   projects = [], onAddProject,
   unreadMessages = 0,
@@ -350,6 +358,15 @@ export default function Topbar({
             hideSubtitle={isMobile}
           />
 
+          <ModuleCard
+            icon={<IconQA />}
+            iconBg="rgba(20,184,166,0.15)" iconColor="#14B8A6"
+            label={t('topbar.nav.qa')}
+            subtitle={t('topbar.nav.qaSub')}
+            active={currentPage === 'qa'}
+            onClick={onGoToQA}
+            hideSubtitle={isMobile}
+          />
 
         </div>
       </div>

@@ -8,6 +8,7 @@ import ReleaseNotesEditorPage from './pages/ReleaseNotesEditorPage.jsx'
 import EpicViewerPage from './pages/EpicViewerPage.jsx'
 import DocumentsPage from './pages/DocumentsPage.jsx'
 import MessagesPage from './pages/MessagesPage.jsx'
+import QAPage from './pages/QAPage.jsx'
 import BrainAnimation from './components/BrainAnimation.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import UserManagementModal from './components/UserManagementModal.jsx'
@@ -65,6 +66,7 @@ export default function App() {
     else if (path.startsWith('/release-notes')) setPage('releaseNotes')
     else if (path.startsWith('/documents')) setPage('documents')
     else if (path.startsWith('/messages')) setPage('messages')
+    else if (path.startsWith('/qa')) setPage('qa')
     else setPage('dashboard')
   }
 
@@ -119,6 +121,7 @@ export default function App() {
   const goToReleaseNotes = () => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }
   const goToReleaseNotesEditor = () => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }
   const goToDocuments = () => { window.history.replaceState({}, '', '/documents'); setPage('documents') }
+  const goToQA = () => { window.history.replaceState({}, '', '/qa'); setPage('qa') }
 
   if (page === 'epicViewer' && user) {
     return (
@@ -131,6 +134,7 @@ export default function App() {
           onGoToDashboard={goToDashboard}
           onGoToReleaseNotes={goToReleaseNotes}
           onGoToDocuments={goToDocuments}
+          onGoToQA={goToQA}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -150,6 +154,7 @@ export default function App() {
           onGoToDashboard={goToDashboard}
           onGoToEditor={goToReleaseNotesEditor}
           onGoToDocuments={goToDocuments}
+          onGoToQA={goToQA}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -169,6 +174,7 @@ export default function App() {
           onGoToDashboard={goToDashboard}
           onGoToReleaseNotes={goToReleaseNotes}
           onGoToDocuments={goToDocuments}
+          onGoToQA={goToQA}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -189,6 +195,7 @@ export default function App() {
           onGoToReleaseNotes={goToReleaseNotes}
           onGoToReleaseNotesEditor={goToReleaseNotesEditor}
           onGoToDocuments={goToDocuments}
+          onGoToQA={goToQA}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -211,8 +218,30 @@ export default function App() {
           onGoToReleaseNotes={goToReleaseNotes}
           onGoToReleaseNotesEditor={goToReleaseNotesEditor}
           onGoToDocuments={goToDocuments}
+          onGoToQA={goToQA}
           onOpenChat={null}
           initialProjectId={messagesProjectId}
+        />
+        {modals}
+      </>
+    )
+  }
+
+  if (page === 'qa' && user) {
+    return (
+      <>
+        <QAPage
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onGoToDashboard={goToDashboard}
+          onGoToReleaseNotes={goToReleaseNotes}
+          onGoToReleaseNotesEditor={goToReleaseNotesEditor}
+          onGoToDocuments={goToDocuments}
+          onGoToMessages={goToMessages}
+          onGoToQA={goToQA}
+          onOpenSettings={openSettings}
+          onOpenUsers={isAdmin ? openUsers : undefined}
         />
         {modals}
       </>
@@ -233,6 +262,7 @@ export default function App() {
           onGoToReleaseNotesEditor={goToReleaseNotesEditor}
           onGoToDocuments={goToDocuments}
           onGoToMessages={goToMessages}
+          onGoToQA={goToQA}
           openChatOnMount={openChatOnDashboard}
           onChatMountConsumed={() => setOpenChatOnDashboard(false)}
         />

@@ -66,7 +66,7 @@ function formatDate(date) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
+export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onGoToDocuments, onGoToQA, onOpenSettings, onOpenChat }) {
   const t = useT()
   const [epicKey, setEpicKey]       = useState(initialEpicKey || '')
   const [inputKey, setInputKey]     = useState(initialEpicKey || '')
@@ -161,6 +161,8 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
           onLogout={onLogout}
           onGoToDashboard={onGoToDashboard}
           onGoToReleaseNotes={onGoToReleaseNotes}
+          onGoToDocuments={onGoToDocuments}
+          onGoToQA={onGoToQA}
           onOpenSettings={onOpenSettings}
           onOpenChat={onOpenChat}
         />

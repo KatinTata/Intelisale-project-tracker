@@ -157,6 +157,8 @@ export const translations = {
     'topbar.nav.messages': 'Poruke',
     'topbar.nav.messagesSub': 'nepročitanih',
     'topbar.nav.messagesSubEmpty': 'Chat & poruke',
+    'topbar.nav.qa': 'Pitanja i odgovori',
+    'topbar.nav.qaSub': 'Pomoć i uputstva',
     'topbar.nav.settings': 'Podešavanja',
 
     // Settings modal
@@ -556,6 +558,8 @@ export const translations = {
     'topbar.nav.messages': 'Messages',
     'topbar.nav.messagesSub': 'unread',
     'topbar.nav.messagesSubEmpty': 'Chat & messages',
+    'topbar.nav.qa': 'Questions & Answers',
+    'topbar.nav.qaSub': 'Help & guides',
     'topbar.nav.settings': 'Settings',
 
     // Settings modal

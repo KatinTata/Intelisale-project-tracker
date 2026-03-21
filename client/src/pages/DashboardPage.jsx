@@ -11,7 +11,7 @@ import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onOpenUsers, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onGoToMessages, openChatOnMount, onChatMountConsumed }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onOpenUsers, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onGoToMessages, onGoToQA, openChatOnMount, onChatMountConsumed }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -298,6 +298,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
         onGoToDocuments={onGoToDocuments}
+        onGoToQA={onGoToQA}
         unreadMessages={unreadCount}
         projects={projects}
         activeId={activeId}
