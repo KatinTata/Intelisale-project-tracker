@@ -23,6 +23,7 @@ export function processEpicData(parents, subtasks) {
       timespent: f.timespent || 0,
       timeoriginalestimate: f.timeoriginalestimate || 0,
       components,
+      assignee: f.assignee?.displayName || null,
     }
   }
 
@@ -95,18 +96,37 @@ export function processEpicData(parents, subtasks) {
 
 export function buildAssigneeData(tasks) {
   const map = {}
-  for (const task of tasks) {
-    const name = task.assignee || 'Neraspoređeno'
-    if (!map[name]) {
-      map[name] = { name, totalSpent: 0, doneTasks: 0, inprogTasks: 0, todoTasks: 0, totalTasks: 0 }
-    }
-    const e = map[name]
-    e.totalSpent += task.spent
-    e.totalTasks++
-    if (task.statusCategory === 'done') e.doneTasks++
-    else if (task.statusCategory === 'todo') e.todoTasks++
-    else e.inprogTasks++ // inprog + testing
+
+  function entry(name) {
+    const key = name || 'Neraspoređeno'
+    if (!map[key]) map[key] = { name: key, totalSpent: 0, doneTasks: 0, inprogTasks: 0, todoTasks: 0, totalTasks: 0 }
+    return map[key]
   }
+
+  for (const task of tasks) {
+    // Task count always goes to the parent assignee
+    const pe = entry(task.assignee)
+    pe.totalTasks++
+    if (task.statusCategory === 'done') pe.doneTasks++
+    else if (task.statusCategory === 'todo') pe.todoTasks++
+    else pe.inprogTasks++
+
+    // Spent: attribute each subtask's hours to the subtask's own assignee
+    const subs = task.subtasks || []
+    if (subs.length === 0) {
+      pe.totalSpent += task.spent
+    } else {
+      const subSpentTotal = subs.reduce((s, sub) => s + sub.timespent, 0)
+      const parentOwnSpent = Math.max(0, task.spent - subSpentTotal)
+      if (parentOwnSpent > 0) pe.totalSpent += parentOwnSpent
+      for (const sub of subs) {
+        if (sub.timespent > 0) {
+          entry(sub.assignee || task.assignee).totalSpent += sub.timespent
+        }
+      }
+    }
+  }
+
   return Object.values(map).sort((a, b) => b.totalSpent - a.totalSpent)
 }
 
