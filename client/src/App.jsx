@@ -11,7 +11,7 @@ import BrainAnimation from './components/BrainAnimation.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer' | 'documents'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer' | 'documents' | 'messages'
   const [user, setUser] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [epicViewerKey, setEpicViewerKey] = useState(null)
@@ -137,6 +137,7 @@ export default function App() {
           onLogout={handleLogout}
           onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
           onOpenSettings={openSettings}
           onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
         />

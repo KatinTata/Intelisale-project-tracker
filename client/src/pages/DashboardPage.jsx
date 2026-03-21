@@ -255,9 +255,11 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onMarkAllRead={handleMarkAllRead}
         onNotificationClick={handleNotificationClick}
         onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
+        onGoToDashboard={undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
         onGoToDocuments={onGoToDocuments}
+        unreadMessages={unreadCount}
         projects={projects}
         activeId={activeId}
         onSelectProject={setActiveId}

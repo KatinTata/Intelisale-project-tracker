@@ -79,14 +79,14 @@ function getHelpLinks(task) {
   }))
 }
 
-function generatePublishHtml(selectedTasks, taskEdits, config, meta) {
+function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOverrides = {}, sectionLabels = {} } = {}) {
   const dateStr = esc(meta.date || todayStr())
   const title = esc(`${meta.clientName || 'Release Notes'} ${config.version || ''}`.trim())
   const jiraBase = meta.jiraUrl ? 'https://' + meta.jiraUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') : null
 
   const groups = {}
   for (const task of selectedTasks) {
-    const prefix = (task.key || '').split('-')[0].toUpperCase()
+    const prefix = sectionOverrides[task.id] || (task.key || '').split('-')[0].toUpperCase()
     if (!groups[prefix]) groups[prefix] = []
     groups[prefix].push(task)
   }
@@ -96,7 +96,8 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta) {
   ]
 
   const sectionsHtml = groupOrder.map(prefix => {
-    const cfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+    const baseCfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+    const cfg = { ...baseCfg, label: sectionLabels[prefix] || baseCfg.label }
     const keyC = KEY_COLORS[prefix] || KEY_COLORS.OTHER
     const cardsHtml = groups[prefix].map((task, idx) => {
       const edit = taskEdits[task.id] || {}
@@ -276,7 +277,7 @@ function IconLink() {
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
+export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onGoToDocuments, onOpenSettings, onOpenChat }) {
   const t = useT()
   // wizard
   const [wizardStep, setWizardStep] = useState(1)
@@ -311,6 +312,17 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
   // step 3
   const [previewTitle, setPreviewTitle] = useState('')
   const [previewDate, setPreviewDate] = useState('')
+
+  // section overrides: { [taskId]: customPrefix } and { [prefix]: customLabel }
+  const [sectionOverrides, setSectionOverrides] = useState({})
+  const [sectionLabels, setSectionLabels] = useState({})
+  const [editingSection, setEditingSection] = useState(null) // prefix being renamed
+  const [editingSectionValue, setEditingSectionValue] = useState('')
+  const [dragOverPrefix, setDragOverPrefix] = useState(null)
+  const [dragOverTaskId, setDragOverTaskId] = useState(null) // task id to insert before
+  const [sectionTaskOrders, setSectionTaskOrders] = useState({}) // { [prefix]: [id,...] }
+  const dragTaskId = useRef(null)
+  const dragFromPrefix = useRef(null)
 
   // publish
   const [publishModal, setPublishModal] = useState(null)
@@ -583,7 +595,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       productName: selectedProject?.displayName || selectedProject?.epicKey || '',
       jiraUrl: user?.jiraUrl || '',
       date: previewDate || todayStr(),
-    })
+    }, { sectionOverrides, sectionLabels })
     setPublishState({ loading: true })
     const jt = localStorage.getItem('jt_token')
     try {
@@ -1154,18 +1166,93 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
   // ── Step 3 ─────────────────────────────────────────────────────────────────
 
-  const renderStep3 = () => {
-    const selTasks = tasks.filter(t => selectedIds.has(t.id))
+  function buildGroups(taskList) {
     const groups = {}
-    for (const task of selTasks) {
-      const prefix = (task.key || '').split('-')[0].toUpperCase()
+    for (const task of taskList) {
+      const prefix = sectionOverrides[task.id] || (task.key || '').split('-')[0].toUpperCase()
       if (!groups[prefix]) groups[prefix] = []
       groups[prefix].push(task)
+    }
+    // Apply explicit ordering within each section
+    for (const prefix of Object.keys(groups)) {
+      const order = sectionTaskOrders[prefix]
+      if (order?.length) {
+        groups[prefix].sort((a, b) => {
+          const ia = order.indexOf(a.id)
+          const ib = order.indexOf(b.id)
+          if (ia === -1 && ib === -1) return 0
+          if (ia === -1) return 1
+          if (ib === -1) return -1
+          return ia - ib
+        })
+      }
     }
     const groupOrder = [
       ...PREFIX_ORDER.filter(p => groups[p]?.length),
       ...Object.keys(groups).filter(p => !PREFIX_ORDER.includes(p) && groups[p]?.length),
     ]
+    return { groups, groupOrder }
+  }
+
+  function applyDrop(toPrefix, beforeTaskId) {
+    const fromTaskId = dragTaskId.current
+    if (!fromTaskId) return
+    const fromPrefix = dragFromPrefix.current
+    dragTaskId.current = null
+    dragFromPrefix.current = null
+    setDragOverPrefix(null)
+    setDragOverTaskId(null)
+
+    // Move to new section if needed
+    if (fromPrefix !== toPrefix) {
+      setSectionOverrides(prev => ({ ...prev, [fromTaskId]: toPrefix }))
+    }
+
+    // Reorder: build new order for both affected sections using current groups snapshot
+    setSectionTaskOrders(prev => {
+      const selTasks = tasks.filter(t => selectedIds.has(t.id))
+      // Compute which section each task belongs to (applying pending cross-section move)
+      const snap = {}
+      for (const task of selTasks) {
+        const p = (fromPrefix !== toPrefix && task.id === fromTaskId)
+          ? toPrefix
+          : (sectionOverrides[task.id] || (task.key || '').split('-')[0].toUpperCase())
+        if (!snap[p]) snap[p] = []
+        snap[p].push(task.id)
+      }
+      // Apply existing explicit orders
+      for (const p of Object.keys(snap)) {
+        const order = prev[p]
+        if (order?.length) snap[p].sort((a, b) => { const ia = order.indexOf(a); const ib = order.indexOf(b); if (ia === -1 && ib === -1) return 0; if (ia === -1) return 1; if (ib === -1) return -1; return ia - ib })
+      }
+
+      const toList = snap[toPrefix] ? [...snap[toPrefix]] : []
+      // Remove dragged task from list (it may already be there or not)
+      const filtered = toList.filter(id => id !== fromTaskId)
+      if (beforeTaskId) {
+        const idx = filtered.indexOf(beforeTaskId)
+        if (idx !== -1) filtered.splice(idx, 0, fromTaskId)
+        else filtered.push(fromTaskId)
+      } else {
+        filtered.push(fromTaskId)
+      }
+
+      const result = { ...prev, [toPrefix]: filtered }
+      if (fromPrefix !== toPrefix) {
+        const fromList = (snap[fromPrefix] || []).filter(id => id !== fromTaskId)
+        result[fromPrefix] = fromList
+      }
+      return result
+    })
+  }
+
+  function getSectionLabel(prefix) {
+    return sectionLabels[prefix] || GROUP_CONFIG[prefix]?.label || prefix
+  }
+
+  const renderStep3 = () => {
+    const selTasks = tasks.filter(t => selectedIds.has(t.id))
+    const { groups, groupOrder } = buildGroups(selTasks)
 
     return (
       <div>
@@ -1211,49 +1298,106 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
             {groupOrder.map(prefix => {
-              const cfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+              const baseCfg = GROUP_CONFIG[prefix] || { label: prefix, icon: '📋', color: '#8B99B5' }
+              const cfg = { ...baseCfg, label: getSectionLabel(prefix) }
               const keyC = KEY_COLORS[prefix] || KEY_COLORS.OTHER
+              const isDropTarget = dragOverPrefix === prefix
               return (
-                <div key={prefix}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: `2px solid ${cfg.color}28` }}>
+                <div
+                  key={prefix}
+                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverPrefix !== prefix) setDragOverPrefix(prefix) }}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) { setDragOverPrefix(null); setDragOverTaskId(null) } }}
+                  onDrop={e => { e.preventDefault(); applyDrop(prefix, null) }}
+                  style={{ borderRadius: 10, outline: isDropTarget ? `2px dashed ${cfg.color}50` : '2px dashed transparent', transition: 'outline 0.12s', padding: 4 }}
+                >
+                  {/* Section header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: `2px solid ${cfg.color}28`, padding: '6px 8px 10px' }}>
                     <span style={{ fontSize: 20 }}>{cfg.icon}</span>
-                    <span style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: cfg.color }}>{cfg.label}</span>
+                    {editingSection === prefix ? (
+                      <input
+                        autoFocus
+                        value={editingSectionValue}
+                        onChange={e => setEditingSectionValue(e.target.value)}
+                        onBlur={() => {
+                          if (editingSectionValue.trim()) setSectionLabels(prev => ({ ...prev, [prefix]: editingSectionValue.trim() }))
+                          setEditingSection(null)
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') e.currentTarget.blur()
+                          if (e.key === 'Escape') setEditingSection(null)
+                        }}
+                        style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: cfg.color, background: 'transparent', border: 'none', borderBottom: `2px solid ${cfg.color}`, outline: 'none', padding: '0 2px', minWidth: 80, flex: 1 }}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => { setEditingSection(prefix); setEditingSectionValue(getSectionLabel(prefix)) }}
+                        title="Klikni da preimenješ sekciju"
+                        style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: cfg.color, cursor: 'pointer', borderBottom: '2px dashed transparent', transition: 'border-color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.borderBottomColor = `${cfg.color}60`}
+                        onMouseLeave={e => e.currentTarget.style.borderBottomColor = 'transparent'}
+                      >{cfg.label}</span>
+                    )}
                     <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '2px 9px', borderRadius: 20, background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}33` }}>{groups[prefix].length}</span>
+                    {isDropTarget && dragFromPrefix.current !== prefix && (
+                      <span style={{ fontFamily: 'DM Sans', fontSize: 11, color: cfg.color, marginLeft: 'auto', opacity: 0.8 }}>⟵ Pusti ovde</span>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                  {/* Task cards */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     {groups[prefix].map(task => {
                       const edit = taskEdits[task.id] || {}
                       const helpLinks = getHelpLinks(task)
+                      const isInsertTarget = dragOverTaskId === task.id
                       return (
-                        <div key={task.id} style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: (edit.description || (edit.images || []).length || helpLinks.length) ? 10 : 0 }}>
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: keyC.bg, color: keyC.color, border: `1px solid ${keyC.border}`, flexShrink: 0 }}>{task.key}</span>
-                            <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{edit.name}</span>
-                          </div>
-                          {edit.description && (
-                            <div style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.75, marginBottom: ((edit.images || []).length || helpLinks.length) ? 10 : 0, whiteSpace: 'pre-wrap' }}>
-                              {edit.description}
-                            </div>
+                        <div key={task.id}>
+                          {/* Drop indicator line */}
+                          {isInsertTarget && (
+                            <div style={{ height: 3, borderRadius: 2, background: cfg.color, margin: '2px 0', opacity: 0.7 }} />
                           )}
-                          {(edit.images || []).map((img, i) => (
-                            <div key={i} style={{ marginBottom: 8 }}>
-                              <img src={img.base64} alt={img.desc || ''} style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, display: 'block' }} />
-                              {img.desc && <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', marginTop: 6, lineHeight: 1.5 }}>{img.desc}</div>}
+                          <div
+                            draggable={true}
+                            onDragStart={e => {
+                              e.stopPropagation()
+                              dragTaskId.current = task.id
+                              dragFromPrefix.current = prefix
+                              e.dataTransfer.effectAllowed = 'move'
+                              e.dataTransfer.setData('text/plain', task.id)
+                            }}
+                            onDragEnd={() => { setDragOverPrefix(null); setDragOverTaskId(null) }}
+                            onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; if (dragOverTaskId !== task.id) setDragOverTaskId(task.id); if (dragOverPrefix !== prefix) setDragOverPrefix(prefix) }}
+                            onDrop={e => { e.preventDefault(); e.stopPropagation(); applyDrop(prefix, task.id) }}
+                            style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', cursor: 'grab', marginBottom: 8, userSelect: 'none' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: (edit.description || (edit.images || []).length || helpLinks.length) ? 10 : 0 }}>
+                              <span data-no-print="1" style={{ color: 'var(--textSubtle)', fontSize: 14, flexShrink: 0, userSelect: 'none', letterSpacing: 2 }}>⠿</span>
+                              <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: keyC.bg, color: keyC.color, border: `1px solid ${keyC.border}`, flexShrink: 0 }}>{task.key}</span>
+                              <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{edit.name}</span>
                             </div>
-                          ))}
-                          {helpLinks.map(link => (
-                            <div key={link.key} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                              <span style={{ color: 'var(--amber)', display: 'flex', alignItems: 'center' }}><IconLink /></span>
-                              <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>{link.key}</span>
-                              {link.summary && <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', flex: 1 }}>{link.summary}</span>}
-                              {buildHelpUrl(link.key, user?.jiraUrl) && (
-                                <a href={buildHelpUrl(link.key, user?.jiraUrl)} target="_blank" rel="noopener noreferrer"
-                                  style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', padding: '3px 8px', border: '1px solid rgba(79,142,247,0.3)', borderRadius: 6 }}>
-                                  ↗ Otvori
-                                </a>
-                              )}
-                            </div>
-                          ))}
+                            {edit.description && (
+                              <div style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)', lineHeight: 1.75, marginBottom: ((edit.images || []).length || helpLinks.length) ? 10 : 0, whiteSpace: 'pre-wrap' }}>
+                                {edit.description}
+                              </div>
+                            )}
+                            {(edit.images || []).map((img, i) => (
+                              <div key={i} style={{ marginBottom: 8 }}>
+                                <img src={img.base64} alt={img.desc || ''} style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, display: 'block' }} />
+                                {img.desc && <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', marginTop: 6, lineHeight: 1.5 }}>{img.desc}</div>}
+                              </div>
+                            ))}
+                            {helpLinks.map(link => (
+                              <div key={link.key} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, marginTop: 4, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                                <span style={{ color: 'var(--amber)', display: 'flex', alignItems: 'center' }}><IconLink /></span>
+                                <span style={{ fontFamily: 'DM Mono', fontSize: 11, padding: '3px 9px', borderRadius: 6, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>{link.key}</span>
+                                {link.summary && <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: 'var(--textMuted)', flex: 1 }}>{link.summary}</span>}
+                                {buildHelpUrl(link.key, user?.jiraUrl) && (
+                                  <a href={buildHelpUrl(link.key, user?.jiraUrl)} target="_blank" rel="noopener noreferrer"
+                                    style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', padding: '3px 8px', border: '1px solid rgba(79,142,247,0.3)', borderRadius: 6 }}>
+                                    ↗ Otvori
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )
                     })}
@@ -1278,7 +1422,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       <Topbar
         user={user} theme={theme} currentPage="releaseNotesEditor"
         onLogout={onLogout} onGoToDashboard={onGoToDashboard} onGoToReleaseNotes={onGoToReleaseNotes}
-        onOpenSettings={onOpenSettings} onOpenChat={onOpenChat}
+        onGoToDocuments={onGoToDocuments} onOpenSettings={onOpenSettings} onOpenChat={onOpenChat}
       />
       <div style={{ padding: '20px 28px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
