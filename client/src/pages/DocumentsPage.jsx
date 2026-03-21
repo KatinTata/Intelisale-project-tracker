@@ -500,7 +500,7 @@ function Checkbox({ checked }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function DocumentsPage({
-  user, theme, onLogout, onOpenSettings, onOpenUsers, onGoToDashboard, onGoToReleaseNotes, onGoToReleaseNotesEditor, onOpenChat,
+  user, theme, onLogout, onOpenSettings, onOpenUsers, onGoToDashboard, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onOpenChat,
 }) {
   const t = useT()
   const [sections, setSections] = useState([])
@@ -583,7 +583,7 @@ export default function DocumentsPage({
         onGoToReleaseNotesEditor={isAdmin ? onGoToReleaseNotesEditor : null}
         onOpenChat={onOpenChat}
         onOpenUsers={onOpenUsers}
-        onGoToDocuments={null}
+        onGoToDocuments={onGoToDocuments}
         currentPage="documents"
       />
 

@@ -4,7 +4,7 @@ import Topbar from '../components/Topbar.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import { useT } from '../lang.jsx'
 
-export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboard, onGoToEditor, onOpenSettings, onOpenUsers, onOpenChat }) {
+export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboard, onGoToEditor, onGoToDocuments, onOpenSettings, onOpenUsers, onOpenChat }) {
   const t = useT()
   const isClient = user?.role === 'client'
 
@@ -62,6 +62,7 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
         onLogout={onLogout}
         onGoToDashboard={onGoToDashboard}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToEditor}
+        onGoToDocuments={onGoToDocuments}
         onOpenSettings={onOpenSettings}
         onOpenUsers={onOpenUsers}
         onOpenChat={onOpenChat}

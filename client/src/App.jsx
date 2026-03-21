@@ -130,6 +130,7 @@ export default function App() {
           onLogout={handleLogout}
           onGoToDashboard={goToDashboard}
           onGoToReleaseNotes={goToReleaseNotes}
+          onGoToDocuments={goToDocuments}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -148,6 +149,7 @@ export default function App() {
           onLogout={handleLogout}
           onGoToDashboard={goToDashboard}
           onGoToEditor={goToReleaseNotesEditor}
+          onGoToDocuments={goToDocuments}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
@@ -186,6 +188,7 @@ export default function App() {
           onGoToDashboard={goToDashboard}
           onGoToReleaseNotes={goToReleaseNotes}
           onGoToReleaseNotesEditor={goToReleaseNotesEditor}
+          onGoToDocuments={goToDocuments}
           onOpenSettings={openSettings}
           onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
