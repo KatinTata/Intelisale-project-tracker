@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../lang.jsx'
 
 export default function DonutChart({ segments = [], size = 200, innerRadius = 70, horizontal = false }) {
+  const t = useT()
   const [animated, setAnimated] = useState(false)
   const svgRef = useRef(null)
 
@@ -13,8 +15,8 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
   const total = segments.reduce((s, seg) => s + seg.value, 0)
 
   useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 50)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setAnimated(true), 50)
+    return () => clearTimeout(timer)
   }, [])
 
   // Build arc data
@@ -63,7 +65,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
         </text>
         <text x={cx} y={cy + 18} textAnchor="middle"
           style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fill: 'var(--textMuted)' }}>
-          završeno
+          {t('donut.done')}
         </text>
       </svg>
 

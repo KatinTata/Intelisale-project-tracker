@@ -10,6 +10,7 @@ import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
 export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments }) {
   const [user, setUser] = useState(initialUser)
@@ -32,6 +33,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [clientModalOpen, setClientModalOpen] = useState(false)
   const projectsRef = useRef([])
 
+  const t = useT()
   const hasJira = !!(user.jiraUrl && user.jiraEmail)
   const isClient = user.role === 'client'
   const { isMobile } = useWindowSize()
@@ -220,7 +222,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   if (!initialized) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 16 }}>Učitavam...</div>
+        <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 16 }}>{t('app.loading')}</div>
       </div>
     )
   }
@@ -283,11 +285,11 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
             }}>
               <span>⚙️</span>
               <span>
-                Prikazuju se demo podaci. Podesite Jira konekciju u{' '}
+                {t('dash.demoNotice')}{' '}
                 <button onClick={() => setSettingsOpen(true)} style={{ color: 'var(--amber)', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
-                  Podešavanjima
+                  {t('dash.settings')}
                 </button>{' '}
-                da biste videli svoje projekte.
+                {t('dash.demoNotice2')}
               </span>
             </div>
           )}
@@ -320,10 +322,10 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 16px', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>📋</div>
           <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 12 }}>
-            Nema dodeljenih projekata
+            {t('dash.noProjects')}
           </h2>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 15, lineHeight: 1.6 }}>
-            Administrator još nije dodelio projekte vašem nalogu. Kontaktirajte administratora.
+            {t('dash.noProjectsSub')}
           </p>
         </div>
       ) : (
@@ -336,10 +338,10 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               style={{ height: 36, marginBottom: 20, opacity: 0.9 }}
             />
             <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 26, color: 'var(--text)', marginBottom: 10 }}>
-              Dobrodošli u Project Hub
+              {t('dash.welcome')}
             </h2>
             <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 15, lineHeight: 1.6 }}>
-              Pratite napredak vaših Jira projekata na jednom mestu.
+              {t('dash.welcomeSub')}
             </p>
           </div>
 
@@ -349,22 +351,22 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               {
                 step: '1',
                 done: hasJira,
-                title: 'Povežite Jira nalog',
-                desc: 'Unesite vaš Jira URL, email i API token u Podešavanjima.',
-                action: { label: 'Otvori podešavanja', onClick: () => setSettingsOpen(true) },
+                title: t('dash.step1'),
+                desc: t('dash.step1Sub'),
+                action: { label: t('dash.openSettings'), onClick: () => setSettingsOpen(true) },
               },
               {
                 step: '2',
                 done: false,
-                title: 'Dodajte projekat',
-                desc: 'Kliknite "+" u tab baru i unesite Epic key vašeg projekta.',
+                title: t('dash.step2'),
+                desc: t('dash.step2Sub'),
                 disabled: !hasJira,
               },
               {
                 step: '3',
                 done: false,
-                title: 'Pratite napredak',
-                desc: 'Pregledajte metrike, grafikone i dnevni napredak po projektu.',
+                title: t('dash.step3'),
+                desc: t('dash.step3Sub'),
                 disabled: !hasJira,
               },
             ].map(s => (
@@ -428,7 +430,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               border: 'none',
             }}
           >
-            Otvori podešavanja
+            {t('dash.openSettings')}
           </button>
         </div>
       )}

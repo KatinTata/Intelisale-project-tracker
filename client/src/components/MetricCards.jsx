@@ -1,5 +1,6 @@
 import { fmtHours } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
 function MetricCard({ label, value, subtitle, valueColor, isMobile }) {
   return (
@@ -50,6 +51,7 @@ function MetricCard({ label, value, subtitle, valueColor, isMobile }) {
 export default function MetricCards({ data, isClient }) {
   const { total, done, inprog, testing, todo, totalEst, totalSpent, overTasks } = data
   const { isMobile, isTablet } = useWindowSize()
+  const t = useT()
 
   const donePct = total > 0 ? Math.round(done / total * 100) : 0
   const diffSec = totalSpent - totalEst
@@ -61,11 +63,11 @@ export default function MetricCards({ data, isClient }) {
     const clientCols = isMobile ? 'repeat(2, 1fr)' : 'repeat(5, minmax(0, 1fr))'
     return (
       <div style={{ display: 'grid', gridTemplateColumns: clientCols, gap: isMobile ? 8 : 12 }}>
-        <MetricCard isMobile={isMobile} label="Ukupno taskova" value={total} subtitle="projekti i subtask" />
-        <MetricCard isMobile={isMobile} label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} valueColor="var(--green)" />
-        <MetricCard isMobile={isMobile} label="Testing" value={testing} subtitle="čeka QA / u testu" valueColor="var(--amber)" />
-        <MetricCard isMobile={isMobile} label="In Progress" value={inprog} subtitle="aktivno u radu" valueColor="var(--accent)" />
-        <MetricCard isMobile={isMobile} label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" valueColor="var(--textMuted)" />
+        <MetricCard isMobile={isMobile} label={t('metrics.total')} value={total} subtitle={t('metrics.total.sub')} />
+        <MetricCard isMobile={isMobile} label={t('metrics.done')} value={`${done} (${donePct}%)`} subtitle={t('metrics.done.sub', { total })} valueColor="var(--green)" />
+        <MetricCard isMobile={isMobile} label={t('metrics.testing')} value={testing} subtitle={t('metrics.testing.sub')} valueColor="var(--amber)" />
+        <MetricCard isMobile={isMobile} label={t('metrics.inprog')} value={inprog} subtitle={t('metrics.inprog.sub')} valueColor="var(--accent)" />
+        <MetricCard isMobile={isMobile} label={t('metrics.todo')} value={todo} subtitle={t('metrics.todo.sub')} valueColor="var(--textMuted)" />
       </div>
     )
   }
@@ -74,25 +76,25 @@ export default function MetricCards({ data, isClient }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: cols, gap: isMobile ? 8 : 12 }}>
-      <MetricCard isMobile={isMobile} label="Ukupno taskova" value={total} subtitle="projekti i subtask" />
-      <MetricCard isMobile={isMobile} label="Završeno" value={`${done} (${donePct}%)`} subtitle={`od ${total} ukupno`} valueColor="var(--green)" />
-      <MetricCard isMobile={isMobile} label="Testing" value={testing} subtitle="čeka QA / u testu" valueColor="var(--amber)" />
-      <MetricCard isMobile={isMobile} label="In Progress" value={inprog} subtitle="aktivno u radu" valueColor="var(--accent)" />
-      <MetricCard isMobile={isMobile} label="To Do" value={todo} subtitle="To Do / Grooming / Estimated" valueColor="var(--textMuted)" />
-      <MetricCard isMobile={isMobile} label="Estimacija" value={fmtHours(totalEst)} subtitle="originalna procena" valueColor="var(--accent)" />
-      <MetricCard isMobile={isMobile} label="Utrošeno" value={fmtHours(totalSpent)} subtitle="logovano vreme" valueColor="var(--accent)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.total')} value={total} subtitle={t('metrics.total.sub')} />
+      <MetricCard isMobile={isMobile} label={t('metrics.done')} value={`${done} (${donePct}%)`} subtitle={t('metrics.done.sub', { total })} valueColor="var(--green)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.testing')} value={testing} subtitle={t('metrics.testing.sub')} valueColor="var(--amber)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.inprog')} value={inprog} subtitle={t('metrics.inprog.sub')} valueColor="var(--accent)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.todo')} value={todo} subtitle={t('metrics.todo.sub')} valueColor="var(--textMuted)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.est')} value={fmtHours(totalEst)} subtitle={t('metrics.est.sub')} valueColor="var(--accent)" />
+      <MetricCard isMobile={isMobile} label={t('metrics.spent')} value={fmtHours(totalSpent)} subtitle={t('metrics.spent.sub')} valueColor="var(--accent)" />
       <MetricCard
         isMobile={isMobile}
-        label="Razlika"
+        label={t('metrics.diff')}
         value={`${absDiffH}h`}
-        subtitle={`${absDiffPct}% ${isOver ? 'iznad' : 'ispod'} estimacije`}
+        subtitle={isOver ? t('metrics.diff.above', { pct: absDiffPct }) : t('metrics.diff.below', { pct: absDiffPct })}
         valueColor={isOver ? 'var(--red)' : 'var(--green)'}
       />
       <MetricCard
         isMobile={isMobile}
-        label="Prekoračenja"
+        label={t('metrics.overruns')}
         value={overTasks.length}
-        subtitle="taskova >15% over"
+        subtitle={t('metrics.overruns.sub')}
         valueColor={overTasks.length > 0 ? 'var(--red)' : 'var(--green)'}
       />
     </div>

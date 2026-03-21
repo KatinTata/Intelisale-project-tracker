@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
+import { useT } from '../lang.jsx'
 
-function fmtTime(dateStr) {
+function fmtTime(dateStr, t) {
   const d = new Date(dateStr)
   const diff = Math.floor((Date.now() - d) / 1000)
-  if (diff < 60) return 'upravo'
-  if (diff < 3600) return `pre ${Math.floor(diff / 60)} min`
-  if (diff < 86400) return `pre ${Math.floor(diff / 3600)}h`
+  if (diff < 60) return t('time.justNow')
+  if (diff < 3600) return t('time.minutesAgo', { n: Math.floor(diff / 60) })
+  if (diff < 86400) return t('time.hoursAgo', { n: Math.floor(diff / 3600) })
   return d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit' })
 }
 
 export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMessagesRead }) {
+  const t = useT()
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [taskKey, setTaskKey] = useState('')
@@ -93,7 +95,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
       {/* Header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, minHeight: 57 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>💬 Chat</div>
+          <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{t('chat.title')}</div>
           <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {project.displayName || project.epicKey}
           </div>
@@ -108,7 +110,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, marginTop: 40 }}>
-            Nema poruka. Budite prvi!
+            {t('chat.noMessages')}
           </div>
         )}
         {messages.map(m => {
@@ -116,7 +118,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
               <div style={{ fontSize: 11, color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", marginBottom: 4 }}>
-                {isMe ? 'Vi' : m.sender_name} · {fmtTime(m.created_at)}
+                {isMe ? t('msg.me') : m.sender_name} · {fmtTime(m.created_at, t)}
               </div>
               {m.task_key && (
                 <TaskChip taskKey={m.task_key} jiraUrl={jiraUrl} />
@@ -149,7 +151,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
             <input
               value={taskKey}
               onChange={e => setTaskKey(e.target.value)}
-              placeholder="Veži za task (npr. ECOM-1774)"
+              placeholder={t('chat.taskPlaceholder')}
               style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text)', fontSize: 12, fontFamily: "'DM Mono'", outline: 'none' }}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -173,7 +175,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
-            placeholder="Napišite poruku... (Enter za slanje)"
+            placeholder={t('chat.messagePlaceholder')}
             rows={2}
             style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", resize: 'none', lineHeight: 1.4, outline: 'none' }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}

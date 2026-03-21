@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
-function fmtTime(dateStr) {
+function fmtTime(dateStr, t) {
   const d = new Date(dateStr)
   const diff = Math.floor((Date.now() - d) / 1000)
-  if (diff < 60) return 'upravo'
-  if (diff < 3600) return `pre ${Math.floor(diff / 60)} min`
-  if (diff < 86400) return `pre ${Math.floor(diff / 3600)}h`
+  if (diff < 60) return t('time.justNow')
+  if (diff < 3600) return t('time.minutesAgo', { n: Math.floor(diff / 60) })
+  if (diff < 86400) return t('time.hoursAgo', { n: Math.floor(diff / 3600) })
   return d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
@@ -17,6 +18,7 @@ function initials(name) { return name.split(' ').map(w => w[0]).join('').toUpper
 function threadId(m) { return m.subject || m.task_key || null }
 
 export default function MessagesPage({ project, currentUser, isClient, initialTaskKey, onClose, onMessagesRead }) {
+  const t = useT()
   const [messages, setMessages] = useState([])
   const [clients, setClients] = useState([])
   const [taskInfoMap, setTaskInfoMap] = useState({}) // key -> summary string
@@ -137,7 +139,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
         a.click()
         URL.revokeObjectURL(url)
       })
-      .catch(() => alert('Greška pri eksportu'))
+      .catch(() => alert(t('msg.exportError')))
   }
 
   const threads = [...new Map(
@@ -159,19 +161,19 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
           style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
-        >← Nazad</button>
+        >← {t('msg.back')}</button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>
-              💬 Poruke
+              💬 {t('msg.title')}
             </span>
             <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
               {project.displayName || project.epicKey}
             </span>
             {unreadCount > 0 && (
               <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--red)', background: 'var(--redTint)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '1px 8px' }}>
-                {unreadCount} nepročitano
+                {t('msg.unread', { n: unreadCount })}
               </span>
             )}
           </div>
@@ -184,7 +186,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
-            ⬇ {threadFilter !== 'all' ? `Export: ${threadFilter}` : 'Eksportuj CSV'}
+            ⬇ {threadFilter !== 'all' ? `Export: ${threadFilter}` : t('msg.exportCsv')}
           </button>
         )}
       </div>
@@ -196,48 +198,48 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
         {!isMobile && (
           <div style={{ width: 220, borderRight: '1px solid var(--border)', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', flexShrink: 0 }}>
             <div style={{ padding: '0 16px 10px', fontFamily: "'DM Mono'", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--textSubtle)' }}>
-              Tredovi
+              {t('msg.threads')}
             </div>
-            {[{ id: 'all', label: 'Sve poruke', taskKey: null, subject: null, count: messages.length }, ...threads].map(t => (
+            {[{ id: 'all', label: t('msg.all'), taskKey: null, subject: null, count: messages.length }, ...threads].map(th => (
               <button
-                key={t.id}
+                key={th.id}
                 onClick={() => {
-                  setThreadFilter(t.id)
-                  if (t.id !== 'all') {
-                    if (t.subject) { setTopicInput(t.subject); setTopicType('subject') }
-                    else if (t.taskKey) { setTopicInput(t.taskKey); setTopicType('task') }
+                  setThreadFilter(th.id)
+                  if (th.id !== 'all') {
+                    if (th.subject) { setTopicInput(th.subject); setTopicType('subject') }
+                    else if (th.taskKey) { setTopicInput(th.taskKey); setTopicType('task') }
                   }
                 }}
                 style={{
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
                   padding: '8px 16px',
-                  borderLeft: threadFilter === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+                  borderLeft: threadFilter === th.id ? '2px solid var(--accent)' : '2px solid transparent',
                   border: 'none', textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
                   width: '100%',
-                  background: threadFilter === t.id ? 'rgba(79,142,247,0.08)' : 'transparent',
+                  background: threadFilter === th.id ? 'rgba(79,142,247,0.08)' : 'transparent',
                   gap: 6,
                 }}
-                onMouseEnter={e => { if (threadFilter !== t.id) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
-                onMouseLeave={e => { if (threadFilter !== t.id) e.currentTarget.style.background = threadFilter === t.id ? 'rgba(79,142,247,0.08)' : 'transparent' }}
+                onMouseEnter={e => { if (threadFilter !== th.id) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                onMouseLeave={e => { if (threadFilter !== th.id) e.currentTarget.style.background = threadFilter === th.id ? 'rgba(79,142,247,0.08)' : 'transparent' }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: t.id === 'all' ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : (t.subject ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : "'DM Mono'"), fontSize: t.id === 'all' ? 13 : 12, color: threadFilter === t.id ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>💬</span>}
-                    {t.taskKey && !t.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
-                    {t.label}
+                  <div style={{ fontFamily: th.id === 'all' ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : (th.subject ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : "'DM Mono'"), fontSize: th.id === 'all' ? 13 : 12, color: threadFilter === th.id ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {th.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>💬</span>}
+                    {th.taskKey && !th.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
+                    {th.label}
                   </div>
-                  {t.taskKey && t.subject && (
+                  {th.taskKey && th.subject && (
                     <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                      🔗 {t.taskKey}
+                      🔗 {th.taskKey}
                     </div>
                   )}
-                  {t.taskKey && !t.subject && taskInfoMap[t.taskKey] && (
+                  {th.taskKey && !th.subject && taskInfoMap[th.taskKey] && (
                     <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                      {taskInfoMap[t.taskKey]}
+                      {taskInfoMap[th.taskKey]}
                     </div>
                   )}
                 </div>
-                <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', flexShrink: 0, marginTop: 2 }}>{t.count}</span>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', flexShrink: 0, marginTop: 2 }}>{th.count}</span>
               </button>
             ))}
           </div>
@@ -248,12 +250,12 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
           {/* Mobile task filter pills */}
           {isMobile && (
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0 }}>
-              {[{ id: 'all', label: `Sve (${messages.length})` }, ...threads.map(t => ({ id: t.id, label: t.subject ? `💬 ${t.subject}` : `🔗 ${t.taskKey}` }))].map(t => (
+              {[{ id: 'all', label: `${t('msg.all')} (${messages.length})` }, ...threads.map(th => ({ id: th.id, label: th.subject ? `💬 ${th.subject}` : `🔗 ${th.taskKey}` }))].map(th => (
                 <button
-                  key={t.id}
-                  onClick={() => setThreadFilter(t.id)}
-                  style={{ fontFamily: "'DM Mono'", fontSize: 11, padding: '4px 10px', borderRadius: 12, border: threadFilter === t.id ? '1px solid var(--accent)' : '1px solid var(--border)', background: threadFilter === t.id ? 'rgba(79,142,247,0.1)' : 'transparent', color: threadFilter === t.id ? 'var(--accent)' : 'var(--textMuted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                >{t.label}</button>
+                  key={th.id}
+                  onClick={() => setThreadFilter(th.id)}
+                  style={{ fontFamily: "'DM Mono'", fontSize: 11, padding: '4px 10px', borderRadius: 12, border: threadFilter === th.id ? '1px solid var(--accent)' : '1px solid var(--border)', background: threadFilter === th.id ? 'rgba(79,142,247,0.1)' : 'transparent', color: threadFilter === th.id ? 'var(--accent)' : 'var(--textMuted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                >{th.label}</button>
               ))}
             </div>
           )}
@@ -261,10 +263,10 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px' : '24px 32px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {loading ? (
-              <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, padding: 48 }}>Učitavam poruke...</div>
+              <div style={{ textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, padding: 48 }}>{t('msg.loading')}</div>
             ) : filtered.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--textSubtle)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, padding: 64 }}>
-                {threadFilter === 'all' ? 'Nema poruka za ovaj projekat.' : 'Nema poruka u ovom tredu.'}
+                {threadFilter === 'all' ? t('msg.noMessages') : t('msg.noThreadMessages')}
               </div>
             ) : (
               filtered.map((m, i) => {
@@ -283,16 +285,16 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', gap: 2 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
                             <span style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                              {isMe ? 'Vi' : m.sender_name}
+                              {isMe ? t('msg.me') : m.sender_name}
                             </span>
                             {!isClient && !isMe && m.recipient_name && (
                               <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px' }}>→ {m.recipient_name}</span>
                             )}
                             {!isClient && !isMe && !m.recipient_name && (
-                              <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px' }}>→ svi klijenti</span>
+                              <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px' }}>→ {t('msg.toAllClients')}</span>
                             )}
                           </div>
-                          <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)' }}>{fmtTime(m.created_at)}</span>
+                          <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)' }}>{fmtTime(m.created_at, t)}</span>
                         </div>
                       </div>
                     )}
@@ -346,7 +348,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                 <input
                   value={topicInput}
                   onChange={handleTopicChange}
-                  placeholder="Tema / Task — slobodan unos ili npr. ECOM-1774 (opciono)"
+                  placeholder={t('msg.topicPlaceholder')}
                   style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, fontFamily: topicType === 'task' ? "'DM Mono'" : "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", outline: 'none', transition: 'border-color 0.15s' }}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -373,7 +375,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
               {/* Row 2: Recipient chips (admin only) */}
               {!isClient && clients.length > 0 && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {[{ id: 'all', name: 'Svi klijenti', email: 'Svi klijenti na projektu' }, ...clients].map(c => {
+                  {[{ id: 'all', name: t('msg.allClients'), email: t('msg.allClientsOnProject') }, ...clients].map(c => {
                     const selected = recipientId === String(c.id)
                     return (
                       <button
@@ -398,7 +400,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                   value={text}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
-                  placeholder="Napišite poruku..."
+                  placeholder={t('msg.messagePlaceholder')}
                   style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', paddingBottom: 28, color: 'var(--text)', fontSize: 14, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", resize: 'none', lineHeight: 1.5, outline: 'none', minHeight: 80, transition: 'border-color 0.15s' }}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -411,14 +413,14 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
               {/* Row 4: Hint + Send button */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)' }}>
-                  Enter za slanje · Shift+Enter novi red
+                  {t('msg.hint')}
                 </span>
                 <button
                   type="submit"
                   disabled={!text.trim() || sending}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, background: !text.trim() || sending ? 'var(--surfaceAlt)' : 'var(--accent)', color: !text.trim() || sending ? 'var(--textMuted)' : '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 14, cursor: !text.trim() || sending ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}
                 >
-                  {sending ? 'Šaljem…' : 'Pošalji →'}
+                  {sending ? t('msg.sending') : t('msg.send')}
                 </button>
               </div>
             </div>

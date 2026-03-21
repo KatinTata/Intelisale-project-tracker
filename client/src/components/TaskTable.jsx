@@ -3,6 +3,7 @@ import Badge from './ui/Badge.jsx'
 import ProgressBar from './ui/ProgressBar.jsx'
 import { fmtHours, getStatusCategory } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
 function statusColor(name) {
   const cat = getStatusCategory(name)
@@ -256,39 +257,40 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState({})
   const { isMobile, isTablet } = useWindowSize()
+  const t = useT()
 
-  const overKeys = new Set(overTasks.map(t => t.key))
+  const overKeys = new Set(overTasks.map(task => task.key))
 
-  const filtered = tasks.filter(t => {
-    const matchSearch = !search || t.key.toLowerCase().includes(search.toLowerCase()) || t.summary.toLowerCase().includes(search.toLowerCase())
+  const filtered = tasks.filter(task => {
+    const matchSearch = !search || task.key.toLowerCase().includes(search.toLowerCase()) || task.summary.toLowerCase().includes(search.toLowerCase())
     if (!matchSearch) return false
-    if (filter === 'done') return t.statusCategory === 'done'
-    if (filter === 'testing') return t.statusCategory === 'testing'
-    if (filter === 'inprog') return t.statusCategory === 'inprog'
-    if (filter === 'todo') return t.statusCategory === 'todo'
-    if (filter === 'over') return overKeys.has(t.key)
-    if (filter === 'noest') return !t.est || t.est === 0
+    if (filter === 'done') return task.statusCategory === 'done'
+    if (filter === 'testing') return task.statusCategory === 'testing'
+    if (filter === 'inprog') return task.statusCategory === 'inprog'
+    if (filter === 'todo') return task.statusCategory === 'todo'
+    if (filter === 'over') return overKeys.has(task.key)
+    if (filter === 'noest') return !task.est || task.est === 0
     return true
   })
 
   const counts = {
     all:     tasks.length,
-    done:    tasks.filter(t => t.statusCategory === 'done').length,
-    testing: tasks.filter(t => t.statusCategory === 'testing').length,
-    inprog:  tasks.filter(t => t.statusCategory === 'inprog').length,
-    todo:    tasks.filter(t => t.statusCategory === 'todo').length,
+    done:    tasks.filter(task => task.statusCategory === 'done').length,
+    testing: tasks.filter(task => task.statusCategory === 'testing').length,
+    inprog:  tasks.filter(task => task.statusCategory === 'inprog').length,
+    todo:    tasks.filter(task => task.statusCategory === 'todo').length,
     over:    overTasks.length,
-    noest:   tasks.filter(t => !t.est || t.est === 0).length,
+    noest:   tasks.filter(task => !task.est || task.est === 0).length,
   }
 
   const filterPills = [
-    { key: 'all',     label: 'Svi',          count: counts.all,     title: 'Svi taskovi' },
-    { key: 'done',    label: 'Završeni',      count: counts.done,    title: 'Done / Resolved / Closed' },
-    { key: 'testing', label: 'Testing',       count: counts.testing, title: 'Taskovi u testiranju (For Testing)' },
-    { key: 'inprog',  label: 'In Progress',   count: counts.inprog,  title: 'Aktivno u radu' },
-    { key: 'todo',    label: 'Grooming',      count: counts.todo,    title: 'To Do / For Grooming' },
-    ...(!isClient ? [{ key: 'over',  label: 'Prekoračenje', count: counts.over,  title: 'Prekoračenje estimacije >15%' }] : []),
-    ...(!isClient ? [{ key: 'noest', label: 'Bez procene',  count: counts.noest, title: 'Taskovi bez estimacije' }] : []),
+    { key: 'all',     label: t('table.filter.all'),     count: counts.all,     title: t('table.title.allTasks') },
+    { key: 'done',    label: t('table.filter.done'),    count: counts.done,    title: t('table.title.done') },
+    { key: 'testing', label: t('table.filter.testing'), count: counts.testing, title: t('table.title.testing') },
+    { key: 'inprog',  label: t('table.filter.inprog'),  count: counts.inprog,  title: t('table.title.inprog') },
+    { key: 'todo',    label: t('table.filter.todo'),    count: counts.todo,    title: t('table.title.todo') },
+    ...(!isClient ? [{ key: 'over',  label: t('table.filter.over'),  count: counts.over,  title: t('table.tooltip.message') }] : []),
+    ...(!isClient ? [{ key: 'noest', label: t('table.filter.noest'), count: counts.noest, title: t('table.title.noest') }] : []),
   ]
 
   function toggleExpand(key) {
@@ -310,7 +312,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
           <span style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Taskovi</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>({tasks.length})</span>
           <input
-            placeholder="🔍 Pretraži..."
+            placeholder={t('table.search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{
@@ -381,12 +383,12 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
         letterSpacing: '0.06em',
         color: 'var(--textMuted)',
       }}>
-        <div>ID</div>
-        <div>Naziv</div>
-        <div>Status</div>
-        {!isMobile && <div>Napredak</div>}
-        {!isMobile && !isTablet && !isClient && <div>Est.</div>}
-        {!isMobile && !isClient && <div>Utrošeno</div>}
+        <div>{t('table.header.id')}</div>
+        <div>{t('table.header.name')}</div>
+        <div>{t('table.header.status')}</div>
+        {!isMobile && <div>{t('table.header.progress')}</div>}
+        {!isMobile && !isTablet && !isClient && <div>{t('table.header.est')}</div>}
+        {!isMobile && !isClient && <div>{t('table.header.spent')}</div>}
       </div>
 
       {/* Rows */}

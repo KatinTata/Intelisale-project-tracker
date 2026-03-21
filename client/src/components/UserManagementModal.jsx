@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
+import { useT } from '../lang.jsx'
 
 export default function UserManagementModal({ projects, onClose }) {
+  const t = useT()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -48,7 +50,7 @@ export default function UserManagementModal({ projects, onClose }) {
   }
 
   async function handleDeleteUser(userId) {
-    if (!confirm('Obrisati ovog korisnika?')) return
+    if (!confirm(t('users.deleteConfirm'))) return
     try {
       await api.deleteUser(userId)
       setUsers(prev => prev.filter(u => u.id !== userId))
@@ -123,10 +125,10 @@ export default function UserManagementModal({ projects, onClose }) {
         }}>
           <div>
             <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 20, color: 'var(--text)', marginBottom: 2 }}>
-              Upravljanje korisnicima
+              {t('users.title')}
             </h2>
             <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
-              Kreiranje i upravljanje client nalozima
+              {t('users.subtitle')}
             </p>
           </div>
           <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import Topbar from '../components/Topbar.jsx'
+import { useT } from '../lang.jsx'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ function formatDate(date) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
+  const t = useT()
   const [epicKey, setEpicKey]       = useState(initialEpicKey || '')
   const [inputKey, setInputKey]     = useState(initialEpicKey || '')
   const [tasks, setTasks]           = useState([])
@@ -179,7 +181,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
                 fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: 'pointer',
               }}
             >
-              <option value="">Izaberi projekat...</option>
+              <option value="">{t('epic.selectProject')}</option>
               {projects.map(p => (
                 <option key={p.id} value={p.epicKey}>{p.displayName || p.epicKey}</option>
               ))}
@@ -191,7 +193,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
             <input
               value={inputKey}
               onChange={e => setInputKey(e.target.value)}
-              placeholder="npr. PROJECT-184"
+              placeholder={t('epic.keyPlaceholder')}
               style={{
                 background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
                 padding: '7px 12px', color: 'var(--text)', width: 180,
@@ -209,7 +211,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--accentHover)'}
               onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
-            >Učitaj</button>
+            >{t('epic.load')}</button>
           </form>
 
           {/* Export button — right-aligned */}
@@ -224,7 +226,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
-          >↓ Export PDF</button>
+          >↓ {t('epic.exportPdf')}</button>
         </div>
 
         {/* ── Document header ── */}
@@ -288,7 +290,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
           <div style={{
             textAlign: 'center', padding: '60px 0',
             color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14,
-          }}>Nema taskova za epic <b>{epicKey}</b>.</div>
+          }}>{t('epic.noTasks', { key: epicKey })}</div>
         )}
 
         {/* ── No epic selected ── */}
@@ -296,7 +298,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
           <div style={{
             textAlign: 'center', padding: '80px 0',
             color: 'var(--textMuted)', fontFamily: "'DM Sans', sans-serif", fontSize: 14,
-          }}>Izaberi projekat ili upiši epic key da bi generisao Release Notes.</div>
+          }}>{t('epic.empty')}</div>
         )}
 
         {/* ── Groups ── */}
@@ -365,7 +367,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
                               <button
                                 className="expand-btn"
                                 onClick={() => toggleExpand(task.key)}
-                                title={isExpanded ? 'Sakrij opis' : 'Prikaži opis'}
+                                title={isExpanded ? t('epic.hideDesc') : t('epic.showDesc')}
                                 style={{
                                   background: 'transparent', border: 'none',
                                   color: isExpanded ? 'var(--accent)' : 'var(--textMuted)',
@@ -438,7 +440,7 @@ export default function EpicViewerPage({ initialEpicKey, user, theme, onLogout, 
                                   }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,247,0.1)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                  >↗ Otvori</a>
+                                  >↗ {t('epic.open')}</a>
                                 )}
                               </div>
                             )

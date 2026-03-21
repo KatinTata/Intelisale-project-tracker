@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import { api } from '../api.js'
 import JqlEditor from '../components/JqlEditor.jsx'
-
-const TABS = [
-  { id: 'epic', label: 'Epic' },
-  { id: 'jql', label: 'JQL upit' },
-  { id: 'combined', label: 'Kombinovani' },
-]
+import { useT } from '../lang.jsx'
 
 export default function AddProjectPage({ onAdd, onCancel }) {
+  const t = useT()
+
+  const TABS = [
+    { id: 'epic', label: t('addProject.tab.epic') },
+    { id: 'jql', label: t('addProject.tab.jql') },
+    { id: 'combined', label: t('addProject.tab.combined') },
+  ]
   const [tab, setTab] = useState('epic')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -66,15 +68,15 @@ export default function AddProjectPage({ onAdd, onCancel }) {
     setLoading(true)
     try {
       if (tab === 'epic') {
-        if (!epicKey.trim()) { setError('Epic key je obavezan'); setLoading(false); return }
+        if (!epicKey.trim()) { setError(t('addProject.err.epicRequired')); setLoading(false); return }
         await onAdd({ epicKey: epicKey.trim(), displayName: epicName.trim() || undefined, filterType: 'epic' })
       } else if (tab === 'jql') {
-        if (!jqlQuery.trim()) { setError('JQL upit je obavezan'); setLoading(false); return }
-        if (!jqlName.trim()) { setError('Naziv projekta je obavezan'); setLoading(false); return }
+        if (!jqlQuery.trim()) { setError(t('addProject.err.jqlRequired')); setLoading(false); return }
+        if (!jqlName.trim()) { setError(t('addProject.err.nameRequired')); setLoading(false); return }
         await onAdd({ displayName: jqlName.trim(), filterType: 'jql', filterJql: jqlQuery.trim() })
       } else {
-        if (!cJql.trim()) { setError('Unesite bar jedan filter'); setLoading(false); return }
-        if (!cName.trim()) { setError('Naziv projekta je obavezan'); setLoading(false); return }
+        if (!cJql.trim()) { setError(t('addProject.err.filterRequired')); setLoading(false); return }
+        if (!cName.trim()) { setError(t('addProject.err.nameRequired')); setLoading(false); return }
         const meta = { epicKey: cEpicKey, fixVersion: cFixVersion, clientScope: cClientScope, clientRequested: cClientRequested, dateFrom: cDateFrom, dateTo: cDateTo }
         await onAdd({ displayName: cName.trim(), filterType: 'combined', filterJql: cJql.trim(), filterMeta: meta, epicKey: cEpicKey || undefined })
       }
@@ -94,38 +96,38 @@ export default function AddProjectPage({ onAdd, onCancel }) {
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
       >
-        ← Nazad
+        ← {t('addProject.back')}
       </button>
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 560, background: 'var(--surface)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', border: '1px solid var(--border)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '28px 32px 0' }}>
-          <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 4 }}>Dodaj projekat</h1>
+          <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 4 }}>{t('addProject.title')}</h1>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, marginBottom: 20 }}>
-            Izaberite način filtriranja taskova
+            {t('addProject.subtitle')}
           </p>
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)' }}>
-            {TABS.map(t => (
+            {TABS.map(tabItem => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={tabItem.id}
+                onClick={() => setTab(tabItem.id)}
                 style={{
                   padding: '10px 20px',
                   fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                  fontWeight: tab === t.id ? 600 : 400,
+                  fontWeight: tab === tabItem.id ? 600 : 400,
                   fontSize: 14,
-                  color: tab === t.id ? 'var(--accent)' : 'var(--textMuted)',
+                  color: tab === tabItem.id ? 'var(--accent)' : 'var(--textMuted)',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+                  borderBottom: tab === tabItem.id ? '2px solid var(--accent)' : '2px solid transparent',
                   marginBottom: -1,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
               >
-                {t.label}
+                {tabItem.label}
               </button>
             ))}
           </div>
@@ -134,10 +136,11 @@ export default function AddProjectPage({ onAdd, onCancel }) {
         {/* Body */}
         <form onSubmit={handleSubmit} style={{ padding: '24px 32px 28px' }}>
           {tab === 'epic' && (
-            <EpicTab epicKey={epicKey} setEpicKey={setEpicKey} displayName={epicName} setDisplayName={setEpicName} />
+            <EpicTab t={t} epicKey={epicKey} setEpicKey={setEpicKey} displayName={epicName} setDisplayName={setEpicName} />
           )}
           {tab === 'jql' && (
             <JqlTab
+              t={t}
               jql={jqlQuery} setJql={setJqlQuery}
               name={jqlName} setName={setJqlName}
               onTest={handleTestJql} testLoading={testLoading}
@@ -146,6 +149,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
           )}
           {tab === 'combined' && (
             <CombinedTab
+              t={t}
               epicKey={cEpicKey} setEpicKey={setCEpicKey}
               fixVersion={cFixVersion} setFixVersion={setCFixVersion}
               clientScope={cClientScope} setClientScope={setCClientScope}
@@ -170,7 +174,7 @@ export default function AddProjectPage({ onAdd, onCancel }) {
             disabled={loading}
             style={{ width: '100%', background: 'var(--accent)', color: '#fff', borderRadius: 8, padding: '11px', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', border: 'none', opacity: loading ? 0.7 : 1, transition: 'all 0.2s ease' }}
           >
-            {loading ? 'Dodajem...' : 'Dodaj projekat'}
+            {loading ? t('addProject.submitting') : t('addProject.submit')}
           </button>
         </form>
       </div>
@@ -178,26 +182,26 @@ export default function AddProjectPage({ onAdd, onCancel }) {
   )
 }
 
-function EpicTab({ epicKey, setEpicKey, displayName, setDisplayName }) {
+function EpicTab({ t, epicKey, setEpicKey, displayName, setDisplayName }) {
   return (
     <>
       <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>EPIC KEY *</label>
-        <input value={epicKey} onChange={e => setEpicKey(e.target.value)} placeholder="npr. PROJECT-184" required autoFocus style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        <label style={labelStyle}>{t('addProject.epic.key')}</label>
+        <input value={epicKey} onChange={e => setEpicKey(e.target.value)} placeholder={t('addProject.epic.keyPlaceholder')} required autoFocus style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
       </div>
       <div style={{ marginBottom: 24 }}>
-        <label style={labelStyle}>NAZIV (opciono)</label>
-        <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="npr. Knjaz Miloš B2B Portal" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        <label style={labelStyle}>{t('addProject.epic.name')}</label>
+        <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder={t('addProject.epic.namePlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
       </div>
     </>
   )
 }
 
-function JqlTab({ jql, setJql, name, setName, onTest, testLoading, testResult, testError }) {
+function JqlTab({ t, jql, setJql, name, setName, onTest, testLoading, testResult, testError }) {
   return (
     <>
       <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>JQL UPIT *</label>
+        <label style={labelStyle}>{t('addProject.jql.query')}</label>
         <JqlEditor
           value={jql}
           onChange={setJql}
@@ -211,46 +215,46 @@ function JqlTab({ jql, setJql, name, setName, onTest, testLoading, testResult, t
             disabled={testLoading || !jql.trim()}
             style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: testLoading || !jql.trim() ? 'not-allowed' : 'pointer', opacity: !jql.trim() ? 0.5 : 1, transition: 'all 0.2s ease' }}
           >
-            {testLoading ? 'Testiram...' : '▶ Test upita'}
+            {testLoading ? t('addProject.jql.testing') : t('addProject.jql.test')}
           </button>
         </div>
-        <TestResult result={testResult} error={testError} />
+        <TestResult t={t} result={testResult} error={testError} />
       </div>
       <div style={{ marginBottom: 24 }}>
-        <label style={labelStyle}>NAZIV PROJEKTA *</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="npr. Knjaz Miloš – poslednjih 60 dana" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        <label style={labelStyle}>{t('addProject.projectName')}</label>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('addProject.jql.namePlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
       </div>
     </>
   )
 }
 
-function CombinedTab({ epicKey, setEpicKey, fixVersion, setFixVersion, clientScope, setClientScope, clientRequested, setClientRequested, dateFrom, setDateFrom, dateTo, setDateTo, name, setName, jql, setJql, onTest, testLoading, testResult, testError }) {
+function CombinedTab({ t, epicKey, setEpicKey, fixVersion, setFixVersion, clientScope, setClientScope, clientRequested, setClientRequested, dateFrom, setDateFrom, dateTo, setDateTo, name, setName, jql, setJql, onTest, testLoading, testResult, testError }) {
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div>
-          <label style={labelStyle}>EPIC KEY (opciono)</label>
+          <label style={labelStyle}>{t('addProject.combined.epicKey')}</label>
           <input value={epicKey} onChange={e => setEpicKey(e.target.value)} placeholder="PROJECT-184" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div>
-          <label style={labelStyle}>FIX VERSION (opciono)</label>
-          <input value={fixVersion} onChange={e => setFixVersion(e.target.value)} placeholder="npr. 2.1.0" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+          <label style={labelStyle}>{t('addProject.combined.fixVersion')}</label>
+          <input value={fixVersion} onChange={e => setFixVersion(e.target.value)} placeholder={t('addProject.combined.fixVersionPlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div>
-          <label style={labelStyle}>CLIENT SCOPE — cf[11529] (opciono)</label>
-          <input value={clientScope} onChange={e => setClientScope(e.target.value)} placeholder="npr. Knjaz Miloš Srbija" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+          <label style={labelStyle}>{t('addProject.combined.clientScope')}</label>
+          <input value={clientScope} onChange={e => setClientScope(e.target.value)} placeholder={t('addProject.combined.clientRequestedPlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div>
-          <label style={labelStyle}>CLIENT REQUESTED (opciono)</label>
-          <input value={clientRequested} onChange={e => setClientRequested(e.target.value)} placeholder="npr. Knjaz Miloš" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+          <label style={labelStyle}>{t('addProject.combined.clientRequested')}</label>
+          <input value={clientRequested} onChange={e => setClientRequested(e.target.value)} placeholder={t('addProject.combined.clientRequestedPlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <label style={labelStyle}>OD DATUMA</label>
+            <label style={labelStyle}>{t('addProject.combined.dateFrom')}</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
           <div>
-            <label style={labelStyle}>DO DATUMA</label>
+            <label style={labelStyle}>{t('addProject.combined.dateTo')}</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
         </div>
@@ -258,11 +262,11 @@ function CombinedTab({ epicKey, setEpicKey, fixVersion, setFixVersion, clientSco
 
       {/* JQL editor */}
       <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>JQL UPIT</label>
+        <label style={labelStyle}>{t('addProject.jql.query')}</label>
         <JqlEditor
           value={jql}
           onChange={setJql}
-          placeholder="— unesite bar jedan filter ili editujte JQL direktno —"
+          placeholder={t('addProject.combined.jqlPlaceholder')}
           rows={3}
         />
         {jql.trim() && (
@@ -273,22 +277,22 @@ function CombinedTab({ epicKey, setEpicKey, fixVersion, setFixVersion, clientSco
               disabled={testLoading}
               style={{ background: 'transparent', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 14px', color: 'var(--accent)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: testLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}
             >
-              {testLoading ? 'Testiram...' : '▶ Test upita'}
+              {testLoading ? t('addProject.jql.testing') : t('addProject.jql.test')}
             </button>
           </div>
         )}
-        <TestResult result={testResult} error={testError} />
+        <TestResult t={t} result={testResult} error={testError} />
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <label style={labelStyle}>NAZIV PROJEKTA *</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="npr. Knjaz Miloš – Q1 2026" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        <label style={labelStyle}>{t('addProject.projectName')}</label>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('addProject.jql.namePlaceholder')} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
       </div>
     </>
   )
 }
 
-function TestResult({ result, error }) {
+function TestResult({ t, result, error }) {
   if (error) {
     return (
       <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--redTint)', border: '1px solid #EF444430', borderRadius: 6, color: 'var(--red)', fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
@@ -300,7 +304,7 @@ function TestResult({ result, error }) {
   return (
     <div style={{ marginTop: 8, padding: '10px 12px', background: 'var(--greenTint)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6 }}>
       <div style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--green)', marginBottom: result.preview.length ? 8 : 0 }}>
-        ✓ Pronađeno {result.count} taskova
+        ✓ {t('addProject.found', { count: result.count })}
       </div>
       {result.preview.map(p => (
         <div key={p.key} style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 3 }}>

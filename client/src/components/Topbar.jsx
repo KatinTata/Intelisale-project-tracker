@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import NotificationBell from './NotificationBell.jsx'
+import { useT } from '../lang.jsx'
 
 // ── SVG Icons (Heroicons outline) ─────────────────────────────────────────────
 
@@ -23,7 +24,7 @@ function IconClipboard() {
 function IconChat() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V20.25a.75.75 0 0 0 1.28.53l3.58-3.58A48.458 48.458 0 0 0 11.25 17c2.115 0 4.198-.137 6.24-.402 1.608-.209 2.76-1.614 2.76-3.235V9.75Z" />
     </svg>
   )
 }
@@ -103,6 +104,7 @@ function IconBtn({ onClick, title, children, badge }) {
 function NavMenu({ items, currentPage }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const t = useT()
 
   useEffect(() => {
     function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -117,7 +119,7 @@ function NavMenu({ items, currentPage }) {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        title="Moduli"
+        title={t('topbar.modules')}
         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79,142,247,0.12)'; e.currentTarget.style.borderColor = 'var(--accent)' }}
         onMouseLeave={e => { e.currentTarget.style.background = open ? 'rgba(79,142,247,0.1)' : 'transparent'; e.currentTarget.style.borderColor = open ? 'var(--accent)' : 'rgba(79,142,247,0.4)' }}
         style={{
@@ -133,7 +135,7 @@ function NavMenu({ items, currentPage }) {
         }}
       >
         <IconGrid />
-        Moduli
+        {t('topbar.modules')}
         <ChevronDown open={open} />
       </button>
 
@@ -430,6 +432,7 @@ export default function Topbar({
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const { isMobile } = useWindowSize()
+  const t = useT()
 
   useEffect(() => {
     function h(e) {
@@ -513,23 +516,24 @@ export default function Topbar({
                   <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', marginTop: 2 }}>{user?.email}</div>
                 </div>
                 {[
-                  ...(onOpenUsers ? [{ label: '👥  Korisnici', action: () => { onOpenUsers(); setMenuOpen(false) } }] : []),
-                  { label: '🚪  Odjava', action: () => { onLogout(); setMenuOpen(false) }, red: true },
+                  ...(onOpenUsers ? [{ label: t('topbar.users'), action: () => { onOpenUsers(); setMenuOpen(false) }, icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg> }] : []),
+                  { label: t('topbar.logout'), action: () => { onLogout(); setMenuOpen(false) }, red: true, icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" /></svg> },
                 ].map(item => (
                   <button
                     key={item.label}
                     onClick={item.action}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
+                      padding: '10px 16px',
                       fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                       fontSize: 14, color: item.red ? 'var(--red)' : 'var(--text)',
                       border: 'none', background: 'transparent',
-                      cursor: 'pointer', minHeight: 44, transition: 'background 0.15s',
+                      cursor: 'pointer', transition: 'background 0.15s',
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
+                    {item.icon}
                     {item.label}
                   </button>
                 ))}
@@ -547,12 +551,12 @@ export default function Topbar({
         padding: isMobile ? '0 12px' : '0 20px',
       }}>
         <NavMenu currentPage={currentPage} items={[
-          { label: 'Dashboard', icon: <IconHome />, action: onGoToDashboard, page: 'dashboard' },
-          { label: 'Release Notes', icon: <IconDoc />, action: onGoToReleaseNotes, page: 'releaseNotes' },
-          ...(onGoToReleaseNotesEditor ? [{ label: 'Release Notes Editor', icon: <IconClipboard />, action: onGoToReleaseNotesEditor, page: 'releaseNotesEditor' }] : []),
-          { label: 'Dokumenti', icon: <IconFolder />, action: onGoToDocuments, page: 'documents' },
-          { label: 'Poruke', icon: <IconChat />, action: onOpenChat },
-          { label: 'Podešavanja', icon: <IconCog />, action: onOpenSettings },
+          { label: t('topbar.nav.dashboard'), icon: <IconHome />, action: onGoToDashboard, page: 'dashboard' },
+          { label: t('topbar.nav.releaseNotes'), icon: <IconDoc />, action: onGoToReleaseNotes, page: 'releaseNotes' },
+          ...(onGoToReleaseNotesEditor ? [{ label: t('topbar.nav.releaseNotesEditor'), icon: <IconClipboard />, action: onGoToReleaseNotesEditor, page: 'releaseNotesEditor' }] : []),
+          { label: t('topbar.nav.documents'), icon: <IconFolder />, action: onGoToDocuments, page: 'documents' },
+          { label: t('topbar.nav.messages'), icon: <IconChat />, action: onOpenChat },
+          { label: t('topbar.nav.settings'), icon: <IconCog />, action: onOpenSettings },
         ]} />
 
         {projects.length > 0 && (

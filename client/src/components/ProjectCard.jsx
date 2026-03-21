@@ -10,13 +10,14 @@ import AssigneeWorkload from './AssigneeWorkload.jsx'
 import ComponentBreakdown from './ComponentBreakdown.jsx'
 import OverrunHeatmap from './OverrunHeatmap.jsx'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
-function fmtLastRefresh(date) {
+function fmtLastRefresh(date, t) {
   if (!date) return null
   const diff = Math.floor((Date.now() - date) / 1000)
-  if (diff < 60) return 'upravo'
-  if (diff < 3600) return `pre ${Math.floor(diff / 60)} min`
-  return `pre ${Math.floor(diff / 3600)}h`
+  if (diff < 60) return t('time.justNow')
+  if (diff < 3600) return t('time.minutesAgo', { n: Math.floor(diff / 60) })
+  return t('time.hoursAgo', { n: Math.floor(diff / 3600) })
 }
 
 function jiraLink(jiraUrl, key) {
@@ -89,6 +90,7 @@ function findAuthor(changelog, reporter, assignee, changeType) {
 
 function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
   const storageKey = `task_changes_${projectId}`
+  const t = useT()
 
   const [stored, setStored] = useState(() => {
     try { return JSON.parse(localStorage.getItem(storageKey)) } catch { return null }
@@ -150,7 +152,7 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
         </span>
         {time && (
           <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
-            {fmtLastRefresh(time)}
+            {fmtLastRefresh(time, t)}
           </span>
         )}
       </div>
@@ -215,6 +217,7 @@ export default function ProjectCard({
   autoRefreshTime,
 }) {
   const { isMobile, isTablet } = useWindowSize()
+  const t = useT()
 
   if (loading) {
     return (
@@ -258,14 +261,14 @@ export default function ProjectCard({
   const statusColor = donePct >= 0.8 ? 'green' : donePct >= 0.4 ? 'amber' : 'blue'
 
   const barData = tasks
-    .filter(t => t.est > 0)
-    .map(t => ({ label: t.key, est: t.est, spent: t.spent }))
+    .filter(task => task.est > 0)
+    .map(task => ({ label: task.key, est: task.est, spent: task.spent }))
 
   const donutSegments = [
-    { value: done,    color: 'var(--green)',      label: 'Završeno'    },
-    { value: testing, color: 'var(--amber)',      label: 'Testing'     },
-    { value: inprog,  color: 'var(--accent)',     label: 'In Progress' },
-    { value: todo,    color: 'var(--textSubtle)', label: 'To Do'       },
+    { value: done,    color: 'var(--green)',      label: t('donut.label.done')   },
+    { value: testing, color: 'var(--amber)',      label: 'Testing'               },
+    { value: inprog,  color: 'var(--accent)',     label: t('donut.label.inprog') },
+    { value: todo,    color: 'var(--textSubtle)', label: t('donut.label.todo')   },
   ]
 
   return (
@@ -377,7 +380,7 @@ export default function ProjectCard({
 
             {lastRefresh && (
               <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textSubtle)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                {refreshing || loading ? 'Osvežavam...' : `${fmtLastRefresh(lastRefresh)}`}
+                {refreshing || loading ? 'Osvežavam...' : `${fmtLastRefresh(lastRefresh, t)}`}
                 {!refreshing && !loading && autoRefreshTime && (
                   <span style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontSize: 11, color: 'var(--textMuted)' }}>
                     auto {autoRefreshTime}
@@ -492,7 +495,7 @@ export default function ProjectCard({
                   </div>
                 </div>
                 <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 8px' }}>
-                  {tasks.filter(t => t.est > 0).length} taskova
+                  {tasks.filter(task => task.est > 0).length} taskova
                 </span>
               </div>
               <OverrunHeatmap tasks={tasks} />

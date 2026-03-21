@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
 function fmtDate(iso) {
   if (!iso) return '—'
@@ -14,6 +15,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [working, setWorking] = useState(false)
   const { isMobile } = useWindowSize()
+  const t = useT()
 
   useEffect(() => {
     api.getArchivedProjects()
@@ -75,10 +77,10 @@ export default function ArchiveModal({ onClose, onRestore }) {
         }}>
           <div>
             <h3 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: 'var(--text)', marginBottom: 2 }}>
-              📦 Arhiva projekata
+              📦 {t('archive.title')}
             </h3>
             <p style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)' }}>
-              Arhivirani projekti — istorija i snapshotovi su sačuvani
+              {t('archive.subtitle')}
             </p>
           </div>
           <button onClick={onClose} style={{
@@ -93,16 +95,16 @@ export default function ArchiveModal({ onClose, onRestore }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
           {loading ? (
             <div style={{ padding: 32, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-              Učitavam...
+              {t('archive.loading')}
             </div>
           ) : projects.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
               <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>
-                Arhiva je prazna
+                {t('archive.empty')}
               </div>
               <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
-                Arhivirani projekti će se pojaviti ovde
+                {t('archive.emptySub')}
               </div>
             </div>
           ) : (
@@ -128,7 +130,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                           {p.epicKey}
                         </span>
                         <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
-                          Arhivirano {fmtDate(p.archivedAt)}
+                          {t('archive.archivedAt', { date: fmtDate(p.archivedAt) })}
                         </span>
                       </div>
                     </div>
@@ -149,7 +151,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                         onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff' }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent)' }}
                       >
-                        ↩ Vrati
+                        ↩ {t('archive.restore')}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(p.id)}
@@ -178,7 +180,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                       borderRadius: 8,
                     }}>
                       <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
-                        Trajno brisanje je nepovratno. Svi snapshotovi i podaci projekta biće izgubljeni.
+                        {t('archive.deleteConfirm')}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => setConfirmDeleteId(null)} style={{
@@ -186,7 +188,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                           border: '1px solid var(--border)', background: 'transparent',
                           color: 'var(--text)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, cursor: 'pointer',
                         }}>
-                          Otkaži
+                          {t('archive.cancel')}
                         </button>
                         <button onClick={() => handlePermanentDelete(p.id)} disabled={working} style={{
                           flex: 1, padding: '8px', borderRadius: 7, border: 'none',
@@ -194,7 +196,7 @@ export default function ArchiveModal({ onClose, onRestore }) {
                           fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 13,
                           cursor: working ? 'not-allowed' : 'pointer', opacity: working ? 0.7 : 1,
                         }}>
-                          Trajno izbriši
+                          {t('archive.delete')}
                         </button>
                       </div>
                     </div>

@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { fmtHours } from '../utils.js'
+import { useT } from '../lang.jsx'
 
 export default function AssigneeWorkload({ data = [] }) {
   const [tooltip, setTooltip] = useState(null)
+  const t = useT()
 
   if (data.length === 0) {
     return (
       <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-        Taskovi nisu dodeljeni nijednom članu tima
+        {t('chart.noAssignees')}
       </div>
     )
   }

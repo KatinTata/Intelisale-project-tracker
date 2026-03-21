@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api.js'
+import { useT } from '../lang.jsx'
 
 const JQL_OPERATORS = ['=', '!=', '~', '!~', '<', '<=', '>', '>=', 'IN', 'NOT IN', 'IS', 'IS NOT', 'WAS', 'WAS IN', 'WAS NOT IN', 'CHANGED']
 const JQL_KEYWORDS = ['AND', 'OR', 'NOT', 'ORDER BY', 'ASC', 'DESC', 'EMPTY', 'NULL']
@@ -49,6 +50,7 @@ function LivePreview({ jql }) {
   const [state, setState] = useState(null) // null | {loading} | {count} | {error}
   const timerRef = useRef(null)
   const lastJql = useRef('')
+  const t = useT()
 
   useEffect(() => {
     const q = jql?.trim() || ''
@@ -64,7 +66,7 @@ function LivePreview({ jql }) {
         lastJql.current = q
         setState({ count: data.count })
       } catch (err) {
-        setState({ error: err.message || 'Nevalidan JQL' })
+        setState({ error: err.message || t('jql.invalid') })
       }
     }, 900)
 
@@ -83,7 +85,7 @@ function LivePreview({ jql }) {
   )
   return (
     <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--green)', marginLeft: 6 }}>
-      ✓ {state.count} issue-a
+      ✓ {t('jql.issues', { count: state.count })}
     </span>
   )
 }

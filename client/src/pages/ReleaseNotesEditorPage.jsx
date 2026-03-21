@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
 import JqlEditor from '../components/JqlEditor.jsx'
+import { useT } from '../lang.jsx'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
@@ -276,6 +277,7 @@ function IconLink() {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onOpenSettings, onOpenChat }) {
+  const t = useT()
   // wizard
   const [wizardStep, setWizardStep] = useState(1)
   const [maxStep, setMaxStep] = useState(1)
@@ -466,7 +468,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         setAiPreviews(prev => ({ ...prev, [taskId]: result }))
       }
     } catch (e) {
-      showToast('AI generisanje nije uspelo, pokušaj ponovo')
+      showToast(t('rne.aiFailed'))
     } finally {
       setAiLoadingIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
       setAiCooldownIds(prev => new Set([...prev, taskId]))
@@ -506,7 +508,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         },
       }))
     } catch {
-      showToast('AI prevod nije uspeo, pokušaj ponovo')
+      showToast(t('rne.aiTranslateFailed'))
     } finally {
       setAiLoadingIds(prev => { const n = new Set(prev); n.delete(taskId); return n })
       setAiCooldownIds(prev => new Set([...prev, taskId]))
@@ -518,7 +520,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     if (bulkProgress) return
     const sel = tasks.filter(t => selectedIds.has(t.id))
     for (let i = 0; i < sel.length; i++) {
-      setBulkProgress({ current: i + 1, total: sel.length, action: 'Generišem' })
+      setBulkProgress({ current: i + 1, total: sel.length, action: 'generate' })
       const task = sel[i]
       if (!taskJiraDetails[task.id]?.description && !taskJiraDetails[task.id]?.error) {
         await fetchAndSetDetail(task)
@@ -532,7 +534,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     if (bulkProgress) return
     const sel = tasks.filter(t => selectedIds.has(t.id))
     for (let i = 0; i < sel.length; i++) {
-      setBulkProgress({ current: i + 1, total: sel.length, action: 'Prevodim' })
+      setBulkProgress({ current: i + 1, total: sel.length, action: 'translate' })
       await translateTask(sel[i].id)
     }
     setBulkProgress(null)
@@ -646,11 +648,11 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       const noteData = detail.note || detail
       const edits = parseNoteHtml(noteData.html || '')
       const keys = Object.keys(edits)
-      if (keys.length === 0) { showToast('Nema taskova u ovom release notes-u'); return }
+      if (keys.length === 0) { showToast(t('rne.noTasks')); return }
 
       const pid = noteData.project_id || note.project_id
       const proj = pid ? projects.find(p => p.id === pid) : selectedProject
-      if (!proj) { showToast('Projekat nije pronađen — izaberi projekat ručno'); return }
+      if (!proj) { showToast('Projekat nije pronađen'); return }
 
       // Fetch only the copied tasks directly (bypass useEffect)
       setLoadingTasks(true)
@@ -677,7 +679,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       setSelectedIds(new Set(loaded.filter(t => edits[t.key]).map(t => t.id)))
       setCustomJql('') // clear JQL — user can add more via JQL below
       setCopyDropOpen(false)
-      showToast(`Učitano ${loaded.length} taskova iz "${noteData.title || 'release notes'}"`)
+      showToast(t('rne.copyLoaded') + `: ${loaded.length} / "${noteData.title || 'release notes'}"`)
     } catch (err) {
       showToast('Greška: ' + (err.message || 'nepoznata greška'))
     } finally {
@@ -749,12 +751,12 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
           </div>
           <div>
             <label style={labelStyle}>Naziv klijenta</label>
-            <input value={config.clientName} onChange={e => setConfigField('clientName', e.target.value)} placeholder="npr. Knjaz Miloš"
+            <input value={config.clientName} onChange={e => setConfigField('clientName', e.target.value)} placeholder={t('rne.clientPlaceholder')}
               style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Verzija</label>
-            <input value={config.version} onChange={e => setConfigField('version', e.target.value)} placeholder="npr. v2.4.1"
+            <input value={config.version} onChange={e => setConfigField('version', e.target.value)} placeholder={t('rne.versionPlaceholder')}
               style={inputStyle} />
           </div>
         </div>
@@ -767,7 +769,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                 <JqlEditor
                   value={customJql}
                   onChange={setCustomJql}
-                  placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
+                  placeholder={t('rne.jqlPlaceholder')}
                   rows={2}
                   showPreview={false}
                 />
@@ -783,7 +785,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                   background: (!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())) ? 'var(--surfaceAlt)' : 'var(--accent)',
                   color: (!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())) ? 'var(--textMuted)' : '#fff',
                 }}>
-                {copiedEdits && tasks.length > 0 ? '+ Dodaj' : '↻ Primeni'}
+                {copiedEdits && tasks.length > 0 ? t('rne.add') : t('rne.apply')}
               </button>
             </div>
           </div>
@@ -809,21 +811,19 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                 }}
               >
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {copyLoading ? 'Učitavam...' : copiedEdits ? '✓ Kopija učitana' : 'Izaberi release notes'}
+                  {copyLoading ? t('rne.loading') : copiedEdits ? t('rne.copyLoaded') : t('rne.selectReleaseNotes')}
                 </span>
                 <span style={{ fontSize: 10, flexShrink: 0, transform: copyDropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block', color: 'var(--textMuted)' }}>▾</span>
               </button>
               <p style={{ margin: '5px 0 0', fontFamily: 'DM Sans', fontSize: 11, color: 'var(--textMuted)', lineHeight: 1.4 }}>
-                {copiedEdits
-                  ? 'Taskovi učitani. Dodaj još via JQL.'
-                  : 'Učitava taskove iz prethodnog release notes-a kao polaznu tačku.'}
+                {copiedEdits ? t('rne.tasksLoaded') : t('rne.copyDesc')}
               </p>
               {copyDropOpen && (
                 <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 300, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: 200, overflow: 'hidden' }}>
                   {existingNotes === null ? (
-                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>Učitavam...</div>
+                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>{t('rne.loading')}</div>
                   ) : existingNotes.length === 0 ? (
-                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>Nema objavljenih release notes-a.</div>
+                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>{t('rne.noPublished')}</div>
                   ) : (
                     <div style={{ maxHeight: 240, overflowY: 'auto', padding: 6 }}>
                       {existingNotes.map(note => (
@@ -835,7 +835,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
-                          <span style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || '(bez naziva)'}</span>
+                          <span style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || t('rne.noTitle')}</span>
                           {note.version && (
                             <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--accent)', background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>{note.version}</span>
                           )}
@@ -899,15 +899,15 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         {/* Rows */}
         <div>
           {loadingTasks ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Učitavam taskove...</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>{t('rne.loading')}</div>
           ) : taskError ? (
             <div style={{ padding: 24, margin: 16, borderRadius: 8, background: 'var(--redTint)', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'DM Sans', fontSize: 13 }}>
               <strong>Greška:</strong> {taskError}
             </div>
           ) : !selectedProject ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Izaberi projekat za prikaz taskova</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>{t('rne.noTasksEmpty')}</div>
           ) : filteredTasks.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>Nema taskova koji odgovaraju filteru</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>{t('rne.noTasksEmpty')}</div>
           ) : filteredTasks.map(task => (
             <Step1Row key={task.id} task={task} selected={selectedIds.has(task.id)} onToggle={() => toggleSelected(task.id)} />
           ))}
@@ -924,8 +924,8 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     <div style={{ paddingBottom: 80 }}>
       {selectedTasks.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans' }}>
-          Nema izabranih taskova.{' '}
-          <button onClick={() => setWizardStep(1)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14 }}>← Nazad</button>
+          {t('rne.noTasksEmpty')}{' '}
+          <button onClick={() => setWizardStep(1)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14 }}>{t('rn.back')}</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -955,7 +955,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                     onChange={e => { e.stopPropagation(); updateEdit(task.id, 'name', e.target.value) }}
                     onClick={e => e.stopPropagation()}
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, minWidth: 0 }}
-                    placeholder="Naziv taska..."
+                    placeholder={t('rne.taskNamePlaceholder')}
                   />
                   <span style={badgeStyle}>{statusLabel(task)}</span>
                   {helpLinks.length > 0 && (
@@ -965,18 +965,18 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                   )}
                   <button onClick={e => { e.stopPropagation(); !isAiLoading && !isAiCooldown && !bulkProgress && generateTaskDesc(task.id) }}
                     disabled={isAiLoading || isAiCooldown || !!bulkProgress}
-                    title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env' : 'Generiši AI opis'}
+                    title={!hasAiKey ? t('rne.noApiKeyShort') : t('rne.generateAI')}
                     style={{ ...iconBtnStyle, color: isAiLoading ? 'var(--textMuted)' : 'var(--accent)', opacity: (!hasAiKey || isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
                     {isAiLoading ? <span style={{ fontSize: 10, opacity: 0.7 }}>···</span> : <IconSparkle />}
                   </button>
                   <button onClick={e => { e.stopPropagation(); !isAiLoading && !isAiCooldown && !bulkProgress && translateTask(task.id) }}
                     disabled={isAiLoading || isAiCooldown || !!bulkProgress}
-                    title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env' : 'Prevedi na engleski'}
+                    title={!hasAiKey ? t('rne.noApiKeyShort') : t('rne.translate')}
                     style={{ ...iconBtnStyle, opacity: (!hasAiKey || isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
                     <IconGlobe />
                   </button>
                   <button onClick={e => { e.stopPropagation(); removeFromSelection(task.id) }}
-                    title="Ukloni iz release notes"
+                    title={t('rne.removeTask')}
                     style={{ ...iconBtnStyle, color: 'var(--textMuted)' }}>
                     ×
                   </button>
@@ -990,7 +990,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                     {/* Detail loading indicator */}
                     {detail?.loading && (
                       <div style={{ fontSize: 12, fontFamily: 'DM Mono', color: 'var(--textMuted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block', opacity: 0.5 }}>○</span> Učitavam Jira opis...
+                        <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block', opacity: 0.5 }}>○</span> {t('rne.loadingJira')}
                       </div>
                     )}
 
@@ -1010,20 +1010,21 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                             onClick={() => !isAiLoading && !isAiCooldown && !bulkProgress && generateTaskDesc(task.id)}
                             disabled={isAiLoading || isAiCooldown || !!bulkProgress}
                             style={{ ...smallBtnStyle, opacity: (isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
-                            {isAiLoading ? 'Generišem...' : <><IconSparkle /> Generiši opis</>}
+                            {isAiLoading ? t('rne.generating') : <><IconSparkle /> {t('rne.generateAI')}</>}
                           </button>
                           <button
                             onClick={() => !isAiLoading && !isAiCooldown && !bulkProgress && translateTask(task.id)}
                             disabled={isAiLoading || isAiCooldown || !!bulkProgress}
                             style={{ ...smallBtnStyle, opacity: (isAiCooldown || !!bulkProgress) ? 0.4 : 1 }}>
-                            <><IconGlobe /> Prevedi sve</>
+                            <><IconGlobe /> {t('rne.translate')}</>
+
                           </button>
                         </div>
                       </div>
                       <textarea
                         value={edit.description || ''}
                         onChange={e => updateEdit(task.id, 'description', e.target.value)}
-                        placeholder={detail?.loading ? 'Učitavam Jira opis...' : 'Opis funkcionalnosti za klijenta...'}
+                        placeholder={detail?.loading ? t('rne.loadingJira') : t('rne.taskNamePlaceholder')}
                         rows={5}
                         style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 13, boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }} />
 
@@ -1031,7 +1032,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                       {aiPreviews[task.id] && (
                         <div style={{ marginTop: 10, background: 'rgba(79,142,247,0.06)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 8, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(79,142,247,0.15)' }}>
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}><IconSparkle /> AI prijedlog</span>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}><IconSparkle /> AI</span>
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button
                                 onClick={() => {
@@ -1039,12 +1040,12 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                                   setAiPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n })
                                 }}
                                 style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                                Primeni
+                                {t('rne.apply')}
                               </button>
                               <button
                                 onClick={() => setAiPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n })}
                                 style={{ padding: '4px 10px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid rgba(79,142,247,0.3)', color: 'var(--textMuted)', cursor: 'pointer' }}>
-                                Odbaci
+                                {t('rne.delete')}
                               </button>
                             </div>
                           </div>
@@ -1069,7 +1070,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                             inp.click()
                           }}
                           style={{ border: '2px dashed var(--border)', borderRadius: 8, padding: '16px', textAlign: 'center', cursor: 'pointer', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, marginBottom: (edit.images || []).length ? 10 : 0, transition: 'border-color 0.2s' }}>
-                          Prevuci slike ili klikni za dodavanje (max 5MB)
+                          {t('rne.imagePrompt')}
                         </div>
                       )}
                       {(edit.images || []).length > 0 && (
@@ -1086,7 +1087,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                                 <textarea
                                   value={img.desc}
                                   onChange={e => updateImageDesc(task.id, imgIdx, e.target.value)}
-                                  placeholder="Šta prikazuje ova slika? Koji je kontekst? (npr. 'Nova stranica za pregled porudžbina sa filterima po statusu')"
+                                  placeholder={t('rne.imagePrompt')}
                                   rows={3}
                                   style={{ width: '100%', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 12, boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5 }} />
                               </div>
@@ -1127,24 +1128,24 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       {/* Fixed bottom bar */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '12px 28px' }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => setWizardStep(1)} style={{ ...smallBtnStyle }}>← Nazad</button>
+          <button onClick={() => setWizardStep(1)} style={{ ...smallBtnStyle }}>{t('rn.back')}</button>
           <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
           <button
             onClick={generateAllDescriptions}
             disabled={!!bulkProgress}
-            title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env za AI funkcionalnosti' : ''}
+            title={!hasAiKey ? t('rne.noApiKey') : ''}
             style={{ ...smallBtnStyle, opacity: !hasAiKey ? 0.5 : bulkProgress ? 0.6 : 1 }}>
-            {bulkProgress?.action === 'Generišem' ? `Generišem ${bulkProgress.current}/${bulkProgress.total}...` : <><IconSparkle /> AI opis za sve</>}
+            {bulkProgress?.action === 'generate' ? `${t('rne.generating')} ${bulkProgress.current}/${bulkProgress.total}` : <><IconSparkle /> {t('rne.generateAI')}</>}
           </button>
           <button
             onClick={translateAll}
             disabled={!!bulkProgress}
-            title={!hasAiKey ? 'Dodaj VITE_ANTHROPIC_API_KEY u client/.env za AI funkcionalnosti' : ''}
+            title={!hasAiKey ? t('rne.noApiKey') : ''}
             style={{ ...smallBtnStyle, opacity: !hasAiKey ? 0.5 : bulkProgress ? 0.6 : 1 }}>
-            {bulkProgress?.action === 'Prevodim' ? `Prevodim ${bulkProgress.current}/${bulkProgress.total}...` : <><IconGlobe /> Prevedi sve</>}
+            {bulkProgress?.action === 'translate' ? `${t('rne.translating')} ${bulkProgress.current}/${bulkProgress.total}` : <><IconGlobe /> {t('rne.translate')}</>}
           </button>
           <button onClick={goToStep3} style={{ marginLeft: 'auto', padding: '9px 24px', borderRadius: 8, fontSize: 14, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', transition: 'all 0.2s ease' }}>
-            Pregledaj →
+            Preview →
           </button>
         </div>
       </div>
@@ -1172,12 +1173,12 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
         {/* Action bar */}
         <div data-no-print="1" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <button onClick={() => setWizardStep(2)} style={{ ...smallBtnStyle }}>← Uredi</button>
+          <button onClick={() => setWizardStep(2)} style={{ ...smallBtnStyle }}>{t('rn.back')}</button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button onClick={() => window.print()} style={smallBtnStyle}>↓ Export PDF</button>
+            <button onClick={() => window.print()} style={smallBtnStyle}>{t('rne.exportPdf')}</button>
             <button onClick={openPublishModal} disabled={publishState?.loading}
               style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: publishState?.loading ? 'wait' : 'pointer' }}>
-              {publishState?.loading ? 'Objavljivanje...' : 'Publish'}
+              {publishState?.loading ? t('app.loading') : 'Publish'}
             </button>
           </div>
         </div>
@@ -1192,7 +1193,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         {/* Editable header fields */}
         <div data-no-print="1" style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <input value={previewTitle} onChange={e => setPreviewTitle(e.target.value)}
-            placeholder="Naslov release notes..."
+            placeholder={t('rne.titlePlaceholder')}
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, boxSizing: 'border-box' }} />
           <input value={previewDate} onChange={e => setPreviewDate(e.target.value)}
             style={{ width: 220, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontFamily: 'DM Mono', fontSize: 13, boxSizing: 'border-box' }} />
@@ -1427,6 +1428,7 @@ function Toast({ message, onClose }) {
 // ── PublishModal ───────────────────────────────────────────────────────────────
 
 function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
+  const t = useT()
   const [selected, setSelected] = useState(new Set())
   const [publishing, setPublishing] = useState(false)
 
@@ -1444,15 +1446,15 @@ function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 24px 80px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Objavi Release Notes</span>
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Release Notes</span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '16px 24px' }}>
           <div style={{ fontSize: 13, color: 'var(--textMuted)', fontFamily: 'DM Sans', marginBottom: 16, lineHeight: 1.6 }}>
-            Izaberi klijente koji će imati pristup ovim release notes-ima.
+            {t('rn.assignClients')}
           </div>
           {clientUsers.length === 0 ? (
-            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>Nema klijentskih korisnika.</div>
+            <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>{t('rn.noClientUsers')}</div>
           ) : (
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               {clientUsers.map(u => (
@@ -1476,10 +1478,10 @@ function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
         </div>
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={onClose} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid var(--border)', color: 'var(--textMuted)', cursor: 'pointer' }}>
-            Odustani
+            {t('rn.cancel')}
           </button>
           <button onClick={handleConfirm} disabled={publishing || publishState?.loading} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}>
-            {publishing || publishState?.loading ? 'Objavljivanje...' : 'Objavi'}
+            {publishing || publishState?.loading ? t('app.loading') : 'Publish'}
           </button>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
+import { useT } from '../lang.jsx'
 
 export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -58,13 +60,13 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
             Project Hub
           </h1>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
-            Prijavite se na vaš nalog
+            {t('login.subtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>EMAIL</label>
+            <label style={labelStyle}>{t('login.email')}</label>
             <input
               type="email"
               value={email}
@@ -77,7 +79,7 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>LOZINKA</label>
+            <label style={labelStyle}>{t('login.password')}</label>
             <input
               type="password"
               value={password}
@@ -121,7 +123,7 @@ export default function LoginPage({ onLogin, effectiveTheme = 'dark' }) {
               transition: 'all 0.2s ease',
             }}
           >
-            {loading ? 'Prijavljujem...' : 'Prijavi se'}
+            {loading ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
 

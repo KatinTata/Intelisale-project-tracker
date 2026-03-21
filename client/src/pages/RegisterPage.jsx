@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
+import { useT } from '../lang.jsx'
 
 export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme = 'dark' }) {
+  const t = useT()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,18 +61,18 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
             Project Hub
           </h1>
           <p style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
-            Kreirajte novi nalog
+            {t('register.subtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>IME</label>
+            <label style={labelStyle}>{t('register.name')}</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Vaše ime"
+              placeholder={t('register.namePlaceholder')}
               required
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
@@ -78,12 +80,12 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
             />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>EMAIL</label>
+            <label style={labelStyle}>{t('login.email')}</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="vas@email.com"
+              placeholder={t('register.emailPlaceholder')}
               required
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
@@ -91,12 +93,12 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>LOZINKA</label>
+            <label style={labelStyle}>{t('login.password')}</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Minimum 6 karaktera"
+              placeholder={t('register.passwordHint')}
               required
               minLength={6}
               style={inputStyle}
@@ -136,14 +138,14 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
               transition: 'all 0.2s ease',
             }}
           >
-            {loading ? 'Kreiram nalog...' : 'Registruj se'}
+            {loading ? t('register.submitting') : t('register.submit')}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', marginTop: 20, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, color: 'var(--textMuted)' }}>
-          Već imate nalog?{' '}
+          {t('register.hasAccount')}{' '}
           <button onClick={onGoLogin} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
-            Prijavite se
+            {t('register.login')}
           </button>
         </div>
       </div>

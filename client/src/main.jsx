@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { applyTheme } from './theme.js'
+import { LangProvider } from './lang.jsx'
 import App from './App.jsx'
 
 // Apply initial theme before render to avoid flash
@@ -9,6 +10,8 @@ applyTheme(savedTheme)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <LangProvider>
+      <App />
+    </LangProvider>
   </StrictMode>
 )

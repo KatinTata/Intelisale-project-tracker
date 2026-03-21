@@ -1,4 +1,7 @@
+import { useT } from '../lang.jsx'
+
 export default function OverrunBanner({ overTasks = [] }) {
+  const t = useT()
   if (overTasks.length === 0) return null
 
   return (
@@ -13,11 +16,11 @@ export default function OverrunBanner({ overTasks = [] }) {
       flexWrap: 'wrap',
     }}>
       <span style={{ color: 'var(--red)', fontWeight: 600, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
-        ⚠️  {overTasks.length} {overTasks.length === 1 ? 'task prekoračuje' : 'taska prekoračuju'} estimaciju za više od 15%
+        ⚠️  {overTasks.length} {overTasks.length === 1 ? t('overrun.singular') : overTasks.length < 5 ? t('overrun.plural') : t('overrun.plural2')}
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {overTasks.map(t => (
-          <span key={t.key} style={{
+        {overTasks.map(task => (
+          <span key={task.key} style={{
             background: 'var(--redTint)',
             color: 'var(--red)',
             borderRadius: 6,
@@ -25,7 +28,7 @@ export default function OverrunBanner({ overTasks = [] }) {
             fontFamily: "'DM Mono'",
             fontSize: 12,
           }}>
-            {t.key} {t.overPct > 0 ? `+${t.overPct}%` : ''}
+            {task.key} {task.overPct > 0 ? `+${task.overPct}%` : ''}
           </span>
         ))}
       </div>

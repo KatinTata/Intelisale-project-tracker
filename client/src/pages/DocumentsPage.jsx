@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
 import * as pdfjsLib from 'pdfjs-dist'
+import { useT } from '../lang.jsx'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -65,12 +66,12 @@ function fmtDate(str) {
   return d.toLocaleDateString('sr-Latn-RS', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-async function downloadDoc(id, filename) {
+async function downloadDoc(id, filename, t) {
   const token = localStorage.getItem('jt_token')
   const res = await fetch(`/api/documents/${id}/download`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error('Download nije uspeo')
+  if (!res.ok) throw new Error(t('docs.downloadFailed'))
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -162,13 +163,14 @@ function PdfThumbnail({ docId }) {
 // ── Document Card ─────────────────────────────────────────────────────────────
 
 function DocCard({ doc, isAdmin, onDelete }) {
+  const t = useT()
   const [hover, setHover] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
   async function handleDownload(e) {
     e.stopPropagation()
     setDownloading(true)
-    try { await downloadDoc(doc.id, doc.original_name) } catch {}
+    try { await downloadDoc(doc.id, doc.original_name, t) } catch {}
     setDownloading(false)
   }
 
@@ -227,6 +229,7 @@ function DocCard({ doc, isAdmin, onDelete }) {
 // ── Upload Modal ──────────────────────────────────────────────────────────────
 
 function UploadModal({ sections, onClose, onUploaded }) {
+  const t = useT()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState(null)
   const [docName, setDocName] = useState('')
@@ -303,7 +306,7 @@ function UploadModal({ sections, onClose, onUploaded }) {
         xhr.upload.onprogress = e => { if (e.lengthComputable) setProgress(Math.round(e.loaded / e.total * 100)) }
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
-          else { try { reject(new Error(JSON.parse(xhr.responseText).error)) } catch { reject(new Error('Upload nije uspeo')) } }
+          else { try { reject(new Error(JSON.parse(xhr.responseText).error)) } catch { reject(new Error(t('docs.uploadFailed'))) } }
         }
         xhr.onerror = () => reject(new Error('Mrežna greška'))
         xhr.open('POST', '/api/documents')
@@ -324,7 +327,7 @@ function UploadModal({ sections, onClose, onUploaded }) {
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
-            {step === 1 ? 'Dodaj dokument' : 'Detalji dokumenta'}
+            {step === 1 ? t('docs.add') : t('docs.upload')}
           </span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
         </div>
@@ -454,7 +457,7 @@ function UploadModal({ sections, onClose, onUploaded }) {
               {uploading && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-                    <span>Upload...</span><span>{progress}%</span>
+                    <span>{t('docs.uploading')}</span><span>{progress}%</span>
                   </div>
                   <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent)', borderRadius: 2, transition: 'width 0.2s ease' }} />
@@ -472,7 +475,7 @@ function UploadModal({ sections, onClose, onUploaded }) {
               Nazad
             </button>
             <button onClick={handleUpload} disabled={uploading || !docName.trim() || !sectionId} style={{ padding: '9px 24px', borderRadius: 8, fontSize: 13, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: uploading ? 'wait' : 'pointer', opacity: (!docName.trim() || !sectionId) ? 0.5 : 1 }}>
-              {uploading ? 'Uploading...' : 'Upload'}
+              {uploading ? t('docs.uploading') : t('docs.upload')}
             </button>
           </div>
         )}
@@ -498,6 +501,7 @@ function Checkbox({ checked }) {
 export default function DocumentsPage({
   user, theme, onLogout, onOpenSettings, onGoToDashboard, onGoToReleaseNotes, onGoToReleaseNotesEditor, onOpenChat,
 }) {
+  const t = useT()
   const [sections, setSections] = useState([])
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -581,9 +585,9 @@ export default function DocumentsPage({
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
-            <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 28, color: 'var(--text)', marginBottom: 4 }}>Dokumenti</h1>
+            <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 28, color: 'var(--text)', marginBottom: 4 }}>{t('docs.title')}</h1>
             <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)' }}>
-              {documents.length} {documents.length === 1 ? 'dokument' : documents.length < 5 ? 'dokumenta' : 'dokumenata'}
+              {t('docs.onProject', { n: documents.length })}
             </div>
           </div>
           {isAdmin && (
@@ -594,14 +598,14 @@ export default function DocumentsPage({
               onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}
             >
               <IconPlus />
-              Dodaj dokument
+              {t('docs.add')}
             </button>
           )}
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-            Učitavam...
+            {t('app.loading')}
           </div>
         ) : documents.length === 0 && sections.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>

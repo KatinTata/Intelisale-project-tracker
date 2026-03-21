@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fmtHours } from '../utils.js'
+import { useT } from '../lang.jsx'
 
 const COMP_COLORS = {
   BACK:    'var(--accent)',
@@ -23,6 +24,7 @@ const GAP = 3
 export default function ComponentBreakdown({ data = [] }) {
   const [animated, setAnimated] = useState(false)
   const [tooltip, setTooltip] = useState(null)
+  const tFn = useT()
 
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 50)
@@ -32,7 +34,7 @@ export default function ComponentBreakdown({ data = [] }) {
   if (data.length === 0) {
     return (
       <div style={{ color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-        Nema podataka o komponentama
+        {tFn('chart.noComponents')}
       </div>
     )
   }

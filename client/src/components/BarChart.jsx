@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useT } from '../lang.jsx'
 
 export default function BarChart({ data = [], width = 600, height = 260 }) {
+  const t = useT()
   const [tooltip, setTooltip] = useState(null)
 
   const paddingLeft = 48
@@ -14,7 +16,7 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
   const filtered = data.filter(d => d.est > 0).slice(0, 12)
   if (filtered.length === 0) return (
     <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-      Nema taskova sa estimacijom
+      {t('chart.noTasks')}
     </div>
   )
 
@@ -41,9 +43,9 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
     <div style={{ position: 'relative', width: '100%' }}>
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-        <span><span style={{ color: 'var(--accent)' }}>●</span> Estimacija</span>
-        <span><span style={{ color: 'var(--green)' }}>●</span> Utrošeno</span>
-        <span><span style={{ color: 'var(--red)' }}>●</span> Prekoračenje</span>
+        <span><span style={{ color: 'var(--accent)' }}>●</span> {t('chart.legend.est').replace('● ', '')}</span>
+        <span><span style={{ color: 'var(--green)' }}>●</span> {t('chart.legend.spent').replace('● ', '')}</span>
+        <span><span style={{ color: 'var(--red)' }}>●</span> {t('chart.legend.over').replace('● ', '')}</span>
       </div>
 
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
@@ -131,13 +133,13 @@ export default function BarChart({ data = [], width = 600, height = 260 }) {
           zIndex: 10,
         }}>
           <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text)' }}>{tooltip.d.label}</div>
-          <div style={{ color: 'var(--accent)' }}>Est: {(tooltip.d.est / 3600).toFixed(1)}h</div>
+          <div style={{ color: 'var(--accent)' }}>{t('chart.tooltip.est', { v: (tooltip.d.est / 3600).toFixed(1) })}</div>
           <div style={{ color: tooltip.d.spent > tooltip.d.est * 1.15 ? 'var(--red)' : 'var(--green)' }}>
-            Spent: {(tooltip.d.spent / 3600).toFixed(1)}h
+            {t('chart.tooltip.spent', { v: (tooltip.d.spent / 3600).toFixed(1) })}
           </div>
           {tooltip.d.spent > tooltip.d.est * 1.15 && (
             <div style={{ color: 'var(--red)' }}>
-              +{Math.round(((tooltip.d.spent - tooltip.d.est) / tooltip.d.est) * 100)}% prekoračenje
+              {t('chart.tooltip.over', { pct: Math.round(((tooltip.d.spent - tooltip.d.est) / tooltip.d.est) * 100) })}
             </div>
           )}
         </div>

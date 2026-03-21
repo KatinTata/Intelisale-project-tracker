@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
+import { useT } from '../lang.jsx'
 
 export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboard, onGoToEditor, onOpenSettings, onOpenChat }) {
+  const t = useT()
   const isClient = user?.role === 'client'
 
   const [notesList, setNotesList] = useState([])
@@ -68,7 +70,7 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
             isClient={isClient}
             onBack={closeNote}
             onRelease={async () => {
-              if (!window.confirm('Označiti kao pušteno u produkciju?')) return
+              if (!window.confirm(t('rn.markReleasedConfirm'))) return
               await api.markReleaseNoteReleased(selectedNote.id)
               const updated = { ...selectedNote, status: 'released', released_at: new Date().toISOString() }
               setSelectedNote(updated)
@@ -76,7 +78,7 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
               setNotesList(prev => prev.map(n => n.id === selectedNote.id ? updated : n))
             }}
             onDelete={async () => {
-              if (!window.confirm('Obrisati ovaj release notes?')) return
+              if (!window.confirm(t('rn.deleteConfirm'))) return
               await api.deleteReleaseNote(selectedNote.id)
               closeNote()
               loadNotesList()
@@ -94,7 +96,7 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>
-                {isClient ? 'Dostupne verzije' : 'Objavljene verzije'}
+                {isClient ? t('rn.availableVersions') : t('rn.publishedVersions')}
               </span>
               <button
                 onClick={loadNotesList}
@@ -106,19 +108,17 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
               >
-                ↻ Osveži
+                {t('rn.refresh')}
               </button>
             </div>
 
             {notesListLoading ? (
               <div style={{ padding: 60, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>
-                Učitavam...
+                {t('rn.loading')}
               </div>
             ) : notesList.length === 0 ? (
               <div style={{ padding: 60, textAlign: 'center', color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 14 }}>
-                {isClient
-                  ? 'Nema dostupnih release notes za vaš nalog.'
-                  : 'Nema objavljenih verzija. Kreiraj prvu u Release Notes Editoru.'}
+                {isClient ? t('rn.emptyClient') : t('rn.emptyAdmin')}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
@@ -129,12 +129,12 @@ export default function ReleaseNotesPage({ user, theme, onLogout, onGoToDashboar
                     isClient={isClient}
                     onOpen={() => openNote(note)}
                     onRelease={async () => {
-                      if (!window.confirm('Označiti kao pušteno u produkciju?')) return
+                      if (!window.confirm(t('rn.markReleasedConfirm'))) return
                       await api.markReleaseNoteReleased(note.id)
                       loadNotesList()
                     }}
                     onDelete={async () => {
-                      if (!window.confirm('Obrisati ovaj release notes?')) return
+                      if (!window.confirm(t('rn.deleteConfirm'))) return
                       await api.deleteReleaseNote(note.id)
                       loadNotesList()
                     }}
@@ -183,6 +183,7 @@ function fmtDate(str) {
 // ── NoteCard ──────────────────────────────────────────────────────────────────
 
 function NoteCard({ note, isClient, onOpen, onRelease, onDelete }) {
+  const t = useT()
   const [hovered, setHovered] = useState(false)
   const isReleased = note.status === 'released'
   const version = note.version || extractVersion(note.title)
@@ -212,7 +213,7 @@ function NoteCard({ note, isClient, onOpen, onRelease, onDelete }) {
           color: isReleased ? 'var(--green)' : 'var(--accent)',
           border: `1px solid ${isReleased ? 'rgba(34,197,94,0.35)' : 'rgba(79,142,247,0.3)'}`,
         }}>
-          {isReleased ? 'RELEASED' : 'OBJAVLJENO'}
+          {isReleased ? t('rn.released') : t('rn.published')}
         </span>
         {version && (
           <span style={{
@@ -236,20 +237,20 @@ function NoteCard({ note, isClient, onOpen, onRelease, onDelete }) {
           </div>
         )}
         <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-          Objavljeno {createdDate}
+          {t('rn.publishedOn', { date: createdDate })}
         </div>
         {isReleased && releasedDate ? (
           <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--green)' }}>
-            Pušteno {releasedDate}
+            {t('rn.releasedOn', { date: releasedDate })}
           </div>
         ) : (
           <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
-            Nije pušteno u produkciju
+            {t('rn.notReleased')}
           </div>
         )}
         {!isClient && note.client_count !== undefined && (
           <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
-            {note.client_count} {note.client_count === 1 ? 'klijent' : 'klijenata'}
+            {note.client_count} {note.client_count === 1 ? t('rn.client.singular') : t('rn.client.plural')}
           </div>
         )}
       </div>
@@ -267,7 +268,7 @@ function NoteCard({ note, isClient, onOpen, onRelease, onDelete }) {
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--green)' }}
           >
-            Mark Released
+            {t('rn.markReleased')}
           </button>
         </div>
       )}
@@ -278,6 +279,7 @@ function NoteCard({ note, isClient, onOpen, onRelease, onDelete }) {
 // ── NoteDetailView ────────────────────────────────────────────────────────────
 
 function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, onDelete, onManageClients }) {
+  const t = useT()
   const isReleased = (detail?.status || note.status) === 'released'
   const version = detail?.version || note.version || extractVersion(note.title)
   const displayName = extractName(note.title, version)
@@ -301,7 +303,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
       >
-        ← Nazad na listu
+        {t('rn.back')}
       </button>
 
       <div style={{
@@ -327,16 +329,16 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
             color: isReleased ? 'var(--green)' : 'var(--accent)',
             border: `1px solid ${isReleased ? 'rgba(34,197,94,0.35)' : 'rgba(79,142,247,0.3)'}`,
           }}>
-            {isReleased ? 'RELEASED' : 'OBJAVLJENO'}
+            {isReleased ? t('rn.released') : t('rn.published')}
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 24 }}>
           {[
-            { label: 'Objavljeno', value: createdDate, color: 'var(--text)' },
-            { label: 'Pušteno', value: releasedDate || 'Nije pušteno', color: releasedDate ? 'var(--green)' : 'var(--textSubtle)' },
+            { label: t('rn.published'), value: createdDate, color: 'var(--text)' },
+            { label: t('rn.released'), value: releasedDate || t('rn.notReleased'), color: releasedDate ? 'var(--green)' : 'var(--textSubtle)' },
             ...(note.project_name ? [{ label: 'Projekat', value: note.project_name, color: 'var(--text)' }] : []),
-            ...(!isClient && clientCount !== undefined ? [{ label: 'Klijenti', value: `${clientCount}`, color: 'var(--text)' }] : []),
+            ...(!isClient && clientCount !== undefined ? [{ label: t('rn.clients'), value: `${clientCount}`, color: 'var(--text)' }] : []),
           ].map(({ label, value, color }) => (
             <div key={label}>
               <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{label}</div>
@@ -352,7 +354,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
           >
-            ↗ Javni link
+            {t('rn.publicLink')}
           </a>
           {!isClient && (
             <>
@@ -362,7 +364,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
               >
-                Klijenti
+                {t('rn.clients')}
               </button>
               {!isReleased && (
                 <button
@@ -371,7 +373,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--green)' }}
                 >
-                  Mark Released
+                  {t('rn.markReleased')}
                 </button>
               )}
               <button
@@ -380,7 +382,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--red)'; e.currentTarget.style.color = 'var(--red)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
               >
-                Obriši
+                {t('rn.delete')}
               </button>
             </>
           )}
@@ -393,11 +395,11 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
           fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)',
           textTransform: 'uppercase', letterSpacing: '0.07em',
         }}>
-          Pregled sadržaja
+          {t('rn.contentPreview')}
         </div>
         {loading ? (
           <div style={{ padding: 60, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
-            Učitavam sadržaj...
+            {t('rn.loadingContent')}
           </div>
         ) : detail?.html ? (
           <iframe
@@ -411,7 +413,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
           />
         ) : (
           <div style={{ padding: 60, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14 }}>
-            Sadržaj nije dostupan
+            {t('rn.noContent')}
           </div>
         )}
       </div>
@@ -422,6 +424,7 @@ function NoteDetailView({ note, detail, loading, isClient, onBack, onRelease, on
 // ── AssignClientsModal ────────────────────────────────────────────────────────
 
 function AssignClientsModal({ assignModal, allClientUsers, onClose, onSave }) {
+  const t = useT()
   const [selected, setSelected] = useState(new Set(assignModal.currentClients.map(c => c.id)))
 
   function toggle(id) {
@@ -432,13 +435,13 @@ function AssignClientsModal({ assignModal, allClientUsers, onClose, onSave }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 24px 80px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>👥 Dodeli klijentima</span>
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{t('rn.assignClients')}</span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 22, cursor: 'pointer' }}>×</button>
         </div>
         <div style={{ padding: '12px 24px', maxHeight: 360, overflowY: 'auto' }}>
           {allClientUsers.length === 0 ? (
             <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-              Nema klijentskih korisnika. Dodaj ih u sekciji Korisnici.
+              {t('rn.noClientUsers')}
             </div>
           ) : allClientUsers.map(u => (
             <div key={u.id} onClick={() => toggle(u.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
@@ -458,9 +461,9 @@ function AssignClientsModal({ assignModal, allClientUsers, onClose, onSave }) {
           ))}
         </div>
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={onClose} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid var(--border)', color: 'var(--textMuted)', cursor: 'pointer' }}>Odustani</button>
+          <button onClick={onClose} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'transparent', border: '1px solid var(--border)', color: 'var(--textMuted)', cursor: 'pointer' }}>{t('rn.cancel')}</button>
           <button onClick={() => onSave([...selected])} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}>
-            Sačuvaj
+            {t('rn.save')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useT } from '../lang.jsx'
 
 function fmtTime(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
@@ -11,6 +12,7 @@ function fmtTime(dateStr) {
 export default function NotificationBell({ unreadCount = 0, notifications = [], onMarkAllRead, onNotificationClick }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const t = useT()
 
   useEffect(() => {
     function handle(e) {
@@ -71,11 +73,11 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
           {/* Header */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
-              Notifikacije
+              {t('notif.title')}
             </span>
             {unreadCount > 0 && (
               <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', background: 'rgba(79,142,247,0.1)', borderRadius: 10, padding: '2px 8px' }}>
-                {unreadCount} novo
+                {t('notif.new', { n: unreadCount })}
               </span>
             )}
           </div>
@@ -83,14 +85,14 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
           {/* List */}
           {notifications.length === 0 ? (
             <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13 }}>
-              Nema novih poruka
+              {t('notif.empty')}
             </div>
           ) : (
             notifications.map(n => (
               <button
                 key={n.id}
                 onClick={() => { onNotificationClick(n); setOpen(false) }}
-                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', transition: 'background 0.15s', border: 'none', borderBottom: '1px solid var(--border)' }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px', background: 'transparent', cursor: 'pointer', transition: 'background 0.15s', border: 'none', borderBottom: '1px solid var(--border)' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
@@ -121,7 +123,7 @@ export default function NotificationBell({ unreadCount = 0, notifications = [], 
               onClick={() => { onMarkAllRead(); setOpen(false) }}
               style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--textMuted)', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
             >
-              Označi sve kao pročitano
+              {t('notif.markAllRead')}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
+import { useT } from '../lang.jsx'
 
 function statusDot(data) {
   if (!data) return 'var(--textMuted)'
@@ -10,6 +11,7 @@ function statusDot(data) {
 }
 
 export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArchive, onOpenArchive, onOpenSettings, projectData }) {
+  const t = useT()
   const { isMobile } = useWindowSize()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addHover, setAddHover] = useState(false)
@@ -55,7 +57,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
               >
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', flexShrink: 0 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                  {activeProject ? (activeProject.displayName || activeProject.epicKey) : 'Odaberi projekat...'}
+                  {activeProject ? (activeProject.displayName || activeProject.epicKey) : t('tabs.selectProject')}
                 </span>
                 {activeProject && (
                   <span style={{
@@ -115,7 +117,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                             {onArchive && (
                               <button
                                 onClick={e => { e.stopPropagation(); setConfirmId(confirming ? null : p.id) }}
-                                title="Arhiviraj projekat"
+                                title={t('tabs.removeProject')}
                                 style={{
                                   width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                                   border: '1px solid var(--border)', background: confirming ? 'var(--redTint)' : 'transparent',
@@ -135,14 +137,14 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                               borderRadius: 8,
                             }}>
                               <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, color: 'var(--text)', marginBottom: 8 }}>
-                                Arhivirati projekat?
+                                {t('tabs.archiveConfirm')}
                               </div>
                               <div style={{ display: 'flex', gap: 8 }}>
                                 <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, cursor: 'pointer' }}>
-                                  Otkaži
+                                  {t('tabs.cancel')}
                                 </button>
                                 <button onClick={() => handleArchiveConfirm(p.id)} style={{ flex: 1, padding: '6px', borderRadius: 6, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-                                  Arhiviraj
+                                  {t('tabs.archive')}
                                 </button>
                               </div>
                             </div>
@@ -161,7 +163,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                         borderTop: '1px solid var(--border)', paddingTop: 10,
                       }}
                     >
-                      📦 Arhiva projekata
+                      {t('tabs.archiveTitle')}
                     </button>
                   </div>
                 </>
@@ -171,7 +173,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
             {(onAdd || onOpenSettings) && (
               <button
                 onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
-                title="Dodaj projekat"
+                title={t('tabs.addProject')}
                 style={{
                   width: 36, height: 36, borderRadius: '50%',
                   border: '2px dashed var(--borderHover)', background: 'transparent',
@@ -218,7 +220,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
               {onOpenArchive && (
                 <button
                   onClick={onOpenArchive}
-                  title="Arhiva projekata"
+                  title={t('tabs.archiveTitle')}
                   style={{
                     width: 32, height: 32, borderRadius: '50%',
                     border: '1px solid var(--border)', background: 'transparent',
@@ -260,7 +262,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                       padding: '5px 10px', borderRadius: 6,
                       whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
                     }}>
-                      Dodaj projekat
+                      {t('tabs.addProject')}
                     </div>
                   )}
                 </div>
@@ -282,17 +284,17 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
             <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 6 }}>
-              Arhivirati projekat?
+              {t('tabs.archiveConfirm')}
             </div>
             <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 13, color: 'var(--textMuted)', marginBottom: 20 }}>
-              Projekat će biti premešten u arhivu. Sve metrike i istorija ostaju sačuvani. Možete ga vratiti u bilo kom trenutku.
+              {t('tabs.archiveDesc')}
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setConfirmId(null)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 14, cursor: 'pointer' }}>
-                Otkaži
+                {t('tabs.cancel')}
               </button>
               <button onClick={() => handleArchiveConfirm(confirmId)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: 'none', background: 'var(--red)', color: '#fff', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                Arhiviraj
+                {t('tabs.archive')}
               </button>
             </div>
           </div>
@@ -303,6 +305,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
 }
 
 function ProjectPill({ project, active, dot, onSelect, onArchive, confirmId, setConfirmId, onArchiveConfirm }) {
+  const t = useT()
   const [hover, setHover] = useState(false)
 
   return (
@@ -340,7 +343,7 @@ function ProjectPill({ project, active, dot, onSelect, onArchive, confirmId, set
         {onArchive && (hover || active) && (
           <span
             onClick={e => { e.stopPropagation(); setConfirmId(confirmId === project.id ? null : project.id) }}
-            title="Arhiviraj projekat"
+            title={t('tabs.removeProject')}
             style={{
               width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
               background: active ? 'rgba(255,255,255,0.25)' : 'var(--border)',
