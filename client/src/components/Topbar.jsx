@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import NotificationBell from './NotificationBell.jsx'
 import { useT } from '../lang.jsx'
-import { api } from '../api.js'
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 
@@ -178,13 +177,9 @@ export default function Topbar({
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const [fetchedProjectCount, setFetchedProjectCount] = useState(null)
-  useEffect(() => {
-    if (projects.length === 0) {
-      api.getProjects().then(list => setFetchedProjectCount(list?.length ?? 0)).catch(() => {})
-    }
-  }, [])
-  const projectCount = projects.length > 0 ? projects.length : (fetchedProjectCount ?? 0)
+  const projectCount = projects.length > 0
+    ? projects.length
+    : parseInt(localStorage.getItem('jt_project_count') || '0')
 
   const initials = user?.name
     ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)

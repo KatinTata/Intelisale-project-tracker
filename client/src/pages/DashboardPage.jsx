@@ -120,6 +120,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       const list = await api.getProjects()
       setProjects(list)
       projectsRef.current = list
+      localStorage.setItem('jt_project_count', list.length)
       if (list.length > 0) {
         setActiveId(list[0].id)
         await refreshAll(list)
