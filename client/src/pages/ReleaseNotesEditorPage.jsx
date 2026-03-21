@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
+import JqlEditor from '../components/JqlEditor.jsx'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
@@ -632,9 +633,13 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Prilagođeni JQL (opciono)</label>
-            <input value={customJql} onChange={e => setCustomJql(e.target.value)} placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
-              style={{ ...inputStyle, fontFamily: 'DM Mono', fontSize: 12 }}
-              onKeyDown={e => { if (e.key === 'Enter' && selectedProject) setFetchTrigger(n => n + 1) }} />
+            <JqlEditor
+              value={customJql}
+              onChange={setCustomJql}
+              placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
+              rows={2}
+              showPreview={false}
+            />
           </div>
           <button onClick={() => { if (selectedProject) setFetchTrigger(n => n + 1) }} disabled={!selectedProject}
             style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', cursor: !selectedProject ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', background: !selectedProject ? 'var(--surfaceAlt)' : 'var(--accent)', color: !selectedProject ? 'var(--textMuted)' : '#fff', transition: 'all 0.2s ease' }}>

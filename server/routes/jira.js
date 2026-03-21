@@ -111,11 +111,26 @@ router.post('/test-jql', async (req, res) => {
     const jira = getUserJira(req.userId)
     if (!jira) return res.status(400).json({ error: 'Jira nije konfigurisan' })
 
-    const data = await jiraPost(jira.jiraUrl, '/search/jql', {
-      jql,
-      fields: ['summary', 'status'],
-      maxResults: 5,
-    }, jira.auth)
+    let data
+    try {
+      data = await jiraPost(jira.jiraUrl, '/search/jql', {
+        jql,
+        fields: ['summary', 'status'],
+        maxResults: 5,
+      }, jira.auth)
+    } catch (jiraErr) {
+      // Extract structured Jira error messages if present, return 422 (not 500)
+      const raw = jiraErr.message || ''
+      const jsonMatch = raw.match(/\{.*\}$/s)
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0])
+          const msg = (parsed.errorMessages || [])[0] || raw
+          return res.status(422).json({ jiraError: true, error: msg })
+        } catch {}
+      }
+      return res.status(422).json({ jiraError: true, error: raw })
+    }
 
     const preview = (data.issues || []).map(i => ({
       key: i.key,
@@ -126,6 +141,46 @@ router.post('/test-jql', async (req, res) => {
     res.json({ count: data.total ?? preview.length, preview })
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/jira/jql-fields — returns list of JQL field names for autocomplete
+router.get('/jql-fields', async (req, res) => {
+  try {
+    const jira = getUserJira(req.userId)
+    if (!jira) return res.json([])
+    try {
+      const data = await jiraGet(jira.jiraUrl, '/jql/autocompletedata', jira.auth)
+      const fields = (data.visibleFieldNames || []).map(f => ({ value: f.value, displayName: f.displayName || f.value }))
+      return res.json(fields)
+    } catch {
+      // Endpoint not supported — return empty list, editor still works with local keywords
+      return res.json([])
+    }
+  } catch (err) {
+    res.json([])
+  }
+})
+
+// GET /api/jira/jql-suggestions?fieldName=X&fieldValue=Y — returns value suggestions
+router.get('/jql-suggestions', async (req, res) => {
+  try {
+    const { fieldName, fieldValue = '' } = req.query
+    if (!fieldName) return res.json([])
+    const jira = getUserJira(req.userId)
+    if (!jira) return res.json([])
+    try {
+      const data = await jiraGet(
+        jira.jiraUrl,
+        `/jql/autocompletedata/suggestions?fieldName=${encodeURIComponent(fieldName)}&fieldValue=${encodeURIComponent(fieldValue)}`,
+        jira.auth
+      )
+      res.json(data.results || [])
+    } catch {
+      res.json([])
+    }
+  } catch (err) {
+    res.json([])
   }
 })
 

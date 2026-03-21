@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
+import * as pdfjsLib from 'pdfjs-dist'
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).href
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 
@@ -74,6 +80,85 @@ async function downloadDoc(id, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+// ── PDF Thumbnail ─────────────────────────────────────────────────────────────
+
+function PdfThumbnail({ docId }) {
+  const canvasRef = useRef(null)
+  const [state, setState] = useState('loading') // 'loading' | 'done' | 'error'
+
+  useEffect(() => {
+    let cancelled = false
+    setState('loading')
+
+    async function render() {
+      try {
+        const token = localStorage.getItem('jt_token')
+        const res = await fetch(`/api/documents/${docId}/download`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok || cancelled) { if (!cancelled) setState('error'); return }
+
+        const buf = await res.arrayBuffer()
+        if (cancelled) return
+
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise
+        if (cancelled) return
+
+        const page = await pdf.getPage(1)
+        if (cancelled) return
+
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        // Render at 480px wide — CSS scales it down to fill the card
+        const naturalVp = page.getViewport({ scale: 1 })
+        const scale = 480 / naturalVp.width
+        const viewport = page.getViewport({ scale })
+
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+        if (!cancelled) setState('done')
+      } catch {
+        if (!cancelled) setState('error')
+      }
+    }
+
+    render()
+    return () => { cancelled = true }
+  }, [docId])
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {/* Canvas — always rendered, hidden while loading */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '100%',
+          height: 'auto',
+          display: state === 'done' ? 'block' : 'none',
+          verticalAlign: 'top',
+        }}
+      />
+
+      {/* Fallback: loading or error */}
+      {state !== 'done' && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--textSubtle)' }}>
+          {state === 'loading' ? (
+            <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', letterSpacing: '0.08em', animation: 'pulse 1.5s ease-in-out infinite', opacity: 0.6 }}>···</div>
+          ) : (
+            <>
+              <IconPdf />
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 10, letterSpacing: '0.08em' }}>PDF</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Document Card ─────────────────────────────────────────────────────────────
 
 function DocCard({ doc, isAdmin, onDelete }) {
@@ -94,15 +179,8 @@ function DocCard({ doc, isAdmin, onDelete }) {
       onMouseLeave={() => setHover(false)}
     >
       {/* Thumbnail area */}
-      <div style={{ width: '100%', height: 180, background: 'var(--surfaceAlt)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-        {doc.thumbnail ? (
-          <img src={doc.thumbnail} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--textSubtle)' }}>
-            <IconPdf />
-            <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', letterSpacing: '0.08em' }}>PDF</span>
-          </div>
-        )}
+      <div style={{ width: '100%', height: 180, background: 'var(--surfaceAlt)', position: 'relative', overflow: 'hidden' }}>
+        <PdfThumbnail docId={doc.id} />
 
         {/* Hover overlay */}
         {hover && (

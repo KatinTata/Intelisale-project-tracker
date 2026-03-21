@@ -67,6 +67,9 @@ export const api = {
     projectId: project.id,
   }),
   testJql: (jql) => request('POST', '/jira/test-jql', { jql }),
+  previewJql: (jql) => request('POST', '/jira/test-jql', { jql }),
+  getJqlFields: () => request('GET', '/jira/jql-fields'),
+  getJqlSuggestions: (fieldName, fieldValue) => request('GET', `/jira/jql-suggestions?fieldName=${encodeURIComponent(fieldName)}&fieldValue=${encodeURIComponent(fieldValue || '')}`),
 
   // Messages
   getMessages: (projectId) => request('GET', `/messages/${projectId}`),

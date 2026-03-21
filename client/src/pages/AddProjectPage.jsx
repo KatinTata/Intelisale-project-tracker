@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import { api } from '../api.js'
+import JqlEditor from '../components/JqlEditor.jsx'
 
 const TABS = [
   { id: 'epic', label: 'Epic' },
@@ -191,14 +192,11 @@ function JqlTab({ jql, setJql, name, setName, onTest, testLoading, testResult, t
     <>
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>JQL UPIT *</label>
-        <textarea
+        <JqlEditor
           value={jql}
-          onChange={e => setJql(e.target.value)}
+          onChange={setJql}
           placeholder={"npr. cf[11529] = 'Knjaz Miloš Srbija' AND created >= -60d"}
           rows={4}
-          style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
-          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
         <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
           <button

@@ -1,0 +1,297 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { api } from '../api.js'
+
+const JQL_OPERATORS = ['=', '!=', '~', '!~', '<', '<=', '>', '>=', 'IN', 'NOT IN', 'IS', 'IS NOT', 'WAS', 'WAS IN', 'WAS NOT IN', 'CHANGED']
+const JQL_KEYWORDS = ['AND', 'OR', 'NOT', 'ORDER BY', 'ASC', 'DESC', 'EMPTY', 'NULL']
+const JQL_FUNCTIONS = ['currentUser()', 'membersOf()', 'now()', 'startOfDay()', 'endOfDay()', 'startOfWeek()', 'endOfWeek()', 'startOfMonth()', 'endOfMonth()', 'startOfYear()', 'endOfYear()']
+
+function parseCursorContext(text, cursorPos) {
+  const before = text.slice(0, cursorPos)
+  const tokenMatch = before.match(/[\w\[\]"'.-]+$/)
+  const currentToken = tokenMatch ? tokenMatch[0] : ''
+  const tokenStart = cursorPos - currentToken.length
+
+  const stripped = before.replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''")
+
+  const quotesBefore = (before.slice(0, tokenStart).match(/"/g) || []).length
+  if (quotesBefore % 2 === 1) {
+    const fieldMatch = stripped.match(/(\w[\w\[\].-]*)\s*(?:=|!=|~|!~|<=?|>=?|in\b|not\s+in\b|is\b)\s*"[^"]*$/i)
+    return { type: 'value', field: fieldMatch?.[1] || '', token: currentToken, tokenStart }
+  }
+
+  const afterOp = stripped.match(/(\w[\w\[\].-]*)\s*(?:=|!=|~|!~|<=?|>=?|(?:not\s+)?in\b|is(?:\s+not)?\b|was(?:\s+(?:not\s+)?in\b)?|changed\b)\s*([\w"'(]*)$/i)
+  if (afterOp) {
+    return { type: 'value', field: afterOp[1], token: currentToken, tokenStart }
+  }
+
+  const afterField = stripped.match(/(\w[\w\[\].-]*)\s+([\w!<>=]*)$/i)
+  if (afterField && !JQL_KEYWORDS.includes(afterField[1].toUpperCase())) {
+    return { type: 'operator', field: afterField[1], token: currentToken, tokenStart }
+  }
+
+  return { type: 'field', field: '', token: currentToken, tokenStart }
+}
+
+// JQL looks "runnable" when it has at least one operator + value
+const JQL_READY_RE = /\b(?:=|!=|~|!~|<=?|>=?|IN|IS|WAS|CHANGED)\s*\S/i
+
+// ── Live Preview Badge ─────────────────────────────────────────────────────────
+
+function LivePreview({ jql }) {
+  const [state, setState] = useState(null) // null | {loading} | {count} | {error}
+  const timerRef = useRef(null)
+  const lastJql = useRef('')
+
+  useEffect(() => {
+    const q = jql?.trim() || ''
+    if (!q || !JQL_READY_RE.test(q)) { setState(null); return }
+    if (q === lastJql.current) return
+
+    clearTimeout(timerRef.current)
+    setState({ loading: true })
+
+    timerRef.current = setTimeout(async () => {
+      try {
+        const data = await api.testJql(q)
+        lastJql.current = q
+        setState({ count: data.count })
+      } catch (err) {
+        setState({ error: err.message || 'Nevalidan JQL' })
+      }
+    }, 900)
+
+    return () => clearTimeout(timerRef.current)
+  }, [jql])
+
+  if (!state) return null
+
+  if (state.loading) return (
+    <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)', marginLeft: 6 }}>···</span>
+  )
+  if (state.error) return (
+    <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--red)', marginLeft: 6 }} title={state.error}>
+      ✗ {state.error.length > 60 ? state.error.slice(0, 60) + '…' : state.error}
+    </span>
+  )
+  return (
+    <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--green)', marginLeft: 6 }}>
+      ✓ {state.count} issue-a
+    </span>
+  )
+}
+
+// ── Main JqlEditor ─────────────────────────────────────────────────────────────
+
+export default function JqlEditor({ value, onChange, placeholder, rows = 4, showPreview = true, style = {} }) {
+  const [fields, setFields] = useState([])
+  const [suggestions, setSuggestions] = useState([])
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [open, setOpen] = useState(false)
+  const [context, setContext] = useState(null)
+  const textareaRef = useRef(null)
+  const dropdownRef = useRef(null)
+  const pendingRef = useRef(null)
+
+  useEffect(() => {
+    api.getJqlFields().then(f => setFields(f || [])).catch(() => {})
+  }, [])
+
+  const fetchSuggestions = useCallback(async (ctx) => {
+    if (!ctx || !ctx.token) { setSuggestions([]); setOpen(false); return }
+
+    const q = ctx.token.toLowerCase()
+
+    if (ctx.type === 'field') {
+      const filtered = [
+        ...fields.filter(f => f.value.toLowerCase().startsWith(q) || f.displayName.toLowerCase().startsWith(q)).slice(0, 10),
+        ...JQL_KEYWORDS.filter(k => k.toLowerCase().startsWith(q)).map(k => ({ value: k, displayName: k, isKeyword: true })).slice(0, 5),
+        ...JQL_FUNCTIONS.filter(f => f.toLowerCase().startsWith(q)).map(f => ({ value: f, displayName: f, isFunction: true })).slice(0, 3),
+      ]
+      setSuggestions(filtered)
+      setOpen(filtered.length > 0)
+      setActiveIdx(0)
+    } else if (ctx.type === 'operator') {
+      const filtered = JQL_OPERATORS.filter(op => op.toLowerCase().startsWith(q)).map(op => ({ value: op, displayName: op, isOperator: true }))
+      setSuggestions(filtered)
+      setOpen(filtered.length > 0)
+      setActiveIdx(0)
+    } else if (ctx.type === 'value' && ctx.field) {
+      clearTimeout(pendingRef.current)
+      pendingRef.current = setTimeout(async () => {
+        try {
+          const results = await api.getJqlSuggestions(ctx.field, ctx.token)
+          const mapped = (results || []).slice(0, 12).map(r => ({ value: r.value, displayName: r.displayName || r.value, isValue: true }))
+          setSuggestions(mapped)
+          setOpen(mapped.length > 0)
+          setActiveIdx(0)
+        } catch { setSuggestions([]); setOpen(false) }
+      }, 250)
+    } else {
+      setSuggestions([]); setOpen(false)
+    }
+  }, [fields])
+
+  function handleChange(e) {
+    const newVal = e.target.value
+    onChange(newVal)
+    const ctx = parseCursorContext(newVal, e.target.selectionStart)
+    setContext(ctx)
+    fetchSuggestions(ctx)
+  }
+
+  function handleKeyDown(e) {
+    if (!open) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' || e.key === 'Tab') {
+      if (suggestions[activeIdx]) { e.preventDefault(); applySuggestion(suggestions[activeIdx]) }
+    }
+    else if (e.key === 'Escape') { setOpen(false) }
+  }
+
+  function applySuggestion(suggestion) {
+    if (!context || !textareaRef.current) return
+    const ta = textareaRef.current
+    const before = value.slice(0, context.tokenStart)
+    const after = value.slice(ta.selectionStart)
+    const insert = suggestion.value
+
+    if (suggestion.isValue && insert.includes(' ')) {
+      const newVal = before + `"${insert}"` + ' ' + after
+      onChange(newVal)
+      setOpen(false)
+      setTimeout(() => { ta.focus(); const p = context.tokenStart + insert.length + 3; ta.setSelectionRange(p, p) }, 0)
+      return
+    }
+
+    const suffix = ' '
+    const newVal = before + insert + suffix + after
+    onChange(newVal)
+    setOpen(false)
+    setTimeout(() => {
+      ta.focus()
+      const pos = context.tokenStart + insert.length + suffix.length
+      ta.setSelectionRange(pos, pos)
+    }, 0)
+  }
+
+  useEffect(() => {
+    function h(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target) && e.target !== textareaRef.current) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onClick={e => {
+          const ctx = parseCursorContext(value, e.target.selectionStart)
+          setContext(ctx)
+          if (ctx.token) fetchSuggestions(ctx)
+        }}
+        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+        onBlur={e => { e.target.style.borderColor = 'var(--border)'; setOpen(false) }}
+        placeholder={placeholder}
+        rows={rows}
+        spellCheck={false}
+        style={{
+          width: '100%',
+          background: 'var(--bg)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: '9px 12px',
+          color: 'var(--text)',
+          fontSize: 13,
+          fontFamily: "'DM Mono', monospace",
+          lineHeight: 1.6,
+          resize: 'vertical',
+          boxSizing: 'border-box',
+          outline: 'none',
+          transition: 'border-color 0.15s',
+          ...style,
+        }}
+      />
+
+      {/* Live preview row */}
+      {showPreview && (
+        <div style={{ display: 'flex', alignItems: 'center', minHeight: 20, marginTop: 4 }}>
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)', letterSpacing: '0.04em' }}>
+            LIVE
+          </span>
+          <LivePreview jql={value} />
+        </div>
+      )}
+
+      {/* Autocomplete dropdown */}
+      {open && suggestions.length > 0 && (
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            zIndex: 300,
+            maxHeight: 220,
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+          }}
+        >
+          {suggestions.map((s, i) => (
+            <button
+              key={s.value + i}
+              onMouseDown={e => { e.preventDefault(); applySuggestion(s) }}
+              onMouseEnter={() => setActiveIdx(i)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '8px 12px',
+                background: i === activeIdx ? 'rgba(79,142,247,0.1)' : 'transparent',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+              }}
+            >
+              <span style={{
+                fontFamily: "'DM Mono'",
+                fontSize: 9,
+                padding: '1px 5px',
+                borderRadius: 4,
+                flexShrink: 0,
+                background: s.isKeyword ? 'rgba(245,158,11,0.15)' : s.isOperator ? 'rgba(139,92,246,0.15)' : s.isFunction ? 'rgba(34,197,94,0.15)' : s.isValue ? 'rgba(79,142,247,0.15)' : 'var(--surfaceAlt)',
+                color: s.isKeyword ? 'var(--amber)' : s.isOperator ? '#A78BFA' : s.isFunction ? 'var(--green)' : s.isValue ? 'var(--accent)' : 'var(--textMuted)',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}>
+                {s.isKeyword ? 'KW' : s.isOperator ? 'OP' : s.isFunction ? 'FN' : s.isValue ? 'VAL' : 'FLD'}
+              </span>
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 13, color: i === activeIdx ? 'var(--accent)' : 'var(--text)', flex: 1 }}>
+                {s.value}
+              </span>
+              {s.displayName && s.displayName !== s.value && (
+                <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {s.displayName}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
