@@ -5,25 +5,33 @@ const JQL_OPERATORS = ['=', '!=', '~', '!~', '<', '<=', '>', '>=', 'IN', 'NOT IN
 const JQL_KEYWORDS = ['AND', 'OR', 'NOT', 'ORDER BY', 'ASC', 'DESC', 'EMPTY', 'NULL']
 const JQL_FUNCTIONS = ['currentUser()', 'membersOf()', 'now()', 'startOfDay()', 'endOfDay()', 'startOfWeek()', 'endOfWeek()', 'startOfMonth()', 'endOfMonth()', 'startOfYear()', 'endOfYear()']
 
+const OP_PATTERN = /(?:=|!=|~|!~|<=?|>=?|(?:not\s+)?in\b|is(?:\s+not)?\b|was(?:\s+(?:not\s+)?in\b)?|changed\b)/i
+
 function parseCursorContext(text, cursorPos) {
   const before = text.slice(0, cursorPos)
+
+  // Token: what's at the cursor right now (strip leading quote for matching)
   const tokenMatch = before.match(/[\w\[\]"'.-]+$/)
-  const currentToken = tokenMatch ? tokenMatch[0] : ''
-  const tokenStart = cursorPos - currentToken.length
+  const currentToken = tokenMatch ? tokenMatch[0].replace(/^"/, '') : ''
+  const tokenStart = cursorPos - (tokenMatch ? tokenMatch[0].length : 0)
 
+  // Inside an open quoted value: field = "|cursor
+  const openQuoteMatch = before.match(/(?:"([^"]+)"|(\w[\w\[\].-]*))\s*(?:=|!=|~|!~|<=?|>=?|in\b|not\s+in\b|is\b)\s*"([^"]*)$/i)
+  if (openQuoteMatch) {
+    const field = openQuoteMatch[1] || openQuoteMatch[2] || ''
+    const valueToken = openQuoteMatch[3] || ''
+    return { type: 'value', field, token: valueToken, tokenStart }
+  }
+
+  // After an operator (even with empty token): field = |cursor  or  field = val|cursor
+  const afterOpMatch = before.match(/(?:"([^"]+)"|(\w[\w\[\].-]*))\s*(?:=|!=|~|!~|<=?|>=?|(?:not\s+)?in\b|is(?:\s+not)?\b|was(?:\s+(?:not\s+)?in\b)?|changed\b)\s*([\w"'(]*)$/i)
+  if (afterOpMatch) {
+    const field = afterOpMatch[1] || afterOpMatch[2] || ''
+    return { type: 'value', field, token: currentToken, tokenStart }
+  }
+
+  // After a field name — operator context
   const stripped = before.replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''")
-
-  const quotesBefore = (before.slice(0, tokenStart).match(/"/g) || []).length
-  if (quotesBefore % 2 === 1) {
-    const fieldMatch = stripped.match(/(\w[\w\[\].-]*)\s*(?:=|!=|~|!~|<=?|>=?|in\b|not\s+in\b|is\b)\s*"[^"]*$/i)
-    return { type: 'value', field: fieldMatch?.[1] || '', token: currentToken, tokenStart }
-  }
-
-  const afterOp = stripped.match(/(\w[\w\[\].-]*)\s*(?:=|!=|~|!~|<=?|>=?|(?:not\s+)?in\b|is(?:\s+not)?\b|was(?:\s+(?:not\s+)?in\b)?|changed\b)\s*([\w"'(]*)$/i)
-  if (afterOp) {
-    return { type: 'value', field: afterOp[1], token: currentToken, tokenStart }
-  }
-
   const afterField = stripped.match(/(\w[\w\[\].-]*)\s+([\w!<>=]*)$/i)
   if (afterField && !JQL_KEYWORDS.includes(afterField[1].toUpperCase())) {
     return { type: 'operator', field: afterField[1], token: currentToken, tokenStart }
@@ -97,7 +105,9 @@ export default function JqlEditor({ value, onChange, placeholder, rows = 4, show
   }, [])
 
   const fetchSuggestions = useCallback(async (ctx) => {
-    if (!ctx || !ctx.token) { setSuggestions([]); setOpen(false); return }
+    if (!ctx) { setSuggestions([]); setOpen(false); return }
+    // For non-value types, require at least one character
+    if (!ctx.token && ctx.type !== 'value') { setSuggestions([]); setOpen(false); return }
 
     const q = ctx.token.toLowerCase()
 
@@ -119,7 +129,7 @@ export default function JqlEditor({ value, onChange, placeholder, rows = 4, show
       clearTimeout(pendingRef.current)
       pendingRef.current = setTimeout(async () => {
         try {
-          const results = await api.getJqlSuggestions(ctx.field, ctx.token)
+          const results = await api.getJqlSuggestions(ctx.field, ctx.token || '')
           const mapped = (results || []).slice(0, 12).map(r => ({ value: r.value, displayName: r.displayName || r.value, isValue: true }))
           setSuggestions(mapped)
           setOpen(mapped.length > 0)
@@ -154,25 +164,28 @@ export default function JqlEditor({ value, onChange, placeholder, rows = 4, show
     const ta = textareaRef.current
     const before = value.slice(0, context.tokenStart)
     const after = value.slice(ta.selectionStart)
-    const insert = suggestion.value
+    // Strip any outer quotes the API may already include (prevents double-quoting)
+    const insert = suggestion.value.replace(/^"(.*)"$/, '$1')
 
-    if (suggestion.isValue && insert.includes(' ')) {
-      const newVal = before + `"${insert}"` + ' ' + after
+    if (suggestion.isValue) {
+      // Quote values that have spaces or non-ASCII chars (š, ž, ć, etc.)
+      const needsQuotes = /[\s\u0080-\uFFFF]/.test(insert)
+      const newVal = needsQuotes ? before + `"${insert}" ` + after : before + insert + ' ' + after
       onChange(newVal)
       setOpen(false)
-      setTimeout(() => { ta.focus(); const p = context.tokenStart + insert.length + 3; ta.setSelectionRange(p, p) }, 0)
+      const pos = before.length + insert.length + (needsQuotes ? 3 : 1)
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(pos, pos) }, 0)
       return
     }
 
-    const suffix = ' '
-    const newVal = before + insert + suffix + after
+    // Field names: quote if has spaces or JQL-special chars (-, [, ], parentheses)
+    const needsQuotes = !suggestion.isKeyword && !suggestion.isOperator && !suggestion.isFunction && /[\s\-()\[\]]/.test(insert)
+    const quoted = needsQuotes ? `"${insert}"` : insert
+    const newVal = before + quoted + ' ' + after
     onChange(newVal)
     setOpen(false)
-    setTimeout(() => {
-      ta.focus()
-      const pos = context.tokenStart + insert.length + suffix.length
-      ta.setSelectionRange(pos, pos)
-    }, 0)
+    const pos = before.length + quoted.length + 1
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(pos, pos) }, 0)
   }
 
   useEffect(() => {
@@ -195,7 +208,7 @@ export default function JqlEditor({ value, onChange, placeholder, rows = 4, show
         onClick={e => {
           const ctx = parseCursorContext(value, e.target.selectionStart)
           setContext(ctx)
-          if (ctx.token) fetchSuggestions(ctx)
+          if (ctx.token || ctx.type === 'value') fetchSuggestions(ctx)
         }}
         onFocus={e => e.target.style.borderColor = 'var(--accent)'}
         onBlur={e => { e.target.style.borderColor = 'var(--border)'; setOpen(false) }}

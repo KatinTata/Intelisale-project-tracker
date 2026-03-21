@@ -116,7 +116,7 @@ router.post('/test-jql', async (req, res) => {
       data = await jiraPost(jira.jiraUrl, '/search/jql', {
         jql,
         fields: ['summary', 'status'],
-        maxResults: 5,
+        maxResults: 100,
       }, jira.auth)
     } catch (jiraErr) {
       // Extract structured Jira error messages if present, return 422 (not 500)
@@ -132,13 +132,15 @@ router.post('/test-jql', async (req, res) => {
       return res.status(422).json({ jiraError: true, error: raw })
     }
 
-    const preview = (data.issues || []).map(i => ({
+    const allIssues = data.issues || []
+    const preview = allIssues.slice(0, 5).map(i => ({
       key: i.key,
       summary: i.fields?.summary || '',
       status: i.fields?.status?.name || '',
     }))
+    const count = data.total ?? (data.isLast === false ? '100+' : allIssues.length)
 
-    res.json({ count: data.total ?? preview.length, preview })
+    res.json({ count, preview })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import Topbar from '../components/Topbar.jsx'
 import JqlEditor from '../components/JqlEditor.jsx'
@@ -317,12 +317,32 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
   // toast
   const [toast, setToast] = useState(null)
 
+  // copy from existing
+  const [copyDropOpen, setCopyDropOpen] = useState(false)
+  const [existingNotes, setExistingNotes] = useState(null) // null = not loaded yet
+  const [copyLoading, setCopyLoading] = useState(false)
+  const [copiedEdits, setCopiedEdits] = useState(null) // { [key]: { name, description } } keyed by task key
+
+  // Ref to skip one useEffect run when copy sets selectedProject directly
+  const skipNextFetchRef = useRef(false)
+
   useEffect(() => {
     api.getProjects().then(setProjects).catch(() => {})
   }, [])
 
   useEffect(() => {
+    if (!copyDropOpen) return
+    function close(e) {
+      if (!e.target.closest('[data-copy-dropdown]')) setCopyDropOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [copyDropOpen])
+
+  // Normal project/JQL fetch — skipped when copy does it directly
+  useEffect(() => {
     if (!selectedProject) { setTasks([]); setTaskError(null); return }
+    if (skipNextFetchRef.current) { skipNextFetchRef.current = false; return }
     setLoadingTasks(true)
     setTaskError(null)
     setSelectedIds(new Set())
@@ -333,7 +353,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       body: JSON.stringify({ projectId: selectedProject.id, ...(customJql.trim() ? { customJql: customJql.trim() } : {}) }),
     })
       .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`); return d })
-      .then(data => setTasks(data.tasks || []))
+      .then(data => { setTasks(data.tasks || []) })
       .catch(err => { setTaskError(err.message); setTasks([]) })
       .finally(() => setLoadingTasks(false))
   }, [selectedProject, fetchTrigger])
@@ -360,7 +380,12 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       const edits = { ...prev }
       for (const task of tasks) {
         if (selectedIds.has(task.id) && !edits[task.id]) {
-          edits[task.id] = { name: task.fields?.summary || task.summary || '', description: '', images: [] }
+          const copied = copiedEdits?.[task.key]
+          edits[task.id] = {
+            name: copied?.name || task.fields?.summary || task.summary || '',
+            description: copied?.description || '',
+            images: [],
+          }
         }
       }
       return edits
@@ -591,6 +616,109 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
   // ── Step 1 ─────────────────────────────────────────────────────────────────
 
+  function parseNoteHtml(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    const result = {}
+    doc.querySelectorAll('.task-card').forEach(card => {
+      const keyEl = card.querySelector('.task-row .key-badge')
+      const summaryEl = card.querySelector('.task-summary')
+      const descInner = card.querySelector('.task-desc-inner')
+      if (!keyEl) return
+      const key = keyEl.textContent.trim()
+      const name = summaryEl?.textContent.trim() || ''
+      let description = ''
+      if (descInner) {
+        const clone = descInner.cloneNode(true)
+        clone.querySelectorAll('div').forEach(d => d.remove()) // remove image divs
+        clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'))
+        description = clone.textContent.trim()
+      }
+      result[key] = { name, description }
+    })
+    return result
+  }
+
+  async function handleCopyFromNote(note) {
+    if (!note) return
+    setCopyLoading(true)
+    try {
+      const detail = await api.getReleaseNoteDetail(note.id)
+      const noteData = detail.note || detail
+      const edits = parseNoteHtml(noteData.html || '')
+      const keys = Object.keys(edits)
+      if (keys.length === 0) { showToast('Nema taskova u ovom release notes-u'); return }
+
+      const pid = noteData.project_id || note.project_id
+      const proj = pid ? projects.find(p => p.id === pid) : selectedProject
+      if (!proj) { showToast('Projekat nije pronađen — izaberi projekat ručno'); return }
+
+      // Fetch only the copied tasks directly (bypass useEffect)
+      setLoadingTasks(true)
+      const token = localStorage.getItem('jt_token')
+      const res = await fetch('/api/release-notes/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ projectId: proj.id, customJql: `issuekey IN (${keys.join(', ')})` }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      const loaded = data.tasks || []
+
+      // Pre-fill config
+      const version = noteData.version || ''
+      const clientName = version ? (noteData.title || '').replace(version, '').trim() : (noteData.title || '')
+      setConfig({ clientName, version })
+
+      // Skip the useEffect that would fire if project changes
+      if (proj.id !== selectedProject?.id) skipNextFetchRef.current = true
+      setSelectedProject(proj)
+      setCopiedEdits(edits)
+      setTasks(loaded)
+      setSelectedIds(new Set(loaded.filter(t => edits[t.key]).map(t => t.id)))
+      setCustomJql('') // clear JQL — user can add more via JQL below
+      setCopyDropOpen(false)
+      showToast(`Učitano ${loaded.length} taskova iz "${noteData.title || 'release notes'}"`)
+    } catch (err) {
+      showToast('Greška: ' + (err.message || 'nepoznata greška'))
+    } finally {
+      setCopyLoading(false)
+      setLoadingTasks(false)
+    }
+  }
+
+  // Adds more tasks via JQL on top of existing list (merge mode when copiedEdits active)
+  async function handleAddByJql() {
+    if (!selectedProject || !customJql.trim()) return
+    setLoadingTasks(true)
+    setTaskError(null)
+    try {
+      const token = localStorage.getItem('jt_token')
+      const res = await fetch('/api/release-notes/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ projectId: selectedProject.id, customJql: customJql.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      const newTasks = data.tasks || []
+      // Merge: only add tasks not already in the list
+      setTasks(prev => {
+        const existingKeys = new Set(prev.map(t => t.key))
+        const toAdd = newTasks.filter(t => !existingKeys.has(t.key))
+        return [...prev, ...toAdd]
+      })
+      setSelectedIds(prev => {
+        const n = new Set(prev)
+        newTasks.forEach(t => n.add(t.id))
+        return n
+      })
+    } catch (err) {
+      setTaskError(err.message)
+    } finally {
+      setLoadingTasks(false)
+    }
+  }
+
   const filteredTasks = tasks.filter(t => {
     const matchSearch = !search ||
       (t.key || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -630,21 +758,96 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
               style={inputStyle} />
           </div>
         </div>
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          {/* JQL column */}
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Prilagođeni JQL (opciono)</label>
-            <JqlEditor
-              value={customJql}
-              onChange={setCustomJql}
-              placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
-              rows={2}
-              showPreview={false}
-            />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <JqlEditor
+                  value={customJql}
+                  onChange={setCustomJql}
+                  placeholder='npr. project = CRM AND fixVersion = "v2.4" ORDER BY created ASC'
+                  rows={2}
+                  showPreview={false}
+                />
+              </div>
+              <button
+                disabled={!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())}
+                onClick={() => {
+                  if (copiedEdits && tasks.length > 0) handleAddByJql()
+                  else if (selectedProject) setFetchTrigger(n => n + 1)
+                }}
+                style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+                  cursor: (!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())) ? 'not-allowed' : 'pointer',
+                  background: (!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())) ? 'var(--surfaceAlt)' : 'var(--accent)',
+                  color: (!selectedProject || (copiedEdits && tasks.length > 0 && !customJql.trim())) ? 'var(--textMuted)' : '#fff',
+                }}>
+                {copiedEdits && tasks.length > 0 ? '+ Dodaj' : '↻ Primeni'}
+              </button>
+            </div>
           </div>
-          <button onClick={() => { if (selectedProject) setFetchTrigger(n => n + 1) }} disabled={!selectedProject}
-            style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', fontWeight: 600, border: 'none', cursor: !selectedProject ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', background: !selectedProject ? 'var(--surfaceAlt)' : 'var(--accent)', color: !selectedProject ? 'var(--textMuted)' : '#fff', transition: 'all 0.2s ease' }}>
-            ↻ Primeni
-          </button>
+
+          {/* Copy from existing column */}
+          <div style={{ width: 190, flexShrink: 0 }}>
+            <label style={labelStyle}>Kopiraj iz postojećeg</label>
+            <div style={{ position: 'relative' }} data-copy-dropdown>
+              <button
+                onClick={() => {
+                  const next = !copyDropOpen
+                  setCopyDropOpen(next)
+                  if (next && existingNotes === null) {
+                    api.getReleaseNotesList()
+                      .then(d => setExistingNotes(d.notes || []))
+                      .catch(() => setExistingNotes([]))
+                  }
+                }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, transition: 'all 0.15s',
+                  background: copiedEdits ? 'rgba(34,197,94,0.08)' : 'var(--bg)',
+                  border: `1px solid ${copiedEdits ? 'rgba(34,197,94,0.35)' : 'var(--border)'}`,
+                  color: copiedEdits ? 'var(--green)' : 'var(--text)',
+                }}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {copyLoading ? 'Učitavam...' : copiedEdits ? '✓ Kopija učitana' : 'Izaberi release notes'}
+                </span>
+                <span style={{ fontSize: 10, flexShrink: 0, transform: copyDropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block', color: 'var(--textMuted)' }}>▾</span>
+              </button>
+              <p style={{ margin: '5px 0 0', fontFamily: 'DM Sans', fontSize: 11, color: 'var(--textMuted)', lineHeight: 1.4 }}>
+                {copiedEdits
+                  ? 'Taskovi učitani. Dodaj još via JQL.'
+                  : 'Učitava taskove iz prethodnog release notes-a kao polaznu tačku.'}
+              </p>
+              {copyDropOpen && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 300, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: 200, overflow: 'hidden' }}>
+                  {existingNotes === null ? (
+                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>Učitavam...</div>
+                  ) : existingNotes.length === 0 ? (
+                    <div style={{ padding: '12px 16px', fontFamily: 'DM Sans', fontSize: 13, color: 'var(--textMuted)' }}>Nema objavljenih release notes-a.</div>
+                  ) : (
+                    <div style={{ maxHeight: 240, overflowY: 'auto', padding: 6 }}>
+                      {existingNotes.map(note => (
+                        <button
+                          key={note.id}
+                          disabled={copyLoading}
+                          onClick={() => handleCopyFromNote(note)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px', background: 'transparent', border: 'none', borderRadius: 7, cursor: copyLoading ? 'not-allowed' : 'pointer', textAlign: 'left', transition: 'background 0.1s', opacity: copyLoading ? 0.6 : 1 }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surfaceAlt)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <span style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || '(bez naziva)'}</span>
+                          {note.version && (
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--accent)', background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>{note.version}</span>
+                          )}
+                          <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--textMuted)', flexShrink: 0 }}>{new Date(note.created_at).toLocaleDateString('sr-Latn-RS')}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
