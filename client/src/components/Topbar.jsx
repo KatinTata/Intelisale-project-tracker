@@ -327,15 +327,17 @@ export default function Topbar({
             hideSubtitle={isMobile}
           />
 
-          <ModuleCard
-            icon={<IconClipboard />}
-            iconBg="rgba(20,184,166,0.12)" iconColor="#14B8A6"
-            label={t('topbar.nav.releaseNotesEditor')}
-            subtitle={t('topbar.nav.releaseNotesEditorSub')}
-            active={currentPage === 'releaseNotesEditor'}
-            onClick={onGoToReleaseNotesEditor}
-            hideSubtitle={isMobile}
-          />
+          {onGoToReleaseNotesEditor && (
+            <ModuleCard
+              icon={<IconClipboard />}
+              iconBg="rgba(20,184,166,0.12)" iconColor="#14B8A6"
+              label={t('topbar.nav.releaseNotesEditor')}
+              subtitle={t('topbar.nav.releaseNotesEditorSub')}
+              active={currentPage === 'releaseNotesEditor'}
+              onClick={onGoToReleaseNotesEditor}
+              hideSubtitle={isMobile}
+            />
+          )}
 
           <ModuleCard
             icon={<IconFolder />}
