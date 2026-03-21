@@ -160,7 +160,10 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
           </div>
           {taskInfo && (
             <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.25)', borderRadius: 6, padding: '3px 8px' }}>
-              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)' }}>🔗 {taskInfo.key}</span>
+              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                {taskInfo.key}
+              </span>
               <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)' }}>
                 {taskInfo.summary.length > 40 ? taskInfo.summary.slice(0, 40) + '...' : taskInfo.summary}
               </span>
@@ -211,10 +214,16 @@ function TaskChip({ taskKey, jiraUrl }) {
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" style={{ ...style, cursor: 'pointer' }}>
-        🔗 {taskKey}
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ ...style, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+        {taskKey}
       </a>
     )
   }
-  return <span style={style}>🔗 {taskKey}</span>
+  return (
+    <span style={{ ...style, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+      {taskKey}
+    </span>
+  )
 }

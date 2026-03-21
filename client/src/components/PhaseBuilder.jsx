@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core'
+import { DndContext, DragOverlay, pointerWithin, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { api } from '../api.js'
 import PhaseProgress from './PhaseProgress.jsx'
@@ -140,17 +140,25 @@ function DroppablePhaseColumn({ id, phase, tasks, isUnassigned = false, onRename
             <button
               onClick={() => setEditing(true)}
               title="Preimenuj"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--textSubtle)', padding: '1px 2px', fontSize: 11, lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--textSubtle)', padding: '1px 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s', display: 'flex', alignItems: 'center' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--textSubtle)'}
-            >✏️</button>
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z"/>
+              </svg>
+            </button>
             <button
               onClick={() => { if (window.confirm(`Obrisati fazu "${phase.name}"?\nTaskovi će biti prebačeni u Neraspoređeno.`)) onDelete?.() }}
               title="Obriši fazu"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--textSubtle)', padding: '1px 2px', fontSize: 11, lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--textSubtle)', padding: '1px 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s', display: 'flex', alignItems: 'center' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--textSubtle)'}
-            >🗑️</button>
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h8M5 3V2h2v1M3 3l.6 7h4.8L9 3"/>
+              </svg>
+            </button>
           </>
         )}
       </div>
@@ -181,7 +189,7 @@ function DroppablePhaseColumn({ id, phase, tasks, isUnassigned = false, onRename
 
 // ── Phase charts ──────────────────────────────────────────────────────────────
 
-function PhaseCharts({ phases, tasksByPhase }) {
+export function PhaseCharts({ phases, tasksByPhase }) {
   const withTasks = phases.filter(p => (tasksByPhase[p.id] || []).length > 0)
   if (withTasks.length === 0) return null
 
@@ -250,9 +258,9 @@ function AddPhasePanel({ onAdd, onCancel }) {
 
   return (
     <div style={{
-      minWidth: 200, flexShrink: 0,
-      border: '1px solid var(--accent)', borderRadius: 10, padding: '10px',
-      background: 'var(--surface)', alignSelf: 'flex-start',
+      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      border: '1px solid var(--accent)', borderRadius: 10, padding: '10px 14px',
+      background: 'var(--surface)',
     }}>
       <input
         ref={inputRef}
@@ -261,13 +269,13 @@ function AddPhasePanel({ onAdd, onCancel }) {
         onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onCancel() }}
         placeholder="Naziv faze"
         style={{
-          width: '100%', background: 'var(--bg)', border: '1px solid var(--border)',
+          width: 200, background: 'var(--bg)', border: '1px solid var(--border)',
           borderRadius: 6, padding: '5px 8px', color: 'var(--text)',
           fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-          fontSize: 12, outline: 'none', marginBottom: 8, boxSizing: 'border-box',
+          fontSize: 12, outline: 'none', boxSizing: 'border-box', flexShrink: 0,
         }}
       />
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {PHASE_COLORS.map(c => (
           <div
             key={c}
@@ -280,11 +288,11 @@ function AddPhasePanel({ onAdd, onCancel }) {
           />
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
         <button
           onClick={submit}
           style={{
-            flex: 1, padding: '5px 0', background: 'var(--accent)', color: '#fff',
+            padding: '5px 16px', background: 'var(--accent)', color: '#fff',
             border: 'none', borderRadius: 6, cursor: 'pointer',
             fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
             fontSize: 12, fontWeight: 600,
@@ -309,13 +317,18 @@ function AddPhasePanel({ onAdd, onCancel }) {
 
 // ── Main PhaseBuilder ─────────────────────────────────────────────────────────
 
-export default function PhaseBuilder({ projectId, tasks, isClient }) {
+export default function PhaseBuilder({ projectId, tasks, isClient, onPhasesChange }) {
   const [phases, setPhases] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTask, setActiveTask] = useState(null)
   const [addingPhase, setAddingPhase] = useState(false)
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
+
   useEffect(() => { loadPhases() }, [projectId])
+  useEffect(() => { onPhasesChange?.(phases) }, [phases])
 
   async function loadPhases() {
     setLoading(true)
@@ -370,9 +383,12 @@ export default function PhaseBuilder({ projectId, tasks, isClient }) {
   async function addPhase(name, color) {
     try {
       const data = await api.createPhase(projectId, { name, color })
-      setPhases(prev => [...prev, data.phase])
+      setPhases(prev => [...prev, { ...data.phase, taskKeys: data.phase.taskKeys || [] }])
       setAddingPhase(false)
-    } catch {}
+    } catch (e) {
+      console.error('addPhase error:', e)
+      alert('Greška pri kreiranju faze: ' + (e.message || e))
+    }
   }
 
   async function renamePhase(phaseId, name) {
@@ -402,10 +418,10 @@ export default function PhaseBuilder({ projectId, tasks, isClient }) {
     return <PhaseProgress phases={phases} tasksByPhase={tasksByPhase} />
   }
 
-  // Empty state
+  // Empty state (no phases and not adding)
   if (phases.length === 0 && !addingPhase) {
     return (
-      <div style={{ padding: '40px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: '32px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>
           Nema definisanih faza
         </div>
@@ -429,9 +445,45 @@ export default function PhaseBuilder({ projectId, tasks, isClient }) {
     )
   }
 
+  // Empty state but adding first phase
+  if (phases.length === 0 && addingPhase) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <AddPhasePanel onAdd={addPhase} onCancel={() => setAddingPhase(false)} />
+      </div>
+    )
+  }
+
   return (
     <div>
+      {/* Toolbar row — outside DndContext so buttons always work */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 }}>
+        {!addingPhase && (
+          <button
+            onClick={() => setAddingPhase(true)}
+            style={{
+              padding: '6px 14px', background: 'var(--accent)', color: '#fff',
+              border: 'none', borderRadius: 8, cursor: 'pointer',
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontSize: 12, fontWeight: 600, transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            + Nova faza
+          </button>
+        )}
+      </div>
+
+      {/* Add phase panel — outside DndContext, no event interference */}
+      {addingPhase && (
+        <div style={{ marginBottom: 12 }}>
+          <AddPhasePanel onAdd={addPhase} onCancel={() => setAddingPhase(false)} horizontal />
+        </div>
+      )}
+
       <DndContext
+        sensors={sensors}
         collisionDetection={pointerWithin}
         onDragStart={({ active }) => setActiveTask(tasks.find(t => t.key === active.id) || null)}
         onDragEnd={handleDragEnd}
@@ -459,27 +511,6 @@ export default function PhaseBuilder({ projectId, tasks, isClient }) {
             isUnassigned
             activeTaskKey={activeTask?.key}
           />
-
-          {/* Add phase */}
-          <div style={{ minWidth: 200, flexShrink: 0 }}>
-            {addingPhase ? (
-              <AddPhasePanel onAdd={addPhase} onCancel={() => setAddingPhase(false)} />
-            ) : (
-              <button
-                onClick={() => setAddingPhase(true)}
-                style={{
-                  width: '100%', padding: '10px', background: 'transparent',
-                  border: '1px dashed var(--border)', borderRadius: 10, cursor: 'pointer',
-                  color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                  fontSize: 12, fontWeight: 600, transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
-              >
-                + Nova faza
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Drag overlay */}
@@ -492,8 +523,6 @@ export default function PhaseBuilder({ projectId, tasks, isClient }) {
         </DragOverlay>
       </DndContext>
 
-      {/* Phase charts */}
-      <PhaseCharts phases={phases} tasksByPhase={tasksByPhase} />
     </div>
   )
 }

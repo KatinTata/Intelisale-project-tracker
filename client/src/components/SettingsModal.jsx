@@ -425,8 +425,8 @@ function SettingsContent({
           padding: 4,
         }}>
           {[
-            { value: 'dark',  label: `🌙 ${t('settings.appearance.dark')}` },
-            { value: 'light', label: `☀️ ${t('settings.appearance.light')}` },
+            { value: 'dark',  label: t('settings.appearance.dark') },
+            { value: 'light', label: t('settings.appearance.light') },
           ].map(opt => (
             <button
               key={opt.value}

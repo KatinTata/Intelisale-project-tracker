@@ -165,8 +165,9 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>
-              💬 {t('msg.title')}
+            <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <svg width="15" height="15" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>
+              {t('msg.title')}
             </span>
             <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>
               {project.displayName || project.epicKey}
@@ -224,13 +225,14 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: th.id === 'all' ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : (th.subject ? "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" : "'DM Mono'"), fontSize: th.id === 'all' ? 13 : 12, color: threadFilter === th.id ? 'var(--accent)' : 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {th.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>💬</span>}
-                    {th.taskKey && !th.subject && <span style={{ marginRight: 4, opacity: 0.6 }}>🔗</span>}
+                    {th.subject && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:4,opacity:0.6,flexShrink:0}}><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>}
+                    {th.taskKey && !th.subject && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:4,opacity:0.6,flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>}
                     {th.label}
                   </div>
                   {th.taskKey && th.subject && (
-                    <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                      🔗 {th.taskKey}
+                    <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                      {th.taskKey}
                     </div>
                   )}
                   {th.taskKey && !th.subject && taskInfoMap[th.taskKey] && (
@@ -250,7 +252,7 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
           {/* Mobile task filter pills */}
           {isMobile && (
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0 }}>
-              {[{ id: 'all', label: `${t('msg.all')} (${messages.length})` }, ...threads.map(th => ({ id: th.id, label: th.subject ? `💬 ${th.subject}` : `🔗 ${th.taskKey}` }))].map(th => (
+              {[{ id: 'all', label: `${t('msg.all')} (${messages.length})` }, ...threads.map(th => ({ id: th.id, label: th.subject || th.taskKey }))].map(th => (
                 <button
                   key={th.id}
                   onClick={() => setThreadFilter(th.id)}
@@ -302,12 +304,18 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                       <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 3, marginBottom: 4 }}>
                         {m.subject && (
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px' }}>
-                            <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>💬 {m.subject}</span>
+                            <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>
+                              {m.subject}
+                            </span>
                           </div>
                         )}
                         {m.task_key && (
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 6, padding: '3px 10px' }}>
-                            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>🔗 {m.task_key}</span>
+                            <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                              {m.task_key}
+                            </span>
                             {(m.task_summary || taskInfoMap[m.task_key]) && (
                               <span style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', borderLeft: '1px solid rgba(79,142,247,0.2)', paddingLeft: 6 }}>
                                 {(m.task_summary || taskInfoMap[m.task_key]).slice(0, 50)}{(m.task_summary || taskInfoMap[m.task_key]).length > 50 ? '...' : ''}
@@ -357,7 +365,8 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {topicType === 'task' ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--accent)', background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.3)', borderRadius: 6, padding: '3px 10px' }}>
-                        🔗 {topicInput.trim().toUpperCase()}
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                        {topicInput.trim().toUpperCase()}
                         {taskFetchLoading && <span style={{ opacity: 0.6 }}>…</span>}
                         {!taskFetchLoading && taskSummary && (
                           <span style={{ color: 'var(--textMuted)', fontSize: 10, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>— {taskSummary}</span>
@@ -365,7 +374,8 @@ export default function MessagesPage({ project, currentUser, isClient, initialTa
                       </span>
                     ) : (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 11, color: 'var(--text)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px' }}>
-                        💬 {topicInput.trim()}
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>
+                        {topicInput.trim()}
                       </span>
                     )}
                   </div>

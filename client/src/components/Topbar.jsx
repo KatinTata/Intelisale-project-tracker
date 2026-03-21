@@ -202,7 +202,7 @@ export default function Topbar({
           />
           {!isMobile && (
             <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>
-              Intelisale Project Hub
+              Project Hub
             </span>
           )}
         </div>

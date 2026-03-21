@@ -130,7 +130,7 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
   const threads = [...new Map(
     messages.filter(m => threadId(m)).map(m => {
       const id = threadId(m)
-      return [id, { id, label: m.subject || `🔗 ${m.task_key}`, taskKey: m.task_key, subject: m.subject }]
+      return [id, { id, label: m.subject || m.task_key, taskKey: m.task_key, subject: m.subject }]
     })
   ).values()]
 
@@ -257,12 +257,14 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                   <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2, marginBottom: 3, alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                     {m.subject && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 600, fontSize: 11, color: 'var(--text)', background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 8px' }}>
-                        💬 {m.subject}
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>
+                        {m.subject}
                       </span>
                     )}
                     {m.task_key && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--accent)', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: 4, padding: '1px 6px' }}>
-                        🔗 {m.task_key}
+                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                        {m.task_key}
                       </span>
                     )}
                   </div>
@@ -318,7 +320,8 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                   color: 'var(--accent)', background: 'rgba(79,142,247,0.1)',
                   border: '1px solid rgba(79,142,247,0.3)', borderRadius: 6, padding: '3px 10px',
                 }}>
-                  🔗 {topicInput.trim().toUpperCase()}
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M5 6.5a2.5 2.5 0 003.5.3l2-2a2.5 2.5 0 00-3.5-3.5l-1 1"/><path d="M7 5.5a2.5 2.5 0 00-3.5-.3l-2 2a2.5 2.5 0 003.5 3.5l1-1"/></svg>
+                  {topicInput.trim().toUpperCase()}
                   {taskFetchLoading && <span style={{ opacity: 0.6 }}>…</span>}
                   {!taskFetchLoading && taskSummary && (
                     <span style={{ color: 'var(--textMuted)', fontSize: 10, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>— {taskSummary}</span>
@@ -331,7 +334,8 @@ export default function MessagesPanel({ project, currentUser, isClient, initialT
                   color: 'var(--text)', background: 'var(--surfaceAlt)',
                   border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px',
                 }}>
-                  💬 {topicInput.trim()}
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M1 2.5A1 1 0 012 1.5h8a1 1 0 011 1v5a1 1 0 01-1 1H7L5.5 10 4 8.5H2a1 1 0 01-1-1z"/></svg>
+                  {topicInput.trim()}
                 </span>
               )}
             </div>

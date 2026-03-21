@@ -9,7 +9,7 @@ import { fmtHours, buildAssigneeData, buildComponentData } from '../utils.js'
 import AssigneeWorkload from './AssigneeWorkload.jsx'
 import ComponentBreakdown from './ComponentBreakdown.jsx'
 import OverrunHeatmap from './OverrunHeatmap.jsx'
-import PhaseBuilder from './PhaseBuilder.jsx'
+import PhaseBuilder, { PhaseCharts } from './PhaseBuilder.jsx'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
@@ -220,6 +220,12 @@ export default function ProjectCard({
   const { isMobile, isTablet } = useWindowSize()
   const t = useT()
   const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'phases'
+  const [chartPhases, setChartPhases] = useState([])
+
+  useEffect(() => {
+    if (!project?.id || typeof project.id === 'string') return
+    api.getPhases(project.id).then(d => setChartPhases(d?.phases || [])).catch(() => {})
+  }, [project?.id])
 
   if (loading) {
     return (
@@ -251,6 +257,16 @@ export default function ProjectCard({
   }
 
   const { tasks, totalEst, totalSpent, done, inprog, testing, todo, total, overTasks } = data
+
+  // Build phase chart data from chartPhases + tasks
+  const chartTaskPhaseMap = {}
+  for (const p of chartPhases) for (const k of (p.taskKeys || [])) chartTaskPhaseMap[k] = p.id
+  const chartTasksByPhase = {}
+  for (const p of chartPhases) chartTasksByPhase[p.id] = []
+  for (const t of tasks) {
+    const pid = chartTaskPhaseMap[t.key]
+    if (pid != null && chartTasksByPhase[pid]) chartTasksByPhase[pid].push(t)
+  }
 
   const assigneeData   = !isClient ? buildAssigneeData(tasks)   : null
   const componentData  = !isClient ? buildComponentData(tasks)  : null
@@ -446,6 +462,9 @@ export default function ProjectCard({
         )}
       </div>
 
+      {/* Phase charts — below donut/bar, above component breakdown */}
+      <PhaseCharts phases={chartPhases} tasksByPhase={chartTasksByPhase} />
+
       {/* Admin analytics charts */}
       {!isClient && (
         <>
@@ -534,7 +553,7 @@ export default function ProjectCard({
           <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} jiraUrl={jiraUrl} />
         )}
         {activeTab === 'phases' && (
-          <PhaseBuilder projectId={project.id} tasks={tasks} isClient={isClient} />
+          <PhaseBuilder projectId={project.id} tasks={tasks} isClient={isClient} onPhasesChange={setChartPhases} />
         )}
       </div>
     </div>

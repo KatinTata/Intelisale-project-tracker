@@ -231,41 +231,34 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--borderHover)'; e.currentTarget.style.color = 'var(--text)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--textMuted)' }}
                 >
-                  📦
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1.5" y="2" width="11" height="3" rx="0.5"/>
+                    <path d="M2.5 5v6.5a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V5M5.5 8h3"/>
+                  </svg>
                 </button>
               )}
 
               {/* Add button */}
               {(onAdd || onOpenSettings) && (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
-                    onMouseEnter={() => setAddHover(true)}
-                    onMouseLeave={() => setAddHover(false)}
-                    style={{
-                      width: 32, height: 32, borderRadius: '50%',
-                      border: addHover ? '2px solid var(--accent)' : '2px dashed var(--borderHover)',
-                      background: addHover ? 'var(--accent)' : 'transparent',
-                      color: addHover ? '#fff' : 'var(--accent)',
-                      fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', transition: 'all 0.2s ease',
-                    }}
-                  >
-                    +
-                  </button>
-                  {addHover && (
-                    <div style={{
-                      position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'var(--text)', color: 'var(--bg)',
-                      fontSize: 12, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                      padding: '5px 10px', borderRadius: 6,
-                      whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
-                    }}>
-                      {t('tabs.addProject')}
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
+                  onMouseEnter={() => setAddHover(true)}
+                  onMouseLeave={() => setAddHover(false)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 8,
+                    border: addHover ? '2px solid var(--accent)' : '2px dashed var(--borderHover)',
+                    background: addHover ? 'rgba(79,142,247,0.08)' : 'transparent',
+                    color: addHover ? 'var(--accent)' : 'var(--textMuted)',
+                    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                    fontSize: 12, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap',
+                  }}
+                >
+                  <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
+                  {t('tabs.addProject')}
+                </button>
               )}
             </div>
             )}
