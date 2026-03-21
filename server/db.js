@@ -150,6 +150,16 @@ db.exec(`
 `)
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS release_note_sections (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    position    INTEGER DEFAULT 0,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS release_note_clients (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     note_id        INTEGER NOT NULL REFERENCES published_notes(id) ON DELETE CASCADE,
@@ -157,5 +167,7 @@ db.exec(`
     UNIQUE(note_id, client_user_id)
   )
 `)
+
+try { db.exec(`ALTER TABLE published_notes ADD COLUMN section_id INTEGER REFERENCES release_note_sections(id) ON DELETE SET NULL`) } catch {}
 
 export default db

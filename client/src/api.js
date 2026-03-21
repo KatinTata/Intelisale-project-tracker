@@ -82,6 +82,9 @@ export const api = {
   getChangelog: (key) => request('GET', `/jira/changelog/${key}`),
 
   // Release Notes
+  getReleaseNoteSections: () => request('GET', '/release-notes/sections'),
+  createReleaseNoteSection: (name) => request('POST', '/release-notes/sections', { name }),
+  deleteReleaseNoteSection: (id) => request('DELETE', `/release-notes/sections/${id}`),
   getReleaseNotesList: () => request('GET', '/release-notes/list'),
   getClientReleaseNotes: () => request('GET', '/release-notes/client-list'),
   getReleaseNoteDetail: (id) => request('GET', `/release-notes/${id}/detail`),

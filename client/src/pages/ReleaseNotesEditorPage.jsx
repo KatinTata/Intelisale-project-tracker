@@ -653,15 +653,19 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
   async function openPublishModal() {
     try {
-      const usersData = await api.getUsers().catch(() => [])
+      const [usersData, sectionsData] = await Promise.all([
+        api.getUsers().catch(() => []),
+        api.getReleaseNoteSections().catch(() => ({ sections: [] })),
+      ])
       const clientUsers = (Array.isArray(usersData) ? usersData : []).filter(u => u.role === 'client')
-      setPublishModal({ clientUsers })
+      const sections = sectionsData?.sections || []
+      setPublishModal({ clientUsers, sections })
     } catch (err) {
       showToast(err.message)
     }
   }
 
-  async function handlePublish(selectedClientIds) {
+  async function handlePublish(selectedClientIds, sectionName) {
     const selectedTasks = tasks.filter(t => selectedIds.has(t.id))
     const html = generatePublishHtml(selectedTasks, taskEdits, config, {
       clientName: config.clientName,
@@ -681,6 +685,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
           title: previewTitle || `${config.clientName || ''} ${config.version || ''}`.trim(),
           version: config.version || null,
           projectId: selectedProject?.id || null,
+          sectionName: sectionName || null,
         }),
       })
       const ct = res.headers.get('content-type') || ''
@@ -1398,7 +1403,6 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
                 >
                   {/* Section header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: `2px solid ${cfg.color}28`, padding: '6px 8px 10px' }}>
-                    <span style={{ fontSize: 20 }}>{cfg.icon}</span>
                     {editingSection === prefix ? (
                       <input
                         autoFocus
@@ -1522,9 +1526,10 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       {publishModal && (
         <PublishModal
           clientUsers={publishModal.clientUsers}
+          sections={publishModal.sections}
           publishState={publishState}
           onClose={() => { setPublishModal(null); setPublishState(null) }}
-          onPublish={async clientIds => { setPublishModal(null); await handlePublish(clientIds) }}
+          onPublish={async (clientIds, sectionName) => { setPublishModal(null); await handlePublish(clientIds, sectionName) }}
         />
       )}
     </div>
@@ -1657,18 +1662,27 @@ function Toast({ message, onClose }) {
 
 // ── PublishModal ───────────────────────────────────────────────────────────────
 
-function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
+function PublishModal({ clientUsers, sections = [], onClose, onPublish, publishState }) {
   const t = useT()
   const [selected, setSelected] = useState(new Set())
   const [publishing, setPublishing] = useState(false)
+  const [sectionMode, setSectionMode] = useState('none') // 'none' | 'existing' | 'new'
+  const [selectedSectionId, setSelectedSectionId] = useState('')
+  const [newSectionName, setNewSectionName] = useState('')
 
   function toggle(id) {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
+  function getSectionName() {
+    if (sectionMode === 'existing') return sections.find(s => s.id === Number(selectedSectionId))?.name || null
+    if (sectionMode === 'new') return newSectionName.trim() || null
+    return null
+  }
+
   async function handleConfirm() {
     setPublishing(true)
-    await onPublish([...selected])
+    await onPublish([...selected], getSectionName())
     setPublishing(false)
   }
 
@@ -1680,13 +1694,60 @@ function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--textMuted)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '16px 24px' }}>
+
+          {/* Section picker */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Sekcija</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: sectionMode !== 'none' ? 10 : 0 }}>
+              {[
+                { value: 'none', label: 'Bez sekcije' },
+                { value: 'existing', label: 'Postojeća', disabled: sections.length === 0 },
+                { value: 'new', label: 'Nova sekcija' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  disabled={opt.disabled}
+                  onClick={() => setSectionMode(opt.value)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 6, fontSize: 12, fontFamily: 'DM Sans',
+                    border: sectionMode === opt.value ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    background: sectionMode === opt.value ? 'rgba(79,142,247,0.1)' : 'transparent',
+                    color: sectionMode === opt.value ? 'var(--accent)' : opt.disabled ? 'var(--textSubtle)' : 'var(--textMuted)',
+                    cursor: opt.disabled ? 'default' : 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {sectionMode === 'existing' && (
+              <select
+                value={selectedSectionId}
+                onChange={e => setSelectedSectionId(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none' }}
+              >
+                <option value="">— izaberi sekciju —</option>
+                {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )}
+            {sectionMode === 'new' && (
+              <input
+                autoFocus
+                value={newSectionName}
+                onChange={e => setNewSectionName(e.target.value)}
+                placeholder="Naziv sekcije..."
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none', boxSizing: 'border-box' }}
+              />
+            )}
+          </div>
+
           <div style={{ fontSize: 13, color: 'var(--textMuted)', fontFamily: 'DM Sans', marginBottom: 16, lineHeight: 1.6 }}>
             {t('rn.assignClients')}
           </div>
           {clientUsers.length === 0 ? (
             <div style={{ color: 'var(--textMuted)', fontFamily: 'DM Sans', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>{t('rn.noClientUsers')}</div>
           ) : (
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 240, overflowY: 'auto' }}>
               {clientUsers.map(u => (
                 <div key={u.id} onClick={() => toggle(u.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
                   <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: selected.has(u.id) ? 'none' : '2px solid var(--border)', background: selected.has(u.id) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
@@ -1702,7 +1763,7 @@ function PublishModal({ clientUsers, onClose, onPublish, publishState }) {
           )}
           {publishState?.error && (
             <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--redTint)', border: '1px solid var(--red)', borderRadius: 8, fontSize: 13, color: 'var(--red)', fontFamily: 'DM Sans' }}>
-              ⚠️ {publishState.error}
+              {publishState.error}
             </div>
           )}
         </div>

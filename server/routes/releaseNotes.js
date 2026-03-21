@@ -379,17 +379,66 @@ router.post('/ai-enhance', async (req, res) => {
   }
 })
 
+// ── Route: Sections CRUD ─────────────────────────────────────────────────────
+
+router.get('/sections', (req, res) => {
+  try {
+    const sections = db.prepare('SELECT id, name, position FROM release_note_sections WHERE user_id = ? ORDER BY position ASC, name ASC').all(req.userId)
+    res.json({ sections })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.post('/sections', (req, res) => {
+  try {
+    const { name } = req.body
+    if (!name?.trim()) return res.status(400).json({ error: 'name je obavezan' })
+    const maxPos = db.prepare('SELECT MAX(position) as m FROM release_note_sections WHERE user_id = ?').get(req.userId)
+    const position = (maxPos?.m ?? -1) + 1
+    const result = db.prepare('INSERT INTO release_note_sections (user_id, name, position) VALUES (?, ?, ?)').run(req.userId, name.trim(), position)
+    res.json({ id: result.lastInsertRowid, name: name.trim(), position })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.delete('/sections/:id', (req, res) => {
+  try {
+    const sec = db.prepare('SELECT id FROM release_note_sections WHERE id = ? AND user_id = ?').get(req.params.id, req.userId)
+    if (!sec) return res.status(404).json({ error: 'Nije pronađeno' })
+    db.prepare('DELETE FROM release_note_sections WHERE id = ?').run(sec.id)
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Route: Publish ────────────────────────────────────────────────────────────
 
 router.post('/publish', (req, res) => {
   try {
-    const { html, title, projectId, version } = req.body
+    const { html, title, projectId, version, sectionId } = req.body
     if (!html?.trim()) return res.status(400).json({ error: 'html je obavezan' })
 
     const token = randomBytes(16).toString('hex')
 
-    db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, version, html) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(token, projectId || null, req.userId, title || null, version || null, html)
+    // Resolve sectionId: if a string name is passed, find or create the section
+    let resolvedSectionId = sectionId || null
+    if (!resolvedSectionId && req.body.sectionName?.trim()) {
+      const existing = db.prepare('SELECT id FROM release_note_sections WHERE user_id = ? AND name = ?').get(req.userId, req.body.sectionName.trim())
+      if (existing) {
+        resolvedSectionId = existing.id
+      } else {
+        const maxPos = db.prepare('SELECT MAX(position) as m FROM release_note_sections WHERE user_id = ?').get(req.userId)
+        const position = (maxPos?.m ?? -1) + 1
+        const result = db.prepare('INSERT INTO release_note_sections (user_id, name, position) VALUES (?, ?, ?)').run(req.userId, req.body.sectionName.trim(), position)
+        resolvedSectionId = result.lastInsertRowid
+      }
+    }
+
+    db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, version, html, section_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(token, projectId || null, req.userId, title || null, version || null, html, resolvedSectionId)
 
     // Auto-populate clients from project on publish
     if (projectId) {
@@ -431,9 +480,11 @@ router.get('/list', (req, res) => {
     const notes = db.prepare(`
       SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.updated_at, pn.released_at, pn.project_id,
              p.display_name as project_name, p.epic_key,
+             pn.section_id, rns.name as section_name,
              (SELECT COUNT(*) FROM release_note_clients WHERE note_id = pn.id) as client_count
       FROM published_notes pn
       LEFT JOIN projects p ON p.id = pn.project_id
+      LEFT JOIN release_note_sections rns ON rns.id = pn.section_id
       WHERE pn.user_id = ?
       ORDER BY pn.created_at DESC
     `).all(req.userId)
@@ -449,10 +500,12 @@ router.get('/client-list', (req, res) => {
   try {
     const notes = db.prepare(`
       SELECT pn.id, pn.token, pn.title, pn.version, pn.status, pn.created_at, pn.released_at, pn.project_id,
-             p.display_name as project_name, p.epic_key
+             p.display_name as project_name, p.epic_key,
+             pn.section_id, rns.name as section_name
       FROM release_note_clients rnc
       JOIN published_notes pn ON pn.id = rnc.note_id
       LEFT JOIN projects p ON p.id = pn.project_id
+      LEFT JOIN release_note_sections rns ON rns.id = pn.section_id
       WHERE rnc.client_user_id = ?
       ORDER BY pn.created_at DESC
     `).all(req.userId)
