@@ -5,7 +5,6 @@ import ProjectCard from '../components/ProjectCard.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
 import UserManagementModal from '../components/UserManagementModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
-import MessagesPage from './MessagesPage.jsx'
 import ClientNotificationModal from '../components/ClientNotificationModal.jsx'
 import AddProjectPage from './AddProjectPage.jsx'
 import { api } from '../api.js'
@@ -13,7 +12,7 @@ import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, openChatOnMount, onChatMountConsumed }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onGoToMessages, openChatOnMount, onChatMountConsumed }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -27,8 +26,6 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [lastRefresh, setLastRefresh] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [prevProjectData, setPrevProjectData] = useState({})
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatTaskKey, setChatTaskKey] = useState(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [recentUnread, setRecentUnread] = useState([])
   const [clientModalOpen, setClientModalOpen] = useState(false)
@@ -78,7 +75,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
 
   useEffect(() => {
     if (openChatOnMount) {
-      setChatOpen(true)
+      onGoToMessages?.(activeId || null)
       onChatMountConsumed?.()
     }
   }, [openChatOnMount])
@@ -256,9 +253,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   }
 
   function handleNotificationClick(n) {
-    // Switch to the project that notification belongs to
-    if (n.project_id) setActiveId(n.project_id)
-    setChatOpen(true)
+    onGoToMessages?.(n.project_id || activeId || null)
   }
 
   const activeProject = projects.find(p => p.id === activeId)
@@ -298,7 +293,8 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         recentUnread={recentUnread}
         onMarkAllRead={handleMarkAllRead}
         onNotificationClick={handleNotificationClick}
-        onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
+        onGoToMessages={onGoToMessages ? () => onGoToMessages(activeProject?.id || null) : undefined}
+        onOpenChat={undefined}
         onGoToDashboard={undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
@@ -369,10 +365,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               isClient={isClient}
               jiraUrl={user.jiraUrl}
               autoRefreshTime={autoRefreshTime}
-              onOpenMessages={(taskKey) => {
-                setChatTaskKey(taskKey || null)
-                setChatOpen(true)
-              }}
+              onOpenMessages={() => onGoToMessages?.(activeProject?.id || null)}
             />
           )}
         </div>
@@ -508,25 +501,11 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
       )}
 
 
-      {chatOpen && activeProject && (
-        <MessagesPage
-          project={activeProject}
-          currentUser={user}
-          isClient={isClient}
-          initialTaskKey={chatTaskKey}
-          onClose={() => { setChatOpen(false); setChatTaskKey(null) }}
-          onMessagesRead={() => {
-            api.getUnreadCount().then(({ count }) => setUnreadCount(count)).catch(() => {})
-            api.getRecentUnread().then(setRecentUnread).catch(() => {})
-          }}
-        />
-      )}
-
       {clientModalOpen && (
         <ClientNotificationModal
           notifications={recentUnread}
           onClose={() => setClientModalOpen(false)}
-          onOpenChat={() => { setClientModalOpen(false); setChatOpen(true) }}
+          onOpenChat={() => { setClientModalOpen(false); onGoToMessages?.(activeProject?.id || null) }}
         />
       )}
 

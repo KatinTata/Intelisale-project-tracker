@@ -7,6 +7,7 @@ import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
 import ReleaseNotesEditorPage from './pages/ReleaseNotesEditorPage.jsx'
 import EpicViewerPage from './pages/EpicViewerPage.jsx'
 import DocumentsPage from './pages/DocumentsPage.jsx'
+import MessagesPage from './pages/MessagesPage.jsx'
 import BrainAnimation from './components/BrainAnimation.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 
@@ -15,6 +16,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [epicViewerKey, setEpicViewerKey] = useState(null)
+  const [messagesProjectId, setMessagesProjectId] = useState(null)
   const [openChatOnDashboard, setOpenChatOnDashboard] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
@@ -47,6 +49,7 @@ export default function App() {
         if (path === '/release-notes/editor') setPage('releaseNotesEditor')
         else if (path.startsWith('/release-notes')) setPage('releaseNotes')
         else if (path.startsWith('/documents')) setPage('documents')
+        else if (path.startsWith('/messages')) setPage('messages')
         else setPage('dashboard')
       })
       .catch(() => localStorage.removeItem('jt_token'))
@@ -59,6 +62,7 @@ export default function App() {
     if (path === '/release-notes/editor') setPage('releaseNotesEditor')
     else if (path.startsWith('/release-notes')) setPage('releaseNotes')
     else if (path.startsWith('/documents')) setPage('documents')
+    else if (path.startsWith('/messages')) setPage('messages')
     else setPage('dashboard')
   }
 
@@ -94,10 +98,10 @@ export default function App() {
 
   const openSettings = () => setSettingsOpen(true)
 
-  function goToMessages() {
-    setOpenChatOnDashboard(true)
-    window.history.replaceState({}, '', '/')
-    setPage('dashboard')
+  function goToMessages(projectId) {
+    setMessagesProjectId(projectId || null)
+    window.history.replaceState({}, '', '/messages')
+    setPage('messages')
   }
 
   if (page === 'epicViewer' && user) {
@@ -171,6 +175,26 @@ export default function App() {
     )
   }
 
+  if (page === 'messages' && user) {
+    return (
+      <>
+        <MessagesPage
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onOpenSettings={openSettings}
+          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          onOpenChat={null}
+          initialProjectId={messagesProjectId}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
+    )
+  }
+
   if (page === 'dashboard' && user) {
     return (
       <>
@@ -183,6 +207,7 @@ export default function App() {
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
           onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          onGoToMessages={goToMessages}
           openChatOnMount={openChatOnDashboard}
           onChatMountConsumed={() => setOpenChatOnDashboard(false)}
         />
