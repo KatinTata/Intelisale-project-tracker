@@ -211,23 +211,26 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .cover-page{display:none}
     .print-header{display:none}
     .print-footer{display:none}
-    @page{margin:24mm 18mm 20mm 18mm}
-    @page :first{margin-top:8mm}
+    .print-footer-override{display:none}
+    @page{margin:16mm 18mm 20mm 18mm}
     @media print{
+      html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       *{font-family:'Trebuchet MS','Century Gothic',Arial,sans-serif !important}
-      body{background:#fff !important;color:#0F1523 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      body{background:#fff !important;color:#0F1523 !important}
       /* ── Hide screen-only elements ── */
       .cover-page{display:none !important}
       .pbar{display:none !important}
       .expand-btn{display:none !important}
       .doc-hdr{display:none !important}
       .footer{display:none !important}
-      /* ── Header: fixed, repeats on every page ── */
-      .print-header{display:flex !important;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;height:64px;padding:0;background:#fff;z-index:10}
+      /* ── Header: normal flow, appears once on first page only ── */
+      .print-header{display:flex !important;align-items:center;justify-content:space-between;position:relative;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid #0F1523}
       /* ── Footer: fixed, repeats on every page ── */
-      .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;height:48px;padding:0;background:#fff;z-index:10}
-      /* ── Layout: page 1 uses wrap padding to clear header; pages 2+ use @page margin ── */
-      .wrap{padding:80px 0 20px !important}
+      .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:12mm;left:0;right:0;height:40px;padding:0;background:#fff;z-index:10}
+      /* ── Footer override: covers browser-generated URL footer ── */
+      .print-footer-override{display:block !important;position:fixed;bottom:0;left:0;right:0;height:12mm;background:#fff;z-index:100}
+      /* ── Layout: no top padding needed, header is in normal flow ── */
+      .wrap{padding:0 0 20px !important}
       .groups{gap:24px !important}
       /* ── Sections: allow natural page breaks between them ── */
       section{break-before:auto;page-break-before:auto;break-inside:auto;page-break-inside:auto}
@@ -315,6 +318,7 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     </div>
     <div class="footer">INTELISALE · Empowering Sales Excellence · www.intelisale.com</div>
   </div>
+  <div class="print-footer-override"></div>
   <script>
     function toggle(id){var card=document.getElementById(id),desc=document.getElementById(id+'-d'),btn=card?card.querySelector('.expand-btn'):null;if(!desc)return;var open=desc.classList.contains('open');desc.classList.toggle('open',!open);if(btn)btn.classList.toggle('open',!open);if(card)card.classList.toggle('open',!open)}
   </script>
@@ -1336,11 +1340,11 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
     return (
       <div>
         <style>{`
-          @page { margin: 24mm 18mm 20mm 18mm; }
-          @page :first { margin-top: 8mm; }
+          @page { margin: 16mm 18mm 20mm 18mm; }
           @media print {
+            html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             * { font-family: 'Trebuchet MS', 'Century Gothic', Arial, sans-serif !important; }
-            body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { background: #fff !important; }
             [data-no-print] { display: none !important; }
             /* Hide topbar (sticky header) and stepper wrapper */
             body > div > div:first-child { display: none !important; }
