@@ -9,6 +9,7 @@ import { fmtHours, buildAssigneeData, buildComponentData } from '../utils.js'
 import AssigneeWorkload from './AssigneeWorkload.jsx'
 import ComponentBreakdown from './ComponentBreakdown.jsx'
 import OverrunHeatmap from './OverrunHeatmap.jsx'
+import PhaseBuilder from './PhaseBuilder.jsx'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
@@ -218,6 +219,7 @@ export default function ProjectCard({
 }) {
   const { isMobile, isTablet } = useWindowSize()
   const t = useT()
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' | 'phases'
 
   if (loading) {
     return (
@@ -504,8 +506,37 @@ export default function ProjectCard({
         </>
       )}
 
-      {/* Task table */}
-      <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} jiraUrl={jiraUrl} />
+      {/* Tabs: Taskovi / Faze */}
+      <div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+          {[
+            { id: 'tasks', label: 'Taskovi' },
+            { id: 'phases', label: 'Faze' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '6px 16px', borderRadius: 7, fontSize: 13, fontWeight: 600,
+                fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                cursor: 'pointer', transition: 'all 0.15s',
+                background: activeTab === tab.id ? 'var(--accent)' : 'transparent',
+                color: activeTab === tab.id ? '#fff' : 'var(--textMuted)',
+                border: activeTab === tab.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'tasks' && (
+          <TaskTable tasks={tasks} overTasks={overTasks} isClient={isClient} projectId={project.id} onOpenMessages={onOpenMessages} jiraUrl={jiraUrl} />
+        )}
+        {activeTab === 'phases' && (
+          <PhaseBuilder projectId={project.id} tasks={tasks} isClient={isClient} />
+        )}
+      </div>
     </div>
   )
 }

@@ -98,6 +98,14 @@ export const api = {
   getDocuments: () => request('GET', '/documents'),
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
+  // Phases
+  getPhases: (projectId) => request('GET', `/phases/${projectId}`),
+  createPhase: (projectId, body) => request('POST', `/phases/${projectId}`, body),
+  updatePhase: (phaseId, body) => request('PUT', `/phases/${phaseId}`, body),
+  deletePhase: (phaseId) => request('DELETE', `/phases/${phaseId}`),
+  assignTaskToPhase: (projectId, body) => request('POST', `/phases/${projectId}/assign`, body),
+  reorderPhases: (projectId, phases) => request('POST', `/phases/${projectId}/reorder`, { phases }),
+
   // Users (admin only)
   getUsers: () => request('GET', '/users'),
   createUser: (body) => request('POST', '/users', body),

@@ -86,6 +86,28 @@ try { db.exec(`ALTER TABLE messages ADD COLUMN subject TEXT DEFAULT NULL`) } cat
 try { db.exec(`ALTER TABLE users ADD COLUMN anthropic_key TEXT`) } catch {}
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS phases (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id  INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    color       TEXT NOT NULL DEFAULT '#4F8EF7',
+    position    INTEGER DEFAULT 0,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS phase_tasks (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    phase_id   INTEGER REFERENCES phases(id) ON DELETE CASCADE,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    task_key   TEXT NOT NULL,
+    position   INTEGER DEFAULT 0,
+    UNIQUE(project_id, task_key)
+  )
+`)
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS published_notes (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     token      TEXT UNIQUE NOT NULL,
