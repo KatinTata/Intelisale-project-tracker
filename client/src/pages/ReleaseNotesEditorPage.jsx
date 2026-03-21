@@ -110,10 +110,11 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
       const helpLinks = getHelpLinks(task)
       const hasExpand = hasDesc || images.length > 0
 
-      const imagesHtml = images.map(img => `
-        <div style="margin-top:12px">
-          <img src="${img.base64}" alt="${esc(img.desc || '')}" style="max-width:100%;max-height:400px;border-radius:8px;display:block">
-          ${img.desc ? `<div style="font-size:12px;color:#6B7A99;margin-top:6px;font-family:'DM Sans',sans-serif;line-height:1.5">${esc(img.desc)}</div>` : ''}
+      const imagesHtml = images.map((img, imgIdx) => `
+        <div class="img-wrap">
+          <div class="img-print-label">Slika ${imgIdx + 1}${img.desc ? ` &mdash; <em class="img-desc-em">${esc(img.desc)}</em>` : ''}</div>
+          <img src="${img.base64}" alt="${esc(img.desc || '')}" style="max-width:100%;max-height:400px;border-radius:8px;display:block;margin-top:4px">
+          ${img.desc ? `<div class="img-screen-desc" style="font-size:12px;color:#6B7A99;margin-top:6px;font-family:'DM Sans',sans-serif;line-height:1.5">${esc(img.desc)}</div>` : ''}
         </div>`).join('')
 
       const helpHtml = helpLinks.map(link => {
@@ -131,7 +132,8 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
         </div>`
       }).join('')
 
-      return `<div class="task-card" id="${cardId}">
+      const isSimple = !hasExpand
+      return `<div class="task-card${isSimple ? ' task-card--simple' : ''}" id="${cardId}">
         <div class="task-row">
           <span class="key-badge" style="background:${keyC.bg};color:${keyC.color};border:1px solid ${keyC.border}">${key}</span>
           <span class="task-summary">${name}</span>
@@ -201,21 +203,106 @@ function generatePublishHtml(selectedTasks, taskEdits, config, meta, { sectionOv
     .task-desc{max-height:0;overflow:hidden;transition:max-height 0.32s cubic-bezier(0.4,0,0.2,1)}
     .task-desc.open{max-height:3000px}
     .task-desc-inner{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);line-height:1.75}
+    .img-wrap{margin-top:12px}
+    .img-print-label{display:none}
     .help-link-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
     .help-open{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid rgba(79,142,247,0.3);border-radius:6px;white-space:nowrap;flex-shrink:0}
     .help-open:hover{background:rgba(79,142,247,0.1)}
     .footer{margin-top:72px;padding-top:22px;border-top:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--subtle);letter-spacing:0.1em;text-transform:uppercase}
+    .cover-page{display:none}
+    .print-header{display:none}
+    .print-footer{display:none}
+    @page{margin:16mm 18mm 20mm 18mm}
     @media print{
+      *{font-family:'Trebuchet MS','Century Gothic',Arial,sans-serif !important}
+      body{background:#fff !important;color:#0F1523 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      /* ── Hide screen-only elements ── */
       .pbar{display:none !important}
-      .wrap{padding:0 28px 40px}
-      body{background:#fff;color:#111}
-      :root{--bg:#fff;--surface:#f8f9fc;--border:#e2e6f0;--border2:#c8cfdf;--text:#0F1523;--muted:#5A6480;--subtle:#A0AABF;--accent:#2563EB}
-      .task-desc{max-height:none !important;overflow:visible !important}
       .expand-btn{display:none !important}
+      .doc-hdr{display:none !important}
+      .footer{display:none !important}
+      /* ── Show print-only elements ── */
+      .cover-page{display:flex !important;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;page-break-after:always;text-align:center;gap:14px;padding:40px}
+      .print-header{display:flex !important;align-items:flex-start;justify-content:space-between;position:fixed;top:0;left:0;right:0;border-bottom:1.5px solid #0F1523;padding-bottom:10px;margin-bottom:28px;background:#fff;z-index:10}
+      .print-footer{display:flex !important;align-items:center;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;border-top:0.5px solid #E2E6F0;padding-top:8px;background:#fff;z-index:10}
+      .img-print-label{display:block !important;font-size:11px !important;font-weight:600 !important;color:#374151 !important;margin-bottom:4px}
+      .img-desc-em{font-style:italic;color:#5A6480;font-weight:400}
+      .img-screen-desc{display:none !important}
+      /* ── Layout ── */
+      .wrap{padding:0 !important}
+      .groups{gap:24px !important}
+      /* ── Section headers ── */
+      .section-hdr{border-bottom:1.5px solid #BFDBFE !important;background:none !important;padding-bottom:8px !important;margin-bottom:10px !important;gap:0 !important}
+      .sec-icon{display:none !important}
+      .sec-count{display:none !important}
+      .sec-label{font-size:17px !important;font-weight:700 !important;color:#2563EB !important}
+      /* ── Task cards (rich: has desc/images) ── */
+      .task-card{background:#fff !important;border:none !important;border-left:3px solid #2563EB !important;padding:14px 18px !important;margin-bottom:12px !important;break-inside:avoid !important;box-shadow:none !important;border-radius:0 !important}
+      /* ── Task cards (simple: no desc/images) ── */
+      .task-card--simple{border-left:3px solid #BFDBFE !important;padding:9px 18px !important}
+      /* ── Key badge ── */
+      .key-badge{font-size:10px !important;font-weight:700 !important;border:1px solid #93C5FD !important;color:#2563EB !important;background:#EFF6FF !important;padding:2px 8px !important;border-radius:3px !important;letter-spacing:0 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      /* ── Task text ── */
+      .task-summary{font-size:13px !important;font-weight:700 !important;color:#0F1523 !important}
+      .task-card--simple .task-summary{font-weight:600 !important;color:#374151 !important;font-size:12px !important}
+      /* ── Description ── */
+      .task-desc,.task-desc.open{max-height:none !important;overflow:visible !important;display:block !important}
+      .task-desc-inner{font-size:12px !important;color:#374151 !important;line-height:1.65 !important;border-top:none !important;padding-top:8px !important;margin-top:8px !important}
+      /* ── Images ── */
+      .img-wrap{margin-bottom:14px !important;margin-top:0 !important}
+      .img-wrap img{max-width:100% !important;border-radius:5px !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      /* ── Help links ── */
+      .help-link-row{border-top:0.5px solid #F3F4F6 !important;margin-top:10px !important;padding-top:10px !important}
+      .help-open{color:#2563EB !important;font-size:11px !important;font-weight:600 !important;border-color:#93C5FD !important}
+      /* ── Cover page elements ── */
+      .cover-brand{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#9CA3AF}
+      .cover-title{font-size:48px;font-weight:700;color:#0F1523;margin-top:12px}
+      .cover-client{font-size:22px;font-weight:700;color:#2563EB}
+      .cover-version{font-size:14px;font-weight:500;color:#2563EB;border:1px solid #2563EB;padding:3px 14px;border-radius:20px}
+      .cover-date{font-size:13px;color:#5A6480}
+      /* ── Print header elements ── */
+      .print-header-left{display:flex;flex-direction:column;gap:2px}
+      .print-header-title{font-size:36px;font-weight:700;color:#0F1523;line-height:1.05}
+      .print-header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px}
+      .print-header-client{font-size:14px;font-weight:700;color:#0F1523}
+      .print-version-badge{font-size:11px;color:#2563EB;border:1px solid #2563EB;padding:2px 10px;border-radius:4px;display:inline-block}
+      .print-header-date{font-size:11px;color:#5A6480}
+      /* ── Print footer elements ── */
+      .print-footer-text{font-size:10px;color:#9CA3AF}
+      .print-footer-logo{opacity:0.35}
     }
   </style>
 </head>
 <body>
+  <!-- Print-only: cover page (hidden on screen) -->
+  <div class="cover-page">
+    <img src="/logo-dark.png" alt="Intelisale" style="height:50px">
+    <div class="cover-brand">INTELISALE</div>
+    <div class="cover-title">Release Notes</div>
+    ${meta.clientName ? `<div class="cover-client">${esc(meta.clientName)}</div>` : ''}
+    ${config.version ? `<div class="cover-version">${esc(config.version)}</div>` : ''}
+    <div class="cover-date">${dateStr}</div>
+  </div>
+
+  <!-- Print-only: fixed header (hidden on screen) -->
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="/logo-dark.png" alt="Intelisale" style="height:24px">
+      <div class="print-header-title">Release Notes</div>
+    </div>
+    <div class="print-header-right">
+      ${meta.clientName ? `<span class="print-header-client">${esc(meta.clientName)}</span>` : ''}
+      ${config.version ? `<span class="print-version-badge">${esc(config.version)}</span>` : ''}
+      <span class="print-header-date">${dateStr}</span>
+    </div>
+  </div>
+
+  <!-- Print-only: fixed footer (hidden on screen) -->
+  <div class="print-footer">
+    <span class="print-footer-text">${dateStr}${meta.clientName ? ' &middot; ' + esc(meta.clientName) : ''}${config.version ? ' &middot; ' + esc(config.version) : ''} &middot; INTELISALE</span>
+    <img src="/favicon.png" alt="" class="print-footer-logo" style="height:18px;opacity:0.35">
+  </div>
+
   <div class="pbar">
     <span class="pbar-left">${esc(meta.clientName || 'Intelisale')}${config.version ? ' · ' + esc(config.version) : ''} Release Notes</span>
     <button class="pbtn" onclick="window.print()">↓ Export PDF</button>
@@ -1256,7 +1343,18 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
 
     return (
       <div>
-        <style>{`@media print { [data-no-print] { display: none !important; } .preview-wrap { padding: 0 28px 40px !important; } }`}</style>
+        <style>{`
+          @page { margin: 16mm 18mm 20mm 18mm; }
+          @media print {
+            * { font-family: 'Trebuchet MS', 'Century Gothic', Arial, sans-serif !important; }
+            body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            [data-no-print] { display: none !important; }
+            /* Hide topbar (sticky header) and stepper wrapper */
+            body > div > div:first-child { display: none !important; }
+            body > div > div:nth-child(2) > div:first-child { display: none !important; }
+            .preview-wrap { padding: 20px 0 40px !important; border: none !important; background: #fff !important; }
+          }
+        `}</style>
 
         {/* Action bar */}
         <div data-no-print="1" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>

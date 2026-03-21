@@ -386,24 +386,13 @@ router.post('/publish', (req, res) => {
     const { html, title, projectId, version } = req.body
     if (!html?.trim()) return res.status(400).json({ error: 'html je obavezan' })
 
-    // Reuse existing token only when same user + project + version, otherwise create new
-    const existing = version?.trim()
-      ? db.prepare('SELECT token FROM published_notes WHERE user_id = ? AND project_id IS ? AND version = ?')
-          .get(req.userId, projectId || null, version.trim())
-      : null
+    const token = randomBytes(16).toString('hex')
 
-    const token = existing?.token || randomBytes(16).toString('hex')
+    db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, version, html) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(token, projectId || null, req.userId, title || null, version || null, html)
 
-    if (existing) {
-      db.prepare('UPDATE published_notes SET html = ?, title = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE token = ?')
-        .run(html, title || null, version || null, token)
-    } else {
-      db.prepare('INSERT INTO published_notes (token, project_id, user_id, title, version, html) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(token, projectId || null, req.userId, title || null, version || null, html)
-    }
-
-    // Auto-populate clients from project when first publishing
-    if (!existing && projectId) {
+    // Auto-populate clients from project on publish
+    if (projectId) {
       const projectClients = db.prepare(
         'SELECT client_user_id FROM project_clients WHERE project_id = ?'
       ).all(projectId)
@@ -419,7 +408,7 @@ router.post('/publish', (req, res) => {
     }
 
     const noteRow = db.prepare('SELECT id FROM published_notes WHERE token = ?').get(token)
-    res.json({ token, id: noteRow?.id, updated: !!existing })
+    res.json({ token, id: noteRow?.id, updated: false })
   } catch (err) {
     console.error('publish error:', err)
     res.status(500).json({ error: err.message })
