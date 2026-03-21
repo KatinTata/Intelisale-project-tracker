@@ -122,13 +122,20 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
     window.dispatchEvent(new Event('jt-autorefresh-changed'))
   }
 
-  const tabs = [
-    { key: 'profile',    label: t('settings.tab.profile'),    icon: <IconUser /> },
-    { key: 'jira',       label: t('settings.tab.jira'),       icon: <IconLink /> },
-    { key: 'appearance', label: t('settings.tab.appearance'), icon: <IconPalette /> },
-    { key: 'ai',         label: t('settings.tab.ai'),         icon: <IconSparkle /> },
-    { key: 'refresh',    label: 'Osvežavanje',                icon: <IconClock /> },
-  ]
+  const isClient = user?.role === 'client'
+
+  const tabs = isClient
+    ? [
+        { key: 'profile',    label: t('settings.tab.profile'),    icon: <IconUser /> },
+        { key: 'appearance', label: t('settings.tab.appearance'), icon: <IconPalette /> },
+      ]
+    : [
+        { key: 'profile',    label: t('settings.tab.profile'),    icon: <IconUser /> },
+        { key: 'jira',       label: t('settings.tab.jira'),       icon: <IconLink /> },
+        { key: 'appearance', label: t('settings.tab.appearance'), icon: <IconPalette /> },
+        { key: 'ai',         label: t('settings.tab.ai'),         icon: <IconSparkle /> },
+        { key: 'refresh',    label: 'Osvežavanje',                icon: <IconClock /> },
+      ]
 
   return (
     <div style={{
