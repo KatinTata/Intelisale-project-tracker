@@ -10,6 +10,7 @@ import DocumentsPage from './pages/DocumentsPage.jsx'
 import MessagesPage from './pages/MessagesPage.jsx'
 import BrainAnimation from './components/BrainAnimation.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
+import UserManagementModal from './components/UserManagementModal.jsx'
 
 export default function App() {
   const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer' | 'documents' | 'messages'
@@ -18,6 +19,7 @@ export default function App() {
   const [epicViewerKey, setEpicViewerKey] = useState(null)
   const [messagesProjectId, setMessagesProjectId] = useState(null)
   const [openChatOnDashboard, setOpenChatOnDashboard] = useState(false)
+  const [usersOpen, setUsersOpen] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('jt_theme') || 'dark')
   const [checking, setChecking] = useState(true)
 
@@ -97,12 +99,26 @@ export default function App() {
   }
 
   const openSettings = () => setSettingsOpen(true)
+  const openUsers = () => setUsersOpen(true)
+  const isAdmin = user?.role !== 'client'
 
   function goToMessages(projectId) {
     setMessagesProjectId(projectId || null)
     window.history.replaceState({}, '', '/messages')
     setPage('messages')
   }
+
+  const modals = (
+    <>
+      {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      {usersOpen && <UserManagementModal projects={[]} onClose={() => setUsersOpen(false)} />}
+    </>
+  )
+
+  const goToDashboard = () => { window.history.replaceState({}, '', '/'); setPage('dashboard') }
+  const goToReleaseNotes = () => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }
+  const goToReleaseNotesEditor = () => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }
+  const goToDocuments = () => { window.history.replaceState({}, '', '/documents'); setPage('documents') }
 
   if (page === 'epicViewer' && user) {
     return (
@@ -112,12 +128,13 @@ export default function App() {
           user={user}
           theme={theme}
           onLogout={handleLogout}
-          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onGoToDashboard={goToDashboard}
+          onGoToReleaseNotes={goToReleaseNotes}
           onOpenSettings={openSettings}
+          onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }
@@ -129,12 +146,13 @@ export default function App() {
           user={user}
           theme={theme}
           onLogout={handleLogout}
-          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-          onGoToEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onGoToDashboard={goToDashboard}
+          onGoToEditor={goToReleaseNotesEditor}
           onOpenSettings={openSettings}
+          onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }
@@ -146,13 +164,14 @@ export default function App() {
           user={user}
           theme={theme}
           onLogout={handleLogout}
-          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
-          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          onGoToDashboard={goToDashboard}
+          onGoToReleaseNotes={goToReleaseNotes}
+          onGoToDocuments={goToDocuments}
           onOpenSettings={openSettings}
+          onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }
@@ -164,13 +183,14 @@ export default function App() {
           user={user}
           theme={theme}
           onLogout={handleLogout}
-          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
-          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onGoToDashboard={goToDashboard}
+          onGoToReleaseNotes={goToReleaseNotes}
+          onGoToReleaseNotesEditor={goToReleaseNotesEditor}
           onOpenSettings={openSettings}
+          onOpenUsers={isAdmin ? openUsers : undefined}
           onOpenChat={goToMessages}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }
@@ -183,14 +203,15 @@ export default function App() {
           theme={theme}
           onLogout={handleLogout}
           onOpenSettings={openSettings}
-          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
-          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
-          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
-          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          onOpenUsers={isAdmin ? openUsers : undefined}
+          onGoToDashboard={goToDashboard}
+          onGoToReleaseNotes={goToReleaseNotes}
+          onGoToReleaseNotesEditor={goToReleaseNotesEditor}
+          onGoToDocuments={goToDocuments}
           onOpenChat={null}
           initialProjectId={messagesProjectId}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }
@@ -204,14 +225,15 @@ export default function App() {
           onSetTheme={handleSetTheme}
           onLogout={handleLogout}
           onOpenSettings={openSettings}
-          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
-          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
-          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
+          onOpenUsers={isAdmin ? openUsers : undefined}
+          onGoToReleaseNotes={goToReleaseNotes}
+          onGoToReleaseNotesEditor={goToReleaseNotesEditor}
+          onGoToDocuments={goToDocuments}
           onGoToMessages={goToMessages}
           openChatOnMount={openChatOnDashboard}
           onChatMountConsumed={() => setOpenChatOnDashboard(false)}
         />
-        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+        {modals}
       </>
     )
   }

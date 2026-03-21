@@ -399,7 +399,7 @@ function IconLink() {
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onGoToDocuments, onOpenSettings, onOpenChat }) {
+export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDashboard, onGoToReleaseNotes, onGoToDocuments, onOpenSettings, onOpenUsers, onOpenChat }) {
   const t = useT()
   // wizard
   const [wizardStep, setWizardStep] = useState(1)
@@ -1582,7 +1582,7 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       <Topbar
         user={user} theme={theme} currentPage="releaseNotesEditor"
         onLogout={onLogout} onGoToDashboard={onGoToDashboard} onGoToReleaseNotes={onGoToReleaseNotes}
-        onGoToDocuments={onGoToDocuments} onOpenSettings={onOpenSettings} onOpenChat={onOpenChat}
+        onGoToDocuments={onGoToDocuments} onOpenSettings={onOpenSettings} onOpenUsers={onOpenUsers} onOpenChat={onOpenChat}
       />
       <div style={{ padding: '20px 28px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>

@@ -19,7 +19,7 @@ function looksLikeTaskKey(val) { return TASK_KEY_RE.test(val.trim().toUpperCase(
 function threadId(m) { return m.subject || m.task_key || null }
 
 export default function MessagesPage({
-  user, theme, onLogout, onOpenSettings,
+  user, theme, onLogout, onOpenSettings, onOpenUsers,
   onGoToDashboard, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onOpenChat,
   initialProjectId,
 }) {
@@ -197,6 +197,7 @@ export default function MessagesPage({
           onGoToDocuments={onGoToDocuments}
           onOpenChat={null}
           onGoToMessages={null}
+          onOpenUsers={onOpenUsers}
           currentPage="messages"
         />
 

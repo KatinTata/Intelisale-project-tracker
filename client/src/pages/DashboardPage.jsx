@@ -3,7 +3,6 @@ import Topbar from '../components/Topbar.jsx'
 import ProjectTabs from '../components/ProjectTabs.jsx'
 import ProjectCard from '../components/ProjectCard.jsx'
 import ArchiveModal from '../components/ArchiveModal.jsx'
-import UserManagementModal from '../components/UserManagementModal.jsx'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import ClientNotificationModal from '../components/ClientNotificationModal.jsx'
 import AddProjectPage from './AddProjectPage.jsx'
@@ -12,7 +11,7 @@ import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 import { useT } from '../lang.jsx'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onGoToMessages, openChatOnMount, onChatMountConsumed }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onOpenUsers, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments, onGoToMessages, openChatOnMount, onChatMountConsumed }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -20,7 +19,6 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const [loadingProjects, setLoadingProjects] = useState({})
   const [errorProjects, setErrorProjects] = useState({})
   const [archiveOpen, setArchiveOpen] = useState(false)
-  const [usersOpen, setUsersOpen] = useState(false)
   const [addingProject, setAddingProject] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
@@ -288,13 +286,14 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         currentPage="dashboard"
         onOpenSettings={isClient ? undefined : onOpenSettings}
         onLogout={handleLogout}
-        onOpenUsers={isClient ? undefined : () => setUsersOpen(true)}
         unreadCount={unreadCount}
         recentUnread={recentUnread}
         onMarkAllRead={handleMarkAllRead}
         onNotificationClick={handleNotificationClick}
         onGoToMessages={onGoToMessages ? () => onGoToMessages(activeProject?.id || null) : undefined}
+        onOpenUsers={isClient ? undefined : onOpenUsers}
         onOpenChat={undefined}
+
         onGoToDashboard={undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
@@ -492,14 +491,6 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
           onRestore={handleRestoreProject}
         />
       )}
-
-      {usersOpen && (
-        <UserManagementModal
-          projects={projects}
-          onClose={() => setUsersOpen(false)}
-        />
-      )}
-
 
       {clientModalOpen && (
         <ClientNotificationModal

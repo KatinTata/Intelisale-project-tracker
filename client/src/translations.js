@@ -363,7 +363,7 @@ export const translations = {
     'msg.clientBadge': 'K',
 
     // Documents page
-    'docs.title': '📁 Dokumenti',
+    'docs.title': 'Dokumenta',
     'docs.add': 'Dodaj dokument',
     'docs.upload': 'Upload',
     'docs.uploading': 'Uploading...',
@@ -762,7 +762,7 @@ export const translations = {
     'msg.clientBadge': 'C',
 
     // Documents page
-    'docs.title': '📁 Documents',
+    'docs.title': 'Documents',
     'docs.add': 'Add document',
     'docs.upload': 'Upload',
     'docs.uploading': 'Uploading...',
