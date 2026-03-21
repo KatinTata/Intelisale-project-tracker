@@ -2,6 +2,22 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
+function IconUser() {
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
+}
+function IconLink() {
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
+}
+function IconSparkle() {
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
+}
+function IconClock() {
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+}
+function IconExclamation() {
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+}
+
 export default function SettingsModal({ user, theme, onSetTheme, onClose, onUserUpdate }) {
   const [tab, setTab] = useState('profile')
   const [jiraUrl, setJiraUrl] = useState(user.jiraUrl || '')
@@ -93,22 +109,22 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
     }
   }
 
-  const [autoRefreshMinutes, setAutoRefreshMinutes] = useState(() =>
-    parseInt(localStorage.getItem('jt_autorefresh') || '0', 10)
+  const [autoRefreshTime, setAutoRefreshTime] = useState(() =>
+    localStorage.getItem('jt_autorefresh') || ''
   )
 
-  function handleAutoRefreshChange(minutes) {
-    localStorage.setItem('jt_autorefresh', String(minutes))
-    setAutoRefreshMinutes(minutes)
+  function handleAutoRefreshChange(time) {
+    localStorage.setItem('jt_autorefresh', time)
+    setAutoRefreshTime(time)
     window.dispatchEvent(new Event('jt-autorefresh-changed'))
   }
 
   const tabs = [
-    { key: 'profile', label: '👤 Profil' },
-    { key: 'jira',    label: '🔗 Jira' },
-    { key: 'ai',      label: '🤖 AI' },
-    { key: 'refresh', label: 'Osvežavanje' },
-    { key: 'danger',  label: '⚠️ Opasna zona' },
+    { key: 'profile', label: 'Profil',       icon: <IconUser /> },
+    { key: 'jira',    label: 'Jira',          icon: <IconLink /> },
+    { key: 'ai',      label: 'AI',            icon: <IconSparkle /> },
+    { key: 'refresh', label: 'Osvežavanje',   icon: <IconClock /> },
+    { key: 'danger',  label: 'Opasna zona',   icon: <IconExclamation /> },
   ]
 
   return (
@@ -169,8 +185,9 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                     whiteSpace: 'nowrap',
                     minHeight: 44,
                     transition: 'all 0.15s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                   }}
-                >{t.label}</button>
+                >{t.icon}{t.label}</button>
               ))}
             </div>
             <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
@@ -192,7 +209,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
                 deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
                 onDeleteAccount={handleDeleteAccount}
-                autoRefreshMinutes={autoRefreshMinutes} onAutoRefreshChange={handleAutoRefreshChange}
+                autoRefreshTime={autoRefreshTime} onAutoRefreshChange={handleAutoRefreshChange}
               />
             </div>
           </>
@@ -205,19 +222,27 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                   key={t.key}
                   onClick={() => setTab(t.key)}
                   style={{
-                    display: 'block',
+                    display: 'flex', alignItems: 'center', gap: 9,
                     width: '100%',
                     textAlign: 'left',
                     padding: '9px 12px',
                     borderRadius: 8,
+                    borderTop: 'none', borderRight: 'none', borderBottom: 'none',
+                    borderLeft: `3px solid ${tab === t.key ? 'var(--accent)' : 'transparent'}`,
                     fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     fontSize: 14,
                     color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)',
-                    background: tab === t.key ? 'rgba(79,142,247,0.1)' : 'transparent',
+                    background: tab === t.key ? 'rgba(79,142,247,0.08)' : 'transparent',
                     marginBottom: 2,
                     transition: 'all 0.15s',
+                    cursor: 'pointer',
                   }}
-                >{t.label}</button>
+                  onMouseEnter={e => { if (tab !== t.key) e.currentTarget.style.background = 'var(--surfaceAlt)' }}
+                  onMouseLeave={e => { if (tab !== t.key) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ color: tab === t.key ? 'var(--accent)' : 'var(--textMuted)', display: 'flex', flexShrink: 0 }}>{t.icon}</span>
+                  {t.label}
+                </button>
               ))}
             </div>
             <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
@@ -239,7 +264,7 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
                 pwMsg={pwMsg} pwLoading={pwLoading} onChangePassword={handleChangePassword}
                 deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm}
                 onDeleteAccount={handleDeleteAccount}
-                autoRefreshMinutes={autoRefreshMinutes} onAutoRefreshChange={handleAutoRefreshChange}
+                autoRefreshTime={autoRefreshTime} onAutoRefreshChange={handleAutoRefreshChange}
               />
             </div>
           </div>
@@ -249,13 +274,21 @@ export default function SettingsModal({ user, theme, onSetTheme, onClose, onUser
   )
 }
 
-const REFRESH_OPTIONS = [
-  { value: 0,   label: 'Isključeno' },
-  { value: 15,  label: '15 min' },
-  { value: 30,  label: '30 min' },
-  { value: 60,  label: '1 sat' },
-  { value: 120, label: '2 sata' },
-  { value: 360, label: '6 sati' },
+const REFRESH_TIMES = [
+  { value: '',    label: 'Isključeno' },
+  { value: '00:00', label: '00:00' },
+  { value: '02:00', label: '02:00' },
+  { value: '04:00', label: '04:00' },
+  { value: '06:00', label: '06:00' },
+  { value: '08:00', label: '08:00' },
+  { value: '09:00', label: '09:00' },
+  { value: '10:00', label: '10:00' },
+  { value: '12:00', label: '12:00' },
+  { value: '14:00', label: '14:00' },
+  { value: '16:00', label: '16:00' },
+  { value: '18:00', label: '18:00' },
+  { value: '20:00', label: '20:00' },
+  { value: '22:00', label: '22:00' },
 ]
 
 function SettingsContent({
@@ -267,7 +300,7 @@ function SettingsContent({
   oldPassword, setOldPassword, newPassword, setNewPassword,
   pwMsg, pwLoading, onChangePassword,
   deleteConfirm, setDeleteConfirm, onDeleteAccount,
-  autoRefreshMinutes, onAutoRefreshChange,
+  autoRefreshTime, onAutoRefreshChange,
 }) {
   if (tab === 'profile') return (
     <div>
@@ -424,48 +457,46 @@ function SettingsContent({
     <div>
       <h3 style={sectionTitle}>Automatsko osvežavanje</h3>
       <div style={{ fontSize: 13, color: 'var(--textMuted)', marginBottom: 20, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", lineHeight: 1.6 }}>
-        Podaci iz Jire će se automatski osvežavati u pozadini. Klijenti će uvek videti ažurne informacije bez ručnog klika na Osveži.
+        Jednom dnevno, u izabrano vreme, svi projekti će se automatski osvežiti iz Jire.
       </div>
 
-      <label style={fieldLabel}>INTERVAL OSVEŽAVANJA</label>
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, marginBottom: 20 }}>
-        {REFRESH_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => onAutoRefreshChange(opt.value)}
-            style={{
-              flex: 1,
-              minWidth: 60,
-              padding: '7px 8px',
-              borderRadius: 7,
-              border: 'none',
-              background: autoRefreshMinutes === opt.value ? 'var(--accent)' : 'transparent',
-              color: autoRefreshMinutes === opt.value ? '#fff' : 'var(--textMuted)',
-              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-              fontSize: 13,
-              fontWeight: autoRefreshMinutes === opt.value ? 600 : 400,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {opt.label}
-          </button>
+      <label style={fieldLabel}>VREME OSVEŽAVANJA</label>
+      <select
+        value={autoRefreshTime}
+        onChange={e => onAutoRefreshChange(e.target.value)}
+        style={{
+          display: 'block',
+          width: '100%',
+          padding: '9px 12px',
+          marginBottom: 20,
+          background: 'var(--bg)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          color: 'var(--text)',
+          fontFamily: "'DM Mono', monospace",
+          fontSize: 14,
+          cursor: 'pointer',
+          outline: 'none',
+          appearance: 'auto',
+        }}
+      >
+        {REFRESH_TIMES.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
-      </div>
+      </select>
 
       <div style={{
         padding: '12px 16px',
-        background: autoRefreshMinutes > 0 ? 'var(--greenTint)' : 'var(--surfaceAlt)',
-        border: `1px solid ${autoRefreshMinutes > 0 ? 'rgba(34,197,94,0.25)' : 'var(--border)'}`,
+        background: autoRefreshTime ? 'var(--greenTint)' : 'var(--surfaceAlt)',
+        border: `1px solid ${autoRefreshTime ? 'rgba(34,197,94,0.25)' : 'var(--border)'}`,
         borderRadius: 10,
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
         fontSize: 13,
-        color: autoRefreshMinutes > 0 ? 'var(--green)' : 'var(--textMuted)',
+        color: autoRefreshTime ? 'var(--green)' : 'var(--textMuted)',
         lineHeight: 1.5,
       }}>
-        {autoRefreshMinutes > 0
-          ? `Aktivno — svi projekti se osvežavaju automatski svake ${REFRESH_OPTIONS.find(o => o.value === autoRefreshMinutes)?.label || `${autoRefreshMinutes} min`}.`
+        {autoRefreshTime
+          ? `Aktivno — svi projekti se osvežavaju svaki dan u ${autoRefreshTime}.`
           : 'Automatsko osvežavanje je isključeno. Podaci se osvežavaju samo ručno.'}
       </div>
     </div>

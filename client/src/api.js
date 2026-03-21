@@ -87,6 +87,14 @@ export const api = {
   markReleaseNoteReleased: (id) => request('PUT', `/release-notes/${id}/release`),
   deleteReleaseNote: (id) => request('DELETE', `/release-notes/${id}`),
 
+  // Documents
+  getDocumentSections: () => request('GET', '/documents/sections'),
+  createDocumentSection: (name) => request('POST', '/documents/sections', { name }),
+  renameDocumentSection: (id, name) => request('PUT', `/documents/sections/${id}`, { name }),
+  deleteDocumentSection: (id) => request('DELETE', `/documents/sections/${id}`),
+  getDocuments: () => request('GET', '/documents'),
+  deleteDocument: (id) => request('DELETE', `/documents/${id}`),
+
   // Users (admin only)
   getUsers: () => request('GET', '/users'),
   createUser: (body) => request('POST', '/users', body),

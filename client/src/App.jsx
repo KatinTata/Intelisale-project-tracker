@@ -6,11 +6,12 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import ReleaseNotesPage from './pages/ReleaseNotesPage.jsx'
 import ReleaseNotesEditorPage from './pages/ReleaseNotesEditorPage.jsx'
 import EpicViewerPage from './pages/EpicViewerPage.jsx'
+import DocumentsPage from './pages/DocumentsPage.jsx'
 import BrainAnimation from './components/BrainAnimation.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 
 export default function App() {
-  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer'
+  const [page, setPage] = useState('login') // 'login' | 'dashboard' | 'releaseNotes' | 'releaseNotesEditor' | 'epicViewer' | 'documents'
   const [user, setUser] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [epicViewerKey, setEpicViewerKey] = useState(null)
@@ -44,6 +45,7 @@ export default function App() {
         const path = window.location.pathname
         if (path === '/release-notes/editor') setPage('releaseNotesEditor')
         else if (path.startsWith('/release-notes')) setPage('releaseNotes')
+        else if (path.startsWith('/documents')) setPage('documents')
         else setPage('dashboard')
       })
       .catch(() => localStorage.removeItem('jt_token'))
@@ -55,6 +57,7 @@ export default function App() {
     const path = window.location.pathname
     if (path === '/release-notes/editor') setPage('releaseNotesEditor')
     else if (path.startsWith('/release-notes')) setPage('releaseNotes')
+    else if (path.startsWith('/documents')) setPage('documents')
     else setPage('dashboard')
   }
 
@@ -142,6 +145,24 @@ export default function App() {
     )
   }
 
+  if (page === 'documents' && user) {
+    return (
+      <>
+        <DocumentsPage
+          user={user}
+          theme={theme}
+          onLogout={handleLogout}
+          onGoToDashboard={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+          onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
+          onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onOpenSettings={openSettings}
+          onOpenChat={() => { window.history.replaceState({}, '', '/'); setPage('dashboard') }}
+        />
+        {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
+      </>
+    )
+  }
+
   if (page === 'dashboard' && user) {
     return (
       <>
@@ -153,6 +174,7 @@ export default function App() {
           onOpenSettings={openSettings}
           onGoToReleaseNotes={() => { window.history.replaceState({}, '', '/release-notes'); setPage('releaseNotes') }}
           onGoToReleaseNotesEditor={() => { window.history.replaceState({}, '', '/release-notes/editor'); setPage('releaseNotesEditor') }}
+          onGoToDocuments={() => { window.history.replaceState({}, '', '/documents'); setPage('documents') }}
         />
         {settingsOpen && <SettingsModal user={user} theme={theme} onSetTheme={handleSetTheme} onClose={() => setSettingsOpen(false)} onUserUpdate={handleUserUpdate} />}
       </>

@@ -11,6 +11,7 @@ import jiraRoutes from './routes/jira.js'
 import usersRoutes from './routes/users.js'
 import messagesRoutes from './routes/messages.js'
 import releaseNotesRoutes from './routes/releaseNotes.js'
+import documentsRoutes from './routes/documents.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -26,6 +27,7 @@ app.use('/api/jira', authMiddleware, jiraRoutes)
 app.use('/api/users', authMiddleware, usersRoutes)
 app.use('/api/messages', authMiddleware, messagesRoutes)
 app.use('/api/release-notes', authMiddleware, releaseNotesRoutes)
+app.use('/api/documents', authMiddleware, documentsRoutes)
 app.get('/rn/:token', (req, res) => {
   const row = db.prepare('SELECT html FROM published_notes WHERE token = ?').get(req.params.token)
   if (!row) return res.status(404).send('<!DOCTYPE html><html><body><h2>Release notes nisu pronađeni.</h2></body></html>')

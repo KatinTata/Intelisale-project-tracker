@@ -11,7 +11,7 @@ import { api } from '../api.js'
 import { processEpicData, DEMO_PROJECTS } from '../utils.js'
 import { useWindowSize } from '../hooks/useWindowSize.js'
 
-export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor }) {
+export default function DashboardPage({ user: initialUser, theme, onSetTheme, onLogout, onOpenSettings, onGoToReleaseNotes, onGoToReleaseNotesEditor, onGoToDocuments }) {
   const [user, setUser] = useState(initialUser)
   const [projects, setProjects] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -36,27 +36,40 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
   const isClient = user.role === 'client'
   const { isMobile } = useWindowSize()
 
-  const [autoRefreshMinutes, setAutoRefreshMinutes] = useState(() =>
-    parseInt(localStorage.getItem('jt_autorefresh') || '0', 10)
+  const [autoRefreshTime, setAutoRefreshTime] = useState(() =>
+    localStorage.getItem('jt_autorefresh') || ''
   )
 
   // Listen for setting changes from SettingsModal
   useEffect(() => {
     function onChanged() {
-      setAutoRefreshMinutes(parseInt(localStorage.getItem('jt_autorefresh') || '0', 10))
+      setAutoRefreshTime(localStorage.getItem('jt_autorefresh') || '')
     }
     window.addEventListener('jt-autorefresh-changed', onChanged)
     return () => window.removeEventListener('jt-autorefresh-changed', onChanged)
   }, [])
 
-  // Auto-refresh interval
+  // Auto-refresh — fires once daily at the scheduled time
   useEffect(() => {
-    if (!autoRefreshMinutes) return
-    const id = setInterval(() => {
-      if (projectsRef.current.length > 0) refreshAll(projectsRef.current)
-    }, autoRefreshMinutes * 60 * 1000)
-    return () => clearInterval(id)
-  }, [autoRefreshMinutes])
+    if (!autoRefreshTime) return
+    let timeoutId
+    function msUntilNext(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number)
+      const now = new Date()
+      const target = new Date(now)
+      target.setHours(h, m, 0, 0)
+      if (target <= now) target.setDate(target.getDate() + 1)
+      return target - now
+    }
+    function scheduleNext() {
+      timeoutId = setTimeout(() => {
+        if (projectsRef.current.length > 0) refreshAll(projectsRef.current)
+        scheduleNext()
+      }, msUntilNext(autoRefreshTime))
+    }
+    scheduleNext()
+    return () => clearTimeout(timeoutId)
+  }, [autoRefreshTime])
 
   useEffect(() => { setUser(initialUser) }, [initialUser])
 
@@ -242,6 +255,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
         onOpenChat={activeProject ? () => { setChatTaskKey(null); setChatOpen(o => !o) } : undefined}
         onGoToReleaseNotes={onGoToReleaseNotes}
         onGoToReleaseNotesEditor={isClient ? undefined : onGoToReleaseNotesEditor}
+        onGoToDocuments={onGoToDocuments}
         projects={projects}
         activeId={activeId}
         onSelectProject={setActiveId}
@@ -294,7 +308,7 @@ export default function DashboardPage({ user: initialUser, theme, onSetTheme, on
               previousTime={prevProjectData[activeProject.id]?.time}
               isClient={isClient}
               jiraUrl={user.jiraUrl}
-              autoRefreshMinutes={autoRefreshMinutes}
+              autoRefreshTime={autoRefreshTime}
               onOpenMessages={(taskKey) => {
                 setChatTaskKey(taskKey || null)
                 setChatOpen(true)

@@ -207,13 +207,12 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
   )
 }
 
-const AUTO_REFRESH_LABELS = { 15: '15 min', 30: '30 min', 60: '1 sat', 120: '2 sata', 360: '6 sati' }
 
 export default function ProjectCard({
   project, data, onArchive, loading, error,
   hasJira, refreshing, lastRefresh, onRefresh,
   previousData, previousTime, isClient, onOpenMessages, jiraUrl,
-  autoRefreshMinutes,
+  autoRefreshTime,
 }) {
   const { isMobile, isTablet } = useWindowSize()
 
@@ -379,9 +378,9 @@ export default function ProjectCard({
             {lastRefresh && (
               <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textSubtle)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {refreshing || loading ? 'Osvežavam...' : `${fmtLastRefresh(lastRefresh)}`}
-                {!refreshing && !loading && autoRefreshMinutes > 0 && (
+                {!refreshing && !loading && autoRefreshTime && (
                   <span style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontSize: 11, color: 'var(--textMuted)' }}>
-                    auto {AUTO_REFRESH_LABELS[autoRefreshMinutes] || `${autoRefreshMinutes} min`}
+                    auto {autoRefreshTime}
                   </span>
                 )}
               </span>

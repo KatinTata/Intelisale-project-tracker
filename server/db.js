@@ -103,6 +103,31 @@ try { db.exec(`ALTER TABLE published_notes ADD COLUMN released_at DATETIME`) } c
 try { db.exec(`ALTER TABLE published_notes ADD COLUMN version TEXT`) } catch {}
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS document_sections (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    position    INTEGER DEFAULT 0,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS documents (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    section_id    INTEGER REFERENCES document_sections(id) ON DELETE SET NULL,
+    name          TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    file_data     BLOB NOT NULL,
+    file_size     INTEGER,
+    thumbnail     TEXT,
+    visible_to    TEXT DEFAULT 'all',
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS release_note_clients (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     note_id        INTEGER NOT NULL REFERENCES published_notes(id) ON DELETE CASCADE,

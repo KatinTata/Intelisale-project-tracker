@@ -1,0 +1,146 @@
+import { Router } from 'express'
+import multer from 'multer'
+import db from '../db.js'
+
+const router = Router()
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
+
+function getRole(userId) {
+  return db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role || 'admin'
+}
+
+function canClientSee(doc, userId) {
+  if (doc.visible_to === 'all') return true
+  try {
+    const ids = JSON.parse(doc.visible_to)
+    return Array.isArray(ids) && ids.includes(userId)
+  } catch { return false }
+}
+
+// ── Sections ──────────────────────────────────────────────────────────────────
+
+router.get('/sections', (req, res) => {
+  const role = getRole(req.userId)
+  if (role !== 'admin') {
+    // Clients get sections that have at least one visible doc
+    const allSections = db.prepare('SELECT * FROM document_sections ORDER BY position, created_at').all()
+    const allDocs = db.prepare('SELECT section_id, visible_to FROM documents').all()
+    const visible = allSections.filter(s =>
+      allDocs.some(d => d.section_id === s.id && canClientSee(d, req.userId))
+    )
+    return res.json(visible)
+  }
+  const sections = db.prepare(
+    'SELECT * FROM document_sections WHERE user_id = ? ORDER BY position, created_at'
+  ).all(req.userId)
+  res.json(sections)
+})
+
+router.post('/sections', (req, res) => {
+  if (getRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
+  const { name } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'Naziv je obavezan' })
+  const r = db.prepare(
+    'INSERT INTO document_sections (user_id, name) VALUES (?, ?)'
+  ).run(req.userId, name.trim())
+  res.json({ id: r.lastInsertRowid, user_id: req.userId, name: name.trim(), position: 0 })
+})
+
+router.put('/sections/:id', (req, res) => {
+  if (getRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
+  const { name } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'Naziv je obavezan' })
+  db.prepare('UPDATE document_sections SET name = ? WHERE id = ? AND user_id = ?')
+    .run(name.trim(), req.params.id, req.userId)
+  res.json({ ok: true })
+})
+
+router.delete('/sections/:id', (req, res) => {
+  if (getRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
+  db.prepare('DELETE FROM document_sections WHERE id = ? AND user_id = ?')
+    .run(req.params.id, req.userId)
+  res.json({ ok: true })
+})
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+const META = 'id, user_id, section_id, name, original_name, file_size, thumbnail, visible_to, created_at'
+
+router.get('/', (req, res) => {
+  const role = getRole(req.userId)
+  if (role !== 'admin') {
+    const all = db.prepare(`SELECT ${META} FROM documents ORDER BY created_at DESC`).all()
+    return res.json(all.filter(d => canClientSee(d, req.userId)))
+  }
+  const docs = db.prepare(
+    `SELECT ${META} FROM documents WHERE user_id = ? ORDER BY created_at DESC`
+  ).all(req.userId)
+  res.json(docs)
+})
+
+router.post('/', upload.single('file'), async (req, res) => {
+  try {
+    if (getRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
+    if (!req.file) return res.status(400).json({ error: 'Fajl je obavezan' })
+    if (req.file.mimetype !== 'application/pdf') return res.status(400).json({ error: 'Samo PDF fajlovi su podržani' })
+
+    const { name, section_id, visible_to } = req.body
+    if (!name?.trim()) return res.status(400).json({ error: 'Naziv je obavezan' })
+
+    const visibleTo = visible_to || 'all'
+
+    const r = db.prepare(
+      'INSERT INTO documents (user_id, section_id, name, original_name, file_data, file_size, thumbnail, visible_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      req.userId,
+      section_id ? parseInt(section_id) : null,
+      name.trim(),
+      req.file.originalname,
+      req.file.buffer,
+      req.file.size,
+      null,
+      visibleTo
+    )
+
+    res.json({
+      id: r.lastInsertRowid,
+      user_id: req.userId,
+      section_id: section_id ? parseInt(section_id) : null,
+      name: name.trim(),
+      original_name: req.file.originalname,
+      file_size: req.file.size,
+      thumbnail: null,
+      visible_to: visibleTo,
+      created_at: new Date().toISOString(),
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.get('/:id/download', (req, res) => {
+  try {
+    const role = getRole(req.userId)
+    const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id)
+    if (!doc) return res.status(404).json({ error: 'Dokument nije pronađen' })
+
+    if (role !== 'admin' && !canClientSee(doc, req.userId)) {
+      return res.status(403).json({ error: 'Pristup odbijen' })
+    }
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(doc.original_name)}`)
+    if (doc.file_size) res.setHeader('Content-Length', doc.file_size)
+    res.send(doc.file_data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.delete('/:id', (req, res) => {
+  if (getRole(req.userId) !== 'admin') return res.status(403).json({ error: 'Forbidden' })
+  db.prepare('DELETE FROM documents WHERE id = ? AND user_id = ?').run(req.params.id, req.userId)
+  res.json({ ok: true })
+})
+
+export default router
