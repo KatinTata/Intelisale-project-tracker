@@ -149,6 +149,9 @@ db.exec(`
   )
 `)
 
+// Migration: add file_path column for disk-based storage (replaces BLOB approach)
+try { db.exec(`ALTER TABLE documents ADD COLUMN file_path TEXT`) } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS release_note_sections (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
