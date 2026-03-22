@@ -49,18 +49,9 @@ router.post('/', requireAdmin, async (req, res) => {
     }
     const hash = await bcrypt.hash(password, 12)
 
-    let jiraUrl = null, jiraEmail = null, jiraToken = null
-    if (role === 'admin') {
-      // Copy Jira credentials from the creating admin
-      const creator = db.prepare('SELECT jira_url, jira_email, jira_token FROM users WHERE id = ?').get(req.userId)
-      jiraUrl = creator?.jira_url || null
-      jiraEmail = creator?.jira_email || null
-      jiraToken = creator?.jira_token || null
-    }
-
     const result = db.prepare(
-      'INSERT INTO users (email, password, name, role, jira_url, jira_email, jira_token) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(email.toLowerCase(), hash, name, role, jiraUrl, jiraEmail, jiraToken)
+      'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)'
+    ).run(email.toLowerCase(), hash, name, role)
 
     const user = db.prepare('SELECT id, email, name, role, created_at as createdAt FROM users WHERE id = ?').get(result.lastInsertRowid)
     res.json({ user: { ...user, projects: [] } })
@@ -89,12 +80,6 @@ router.put('/:id', requireAdmin, async (req, res) => {
     if (role && role !== target.role) {
       fields.push('role = ?')
       values.push(role)
-      // Copy Jira credentials when promoting to admin
-      if (role === 'admin') {
-        const creator = db.prepare('SELECT jira_url, jira_email, jira_token FROM users WHERE id = ?').get(req.userId)
-        fields.push('jira_url = ?', 'jira_email = ?', 'jira_token = ?')
-        values.push(creator?.jira_url || null, creator?.jira_email || null, creator?.jira_token || null)
-      }
     }
 
     if (password?.trim()) {

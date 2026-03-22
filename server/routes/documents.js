@@ -37,8 +37,16 @@ function canClientSee(doc, userId) {
 router.get('/sections', (req, res) => {
   const role = getRole(req.userId)
   if (role !== 'admin') {
-    const allSections = db.prepare('SELECT * FROM document_sections ORDER BY position, created_at').all()
-    const allDocs = db.prepare('SELECT section_id, visible_to FROM documents').all()
+    // Only return sections from admins who have this client in their projects
+    const adminIds = db.prepare(`
+      SELECT DISTINCT p.user_id FROM project_clients pc
+      JOIN projects p ON p.id = pc.project_id
+      WHERE pc.client_user_id = ?
+    `).all(req.userId).map(r => r.user_id)
+    if (adminIds.length === 0) return res.json([])
+    const ph = adminIds.map(() => '?').join(',')
+    const allSections = db.prepare(`SELECT * FROM document_sections WHERE user_id IN (${ph}) ORDER BY position, created_at`).all(...adminIds)
+    const allDocs = db.prepare(`SELECT section_id, visible_to FROM documents WHERE user_id IN (${ph})`).all(...adminIds)
     const visible = allSections.filter(s =>
       allDocs.some(d => d.section_id === s.id && canClientSee(d, req.userId))
     )
