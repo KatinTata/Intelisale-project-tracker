@@ -349,7 +349,7 @@ const AI_PROMPTS = {
   summarize: (text) => `Ti si tehnički pisac. Rezimiri sledeći sadržaj release notes-a u jasne, kratke tačke koje su razumljive i tehničkim i netehničkim korisnicima. Zadrži strukturu ako postoji.\n\n${text}`,
   simplify: (text) => `Ti si tehnički pisac. Uprosti sledeći tekst release notes-a tako da ga mogu razumeti i korisnici koji nisu tehnički. Izbegavaj žargon, koristi jasne i kratke rečenice.\n\n${text}`,
   translate_sr: (text) => `Prevedi sledeći tekst na srpski jezik (latinica). Zadrži formatiranje (Markdown, bullet liste, naslovi).\n\n${text}`,
-  translate_en: (text) => `Translate the following text to English. Preserve the formatting (Markdown, bullet lists, headings).\n\n${text}`,
+  translate_en: (text) => `Translate the following text to English. Keep the exact same labels and structure (e.g. Summary:, Description:, Image1:, etc.) — only translate the values after the colon. Do not add any explanation or extra text.\n\n${text}`,
   generate_description: (text) => `Ti si tehnički pisac koji piše release notes za krajnje korisnike (ne programere). Na osnovu sledećih informacija o Jira tasku, napiši SAMO jednu kratku i jasnu rečenicu (maksimalno dve) koja opisuje šta je urađeno, bez tehničkog žargona. Odgovori SAMO sa opisom, bez uvoda, objašnjenja ili navodnika.\n\n${text}`,
 }
 

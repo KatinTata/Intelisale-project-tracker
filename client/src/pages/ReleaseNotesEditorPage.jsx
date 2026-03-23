@@ -630,6 +630,11 @@ export default function ReleaseNotesEditorPage({ user, theme, onLogout, onGoToDa
       const newDesc = get('Description')
       const newImageDescs = images.map((_, i) => get(`Image${i + 1}`))
 
+      const anyChanged = newName || newDesc || newImageDescs.some(Boolean)
+      if (!anyChanged) {
+        showToast(t('rne.aiTranslateFailed'))
+        return
+      }
       setTaskEdits(prev => ({
         ...prev,
         [taskId]: {
