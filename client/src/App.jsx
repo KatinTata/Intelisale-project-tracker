@@ -173,6 +173,7 @@ export default function App() {
           onLogout={handleLogout}
           onGoToDashboard={goToDashboard}
           onGoToReleaseNotes={goToReleaseNotes}
+          onGoToReleaseNotesEditor={goToReleaseNotesEditor}
           onGoToDocuments={goToDocuments}
           onGoToQA={goToQA}
           onOpenSettings={openSettings}

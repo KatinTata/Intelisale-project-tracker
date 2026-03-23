@@ -27,17 +27,42 @@ function jiraLink(jiraUrl, key) {
   return `https://${base}/browse/${key}`
 }
 
-function changeIcon(type, toStatus) {
-  if (type === 'new') return '🆕'
-  if (type === 'spent') return '⏱️'
-  if (type === 'est') return '📐'
+function ChangeTypeIcon({ type, toStatus, color }) {
+  const s = { width: 14, height: 14, flexShrink: 0 }
+  if (type === 'new') return (
+    <svg viewBox="0 0 14 14" fill="none" style={s}>
+      <circle cx="7" cy="7" r="6" stroke={color} strokeWidth="1.5"/>
+      <path d="M7 4v6M4 7h6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  )
+  if (type === 'spent') return (
+    <svg viewBox="0 0 14 14" fill="none" style={s}>
+      <circle cx="7" cy="7" r="6" stroke={color} strokeWidth="1.5"/>
+      <path d="M7 4v3.5l2 1.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  )
+  if (type === 'est') return (
+    <svg viewBox="0 0 14 14" fill="none" style={s}>
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke={color} strokeWidth="1.5"/>
+      <path d="M4 7h6M4 4.5h3M4 9.5h4" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  )
   if (type === 'status') {
-    if (['Resolved', 'Closed', 'Done'].includes(toStatus)) return '✅'
-    if (['For Testing', 'TESTING STARTED'].includes(toStatus)) return '🧪'
-    if (['For Grooming', 'To Do', 'Estimated'].includes(toStatus)) return '📋'
-    return '🔄'
+    if (['Resolved', 'Closed', 'Done'].includes(toStatus)) return (
+      <svg viewBox="0 0 14 14" fill="none" style={s}>
+        <circle cx="7" cy="7" r="6" stroke={color} strokeWidth="1.5"/>
+        <path d="M4.5 7l2 2 3-3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+    return (
+      <svg viewBox="0 0 14 14" fill="none" style={s}>
+        <circle cx="7" cy="7" r="6" stroke={color} strokeWidth="1.5"/>
+        <path d="M5 5.5C5.3 4.6 6.1 4 7 4c1.1 0 2 .9 2 2 0 1.5-2 2-2 3.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="7" cy="11" r="0.75" fill={color}/>
+      </svg>
+    )
   }
-  return '•'
+  return <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
 }
 
 function changeColor(type, toStatus) {
@@ -148,9 +173,23 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
         background: 'var(--surfaceAlt)',
         borderBottom: changes.length > 0 ? '1px solid var(--border)' : 'none',
       }}>
-        <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
-          {changes.length === 0 ? '✓ Nema novih promena' : `📊 ${changes.length} ${changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja`}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          {changes.length === 0 ? (
+            <svg viewBox="0 0 14 14" fill="none" style={{ width: 14, height: 14, flexShrink: 0 }}>
+              <circle cx="7" cy="7" r="6" stroke="var(--green)" strokeWidth="1.5"/>
+              <path d="M4.5 7l2 2 3-3" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 14 14" fill="none" style={{ width: 14, height: 14, flexShrink: 0 }}>
+              <rect x="1" y="8" width="3" height="5" rx="0.5" fill="var(--textMuted)"/>
+              <rect x="5.5" y="5" width="3" height="8" rx="0.5" fill="var(--accent)"/>
+              <rect x="10" y="2" width="3" height="11" rx="0.5" fill="var(--green)"/>
+            </svg>
+          )}
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+            {changes.length === 0 ? 'Nema novih promena' : `${changes.length} ${changes.length === 1 ? 'promena' : changes.length < 5 ? 'promene' : 'promena'} od poslednjeg osvežavanja`}
+          </span>
+        </div>
         {time && (
           <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textSubtle)' }}>
             {fmtLastRefresh(time, t)}
@@ -172,10 +211,7 @@ function ChangesFeed({ data, previousData, previousTime, jiraUrl, projectId }) {
               padding: '9px 16px',
               borderBottom: i < changes.length - 1 ? '1px solid var(--border)' : 'none',
             }}>
-              <span
-                title={c.type === 'new' ? 'Novi task' : c.type === 'status' ? 'Promena statusa' : c.type === 'est' ? 'Promena estimacije' : c.type === 'spent' ? 'Utrošeno vreme' : ''}
-                style={{ fontSize: 14, flexShrink: 0 }}
-              >{changeIcon(c.type, c.to)}</span>
+              <ChangeTypeIcon type={c.type} toStatus={c.to} color={color} />
               {link ? (
                 <a
                   href={link}
