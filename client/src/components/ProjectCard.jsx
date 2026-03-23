@@ -230,7 +230,6 @@ export default function ProjectCard({
   if (loading) {
     return (
       <div style={{ padding: 48, textAlign: 'center', color: 'var(--textMuted)', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-        <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
         Učitavam podatke iz Jire...
       </div>
     )
