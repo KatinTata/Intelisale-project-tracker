@@ -24,7 +24,7 @@ function MetricCard({ label, value, subtitle, valueColor, isMobile }) {
       }}>
       <div style={{
         fontFamily: "'DM Mono'",
-        fontSize: isMobile ? 9 : 10,
+        fontSize: isMobile ? 10 : 11,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         color: 'var(--textMuted)',

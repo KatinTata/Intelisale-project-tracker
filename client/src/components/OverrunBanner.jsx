@@ -1,7 +1,9 @@
 import { useT } from '../lang.jsx'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
 export default function OverrunBanner({ overTasks = [] }) {
   const t = useT()
+  const { isMobile } = useWindowSize()
   if (overTasks.length === 0) return null
 
   return (
@@ -11,7 +13,8 @@ export default function OverrunBanner({ overTasks = [] }) {
       borderRadius: 10,
       padding: '12px 16px',
       display: 'flex',
-      alignItems: 'center',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'flex-start' : 'center',
       gap: 12,
       flexWrap: 'wrap',
     }}>

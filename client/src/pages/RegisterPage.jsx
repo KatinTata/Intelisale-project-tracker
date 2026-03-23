@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import BrainAnimation from '../components/BrainAnimation.jsx'
 import { useT } from '../lang.jsx'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
 export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme = 'dark' }) {
   const t = useT()
+  const { isMobile } = useWindowSize()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -48,7 +50,7 @@ export default function RegisterPage({ onRegistered, onGoLogin, effectiveTheme =
         WebkitBackdropFilter: 'blur(2px)',
         border: '1px solid var(--border)',
         borderRadius: 16,
-        padding: '36px 40px',
+        padding: isMobile ? '24px 20px' : '36px 40px',
         boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>

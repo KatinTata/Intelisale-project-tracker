@@ -126,6 +126,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                     borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
                     zIndex: 101, overflow: 'hidden', padding: 6,
                     display: 'flex', flexDirection: 'column', gap: 4,
+                    maxHeight: '60vh', overflowY: 'auto',
                   }}>
                     {projects.map(p => {
                       const active = p.id === activeId
@@ -207,7 +208,7 @@ export default function ProjectTabs({ projects, activeId, onSelect, onAdd, onArc
                 onClick={() => onAdd ? onAdd() : onOpenSettings?.()}
                 title={t('tabs.addProject')}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%',
+                  width: 40, height: 40, borderRadius: '50%',
                   border: '2px dashed var(--borderHover)', background: 'transparent',
                   color: 'var(--accent)', fontSize: 20,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',

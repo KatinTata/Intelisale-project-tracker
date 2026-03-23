@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api.js'
 import { useT } from '../lang.jsx'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
 function fmtTime(dateStr, t) {
   const d = new Date(dateStr)
@@ -13,6 +14,7 @@ function fmtTime(dateStr, t) {
 
 export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMessagesRead }) {
   const t = useT()
+  const { isMobile } = useWindowSize()
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [taskKey, setTaskKey] = useState('')
@@ -84,7 +86,7 @@ export default function ChatPanel({ project, currentUser, jiraUrl, onClose, onMe
       right: 0,
       top: 0,
       bottom: 0,
-      width: 380,
+      width: isMobile ? '100%' : 380,
       background: 'var(--surface)',
       borderLeft: '1px solid var(--border)',
       display: 'flex',

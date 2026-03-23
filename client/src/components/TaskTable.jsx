@@ -17,7 +17,7 @@ const COL_DESKTOP        = '130px 1fr 130px 160px 80px 100px'
 const COL_DESKTOP_CLIENT = '130px 1fr 130px 160px'
 const COL_TABLET         = '120px 1fr 120px 140px 90px'
 const COL_TABLET_CLIENT  = '120px 1fr 120px 140px'
-const COL_MOBILE         = '100px 1fr 100px'
+const COL_MOBILE         = '90px 1fr 90px'
 
 function TaskKey({ taskKey, jiraUrl, over, isClient }) {
   const color = (!isClient && over) ? 'var(--red)' : 'var(--accent)'
@@ -306,11 +306,11 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
       : (isClient ? COL_DESKTOP_CLIENT : COL_DESKTOP)
 
   return (
-    <div className="glass-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+    <div className="glass-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', overflowX: isMobile ? 'auto' : 'hidden' }}>
       {/* Header */}
       <div style={{ padding: isMobile ? '12px' : '16px 20px', borderBottom: '1px solid var(--border)' }}>
         {/* Title + search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           <span style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Taskovi</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: 'var(--textMuted)' }}>({tasks.length})</span>
           <input
@@ -326,7 +326,7 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
               color: 'var(--text)',
               fontSize: 13,
               fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-              width: isMobile ? '140px' : '200px',
+              width: isMobile ? '120px' : '200px',
               minHeight: 36,
             }}
           />
@@ -351,8 +351,8 @@ export default function TaskTable({ tasks = [], overTasks = [], isClient, projec
                   fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500,
                   fontSize: 12,
-                  height: 28,
-                  padding: '0 12px',
+                  height: isMobile ? 36 : 28,
+                  padding: isMobile ? '0 14px' : '0 12px',
                   borderRadius: 14,
                   border: active ? 'none' : '1px solid var(--border)',
                   background: active ? 'var(--accent)' : 'transparent',

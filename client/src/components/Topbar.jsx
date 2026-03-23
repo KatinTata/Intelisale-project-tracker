@@ -243,7 +243,7 @@ export default function Topbar({
               onClick={() => setMenuOpen(o => !o)}
               title={user?.name}
               style={{
-                width: 34, height: 34, borderRadius: '50%',
+                width: isMobile ? 40 : 36, height: isMobile ? 40 : 36, borderRadius: '50%',
                 background: 'var(--accent)', color: '#fff',
                 fontFamily: 'Syne', fontWeight: 700, fontSize: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -304,6 +304,7 @@ export default function Topbar({
         overflowX: 'auto',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
       }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 'max-content' }}>
 

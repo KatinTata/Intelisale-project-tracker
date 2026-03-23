@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../lang.jsx'
+import { useWindowSize } from '../hooks/useWindowSize.js'
 
 export default function DonutChart({ segments = [], size = 200, innerRadius = 70, horizontal = false }) {
   const t = useT()
+  const { isMobile } = useWindowSize()
   const [animated, setAnimated] = useState(false)
   const svgRef = useRef(null)
 
@@ -73,7 +75,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
       <div style={{
         marginTop: horizontal ? 0 : 16,
         flex: horizontal ? 1 : undefined,
-        maxWidth: horizontal ? 320 : undefined,
+        maxWidth: horizontal ? (isMobile ? '100%' : 320) : undefined,
         alignSelf: horizontal ? 'center' : undefined,
         display: 'flex',
         flexDirection: 'column',
@@ -91,7 +93,7 @@ export default function DonutChart({ segments = [], size = 200, innerRadius = 70
                   {seg.value}/{total}
                 </span>
               </div>
-              <div style={{ height: 4, width: '100%', maxWidth: horizontal ? 280 : undefined, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: 4, width: '100%', maxWidth: horizontal ? (isMobile ? '100%' : 280) : undefined, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
                   width: animated ? `${pct}%` : '0%',

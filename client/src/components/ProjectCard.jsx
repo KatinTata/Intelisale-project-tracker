@@ -306,7 +306,7 @@ export default function ProjectCard({
           gap: 16,
         }}>
           <div>
-            <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 18 : 24, color: 'var(--text)', marginBottom: 8 }}>
+            <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 20 : 24, color: 'var(--text)', marginBottom: 8 }}>
               {project.displayName || project.epicKey}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -442,7 +442,7 @@ export default function ProjectCard({
           <h3 style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
             Distribucija taskova
           </h3>
-          <DonutChart segments={donutSegments} size={isMobile ? 150 : 200} innerRadius={isMobile ? 52 : 70} horizontal={isClient && !isMobile} />
+          <DonutChart segments={donutSegments} size={isMobile ? 160 : 200} innerRadius={isMobile ? 56 : 70} horizontal={isClient && !isMobile} />
         </div>
 
         {/* Bar chart — admin only */}
@@ -458,7 +458,7 @@ export default function ProjectCard({
               Estimacija vs Utrošeno (top taskovi)
             </h3>
             <div style={{ overflowX: isMobile ? 'auto' : 'hidden' }}>
-              <BarChart data={barData} width={isMobile ? 480 : 600} height={isMobile ? 200 : 260} />
+              <BarChart data={barData} width={isMobile ? 340 : 600} height={isMobile ? 200 : 260} />
             </div>
           </div>
         )}
