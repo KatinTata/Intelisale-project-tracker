@@ -485,7 +485,7 @@ export default function ProjectCard({
                 {assigneeData.filter(d => d.name !== 'Neraspoređeno').length} članova
               </span>
             </div>
-            <AssigneeWorkload data={assigneeData} />
+            <AssigneeWorkload data={assigneeData} tasks={tasks} />
           </div>
 
           {/* Component Breakdown + Overrun Heatmap — side by side */}
