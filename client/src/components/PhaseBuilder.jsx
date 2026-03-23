@@ -193,51 +193,86 @@ export function PhaseCharts({ phases, tasksByPhase }) {
   const withTasks = phases.filter(p => (tasksByPhase[p.id] || []).length > 0)
   if (withTasks.length === 0) return null
 
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
-      <PhaseStatBar phases={withTasks} tasksByPhase={tasksByPhase} mode="pct" />
-      <PhaseStatBar phases={withTasks} tasksByPhase={tasksByPhase} mode="count" />
-    </div>
-  )
-}
+  const totalTasks = withTasks.reduce((s, p) => s + (tasksByPhase[p.id] || []).length, 0)
+  const totalDone  = withTasks.reduce((s, p) => s + (tasksByPhase[p.id] || []).filter(t => t.statusCategory === 'done').length, 0)
+  const overallPct = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
 
-function PhaseStatBar({ phases, tasksByPhase, mode }) {
   return (
-    <div style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
-      <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 11, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-        {mode === 'pct' ? 'Napredak po fazama' : 'Taskovi po fazama'}
+    <div style={{ background: 'var(--surfaceAlt)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px 20px', marginTop: 16 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 11, color: 'var(--textMuted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Napredak po fazama
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)' }}>
+            {totalDone}/{totalTasks} taskova
+          </span>
+          <span style={{
+            fontFamily: "'DM Mono'", fontSize: 11, fontWeight: 600,
+            padding: '2px 8px', borderRadius: 4,
+            background: overallPct === 100 ? 'var(--greenTint)' : 'var(--surfaceAlt)',
+            color: overallPct === 100 ? 'var(--green)' : 'var(--accent)',
+            border: `1px solid ${overallPct === 100 ? 'rgba(34,197,94,0.3)' : 'rgba(79,142,247,0.25)'}`,
+          }}>
+            {overallPct}%
+          </span>
+        </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {phases.map(phase => {
-          const pt = tasksByPhase[phase.id] || []
-          const total = pt.length
-          const done = pt.filter(t => t.statusCategory === 'done').length
+
+      {/* Phase rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {withTasks.map(phase => {
+          const pt     = tasksByPhase[phase.id] || []
+          const total  = pt.length
+          const done   = pt.filter(t => t.statusCategory === 'done').length
           const inprog = pt.filter(t => t.statusCategory === 'inprog' || t.statusCategory === 'testing').length
-          const todo = total - done - inprog
-          const donePct = total > 0 ? (done / total) * 100 : 0
+          const todo   = total - done - inprog
+          const donePct   = total > 0 ? (done / total) * 100 : 0
           const inprogPct = total > 0 ? (inprog / total) * 100 : 0
-          const todoPct = total > 0 ? (todo / total) * 100 : 0
-          const label = mode === 'pct' ? `${Math.round(donePct)}%` : `${done}/${total}`
+          const todoPct   = total > 0 ? (todo / total) * 100 : 0
 
           return (
             <div key={phase.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: phase.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 11, color: 'var(--textMuted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: phase.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {phase.name}
                 </span>
-                <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', flexShrink: 0 }}>
-                  {label}
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: 'var(--textMuted)', flexShrink: 0 }}>
+                  {done}/{total}
+                </span>
+                <span style={{ fontFamily: "'DM Mono'", fontSize: 11, fontWeight: 600, color: donePct === 100 ? 'var(--green)' : 'var(--textMuted)', flexShrink: 0, minWidth: 34, textAlign: 'right' }}>
+                  {Math.round(donePct)}%
                 </span>
               </div>
-              <div style={{ height: 8, background: 'var(--border)', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
-                {donePct > 0 && <div style={{ width: `${donePct}%`, background: 'var(--green)' }} />}
-                {inprogPct > 0 && <div style={{ width: `${inprogPct}%`, background: 'var(--amber)' }} />}
-                {todoPct > 0 && <div style={{ width: `${todoPct}%`, background: 'var(--textSubtle)', opacity: 0.35 }} />}
+              <div style={{ height: 10, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
+                {donePct > 0   && <div style={{ width: `${donePct}%`,   background: 'var(--green)',    transition: 'width 0.5s' }} />}
+                {inprogPct > 0 && <div style={{ width: `${inprogPct}%`, background: 'var(--amber)',    transition: 'width 0.5s' }} />}
+                {todoPct > 0   && <div style={{ width: `${todoPct}%`,   background: 'var(--textSubtle)', opacity: 0.35, transition: 'width 0.5s' }} />}
               </div>
+              {(inprog > 0 || todo > 0) && (
+                <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                  {inprog > 0 && <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--amber)' }}>● {inprog} u toku</span>}
+                  {todo > 0   && <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textSubtle)' }}>● {todo} čeka</span>}
+                </div>
+              )}
             </div>
           )
         })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--green)',     display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--green)',    display: 'inline-block' }} /> Završeno
+        </span>
+        <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--amber)',     display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--amber)',    display: 'inline-block' }} /> U toku
+        </span>
+        <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: 'var(--textMuted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--textSubtle)', opacity: 0.5, display: 'inline-block' }} /> Čeka
+        </span>
       </div>
     </div>
   )
