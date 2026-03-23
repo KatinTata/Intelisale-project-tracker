@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { DndContext, DragOverlay, pointerWithin, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, DragOverlay, pointerWithin, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { api } from '../api.js'
 import PhaseProgress from './PhaseProgress.jsx'
@@ -324,7 +324,8 @@ export default function PhaseBuilder({ projectId, tasks, isClient, onPhasesChang
   const [addingPhase, setAddingPhase] = useState(false)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   )
 
   useEffect(() => { loadPhases() }, [projectId])
